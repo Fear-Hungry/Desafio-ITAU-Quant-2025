@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "itau_quant"
+version = "0.1.0"
+description = "Quantitative asset allocation strategy for the ITAU-Quant challenge."
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.12"
+pandas = "^2.2.2"
+numpy = "^1.26.4"
+cvxpy = "^1.4.3"
+scikit-learn = "^1.4.2"
+osqp = "^0.6.5"
+ecos = "^2.0.13"
+clarabel = "^0.8.0"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.1.1"
+ruff = "^0.4.2"
+black = "^24.4.2"
+ipykernel = "^6.29.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+line-length = 88
+select = ["E", "F", "W", "I", "UP", "PL", "T20"]
+ignore = ["E501"]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
