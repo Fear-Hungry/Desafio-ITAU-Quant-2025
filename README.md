@@ -10,10 +10,10 @@ reais e validação walk-forward para a carteira ARARA.**
 
 ## 📑 Navegação Rápida
 
-- [Executive Brief](#-executive-brief) — Para gestores (2 min)
-- [O que é a Carteira ARARA](#-o-que-é-exatamente-a-nossa-carteira) — Resumo técnico (5 min)
-- [Explicação Completa para Iniciantes](#-carteira-arara---explicação-completa-para-iniciantes) — Tutorial detalhado (15 min)
-- [Arquitetura e Código](#-arquitetura-funcional) — Para desenvolvedores
+- [Executive Brief](#-executive-brief)
+- [O que é a Carteira ARARA](#-o-que-é-exatamente-a-nossa-carteira)
+- [Explicação Completa para Iniciantes](#-carteira-arara---explicação-completa-para-iniciantes)
+- [Arquitetura e Código](#-arquitetura-funcional)
 
 ## 🎯 Executive Brief
 
@@ -507,18 +507,18 @@ quanto custa cada manobra.
 
 ### ❓ FAQ - Perguntas que a Anna provavelmente fará
 
-**P: Quanto precisamos investir para começar?**  
+**P: Quanto precisamos investir para começar?**
 R: Mínimo sugerido USD 100k para diluir custos fixos e sustentar a cardinalidade desejada.
 
-**P: E se o modelo errar?**  
+**P: E se o modelo errar?**
 R: Acionamos o modo defensivo (DD > 15% ou vol > 15%) e, se necessário, o modo crítico
 (DD > 20% e vol > 18%), além de comparar com estratégias simples para detectar desvios.
 
-**P: Quanto tempo leva o rebalanceamento?**  
+**P: Quanto tempo leva o rebalanceamento?**
 R: Cálculo ~5 minutos; execução: ordens distribuídas em 1–2 dias úteis conforme a liquidez
 dos ETFs.
 
-**P: Podemos override manual?**  
+**P: Podemos override manual?**
 R: Sim, desde que haja justificativa técnica e registro em ata do comitê de investimento.
 
 ## 🔬 Validação e Métricas
