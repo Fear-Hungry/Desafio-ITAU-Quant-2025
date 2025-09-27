@@ -11,9 +11,9 @@ reais e validação walk-forward para a carteira ARARA.**
 ## 📑 Navegação Rápida
 
 - [Executive Brief](#-executive-brief)
-- [O que é a Carteira ARARA](#-o-que-é-exatamente-a-nossa-carteira) — Resumo técnico (5 min)
-- [Explicação Completa para Iniciantes](#-carteira-arara---explicação-completa-para-iniciantes) — Tutorial detalhado (15 min)
-- [Arquitetura e Código](#-arquitetura-funcional) — Para desenvolvedores
+- [O que é a Carteira ARARA](#-o-que-é-exatamente-a-nossa-carteira)
+- [Explicação Completa para Iniciantes](#-carteira-arara---explicação-completa-para-iniciantes)
+- [Arquitetura e Código](#-arquitetura-funcional)
 
 ## 🎯 Executive Brief
 
