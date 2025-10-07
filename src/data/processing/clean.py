@@ -4,4 +4,3 @@ Normalização de timezones, sanity checks e validações de integridade de dado
 """
 
 from __future__ import annotations
-

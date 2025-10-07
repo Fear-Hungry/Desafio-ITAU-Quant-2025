@@ -51,5 +51,3 @@ def download_prices(
     adj = adj.reindex(columns=[c for c in tickers_list if c in adj.columns])
     adj = adj.sort_index().ffill().dropna(how="all")
     return adj
-
-

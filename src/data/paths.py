@@ -25,4 +25,3 @@ PROJECT_ROOT: Path = find_project_root()
 DATA_DIR: Path = PROJECT_ROOT / "data"
 RAW_DATA_DIR: Path = DATA_DIR / "raw"
 PROCESSED_DATA_DIR: Path = DATA_DIR / "processed"
-
