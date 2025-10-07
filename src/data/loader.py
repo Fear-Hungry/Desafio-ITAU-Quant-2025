@@ -62,7 +62,7 @@ def load_asset_prices(file_name: str) -> pd.DataFrame:
     return df
 
 
-def calculate_returns(prices_df: pd.DataFrame, method:str = "log") -> pd.DataFrame:
+def calculate_returns(prices_df: pd.DataFrame, method: str = "log") -> pd.DataFrame:
     """
     Calcula os retornos percentuais (decimais) a partir de um DataFrame de preços.
 
@@ -81,8 +81,6 @@ def calculate_returns(prices_df: pd.DataFrame, method:str = "log") -> pd.DataFra
         rets = prices.pct_change()
 
     return rets.dropna(how="all")
-
-
 
 
 def download_and_cache_arara_prices(

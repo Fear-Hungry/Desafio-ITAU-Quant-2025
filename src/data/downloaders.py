@@ -89,5 +89,3 @@ def download_fred_dtb3(
     rf_daily = (s / 100.0) / 360.0
     rf_daily.name = "rf_daily"
     return rf_daily.asfreq("B").ffill()
-
-
