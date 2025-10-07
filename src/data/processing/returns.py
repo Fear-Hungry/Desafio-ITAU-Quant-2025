@@ -1,3 +1,8 @@
+"""Funções de processamento de retornos.
+
+Cálculo de retornos log/percentual e helpers relacionados.
+"""
+
 from __future__ import annotations
 
 import numpy as np
@@ -13,5 +18,3 @@ def calculate_returns(prices_df: pd.DataFrame, method: str = "log") -> pd.DataFr
     else:
         rets = prices.pct_change()
     return rets.dropna(how="all")
-
-

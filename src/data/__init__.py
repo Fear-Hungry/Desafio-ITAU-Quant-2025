@@ -17,4 +17,3 @@ __all__ = [
     "download_and_preprocess_arara",
     "download_fred_dtb3",
 ]
-

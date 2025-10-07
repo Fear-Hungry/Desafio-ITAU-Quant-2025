@@ -1,3 +1,10 @@
+"""Fachada de dados ARARA.
+
+Responsável por orquestrar operações de alto nível: baixar preços/r_f,
+calcular retornos e persistir artefatos. Delega a submódulos em
+`data.paths`, `data.universe`, `data.sources.*` e `data.processing.*`.
+"""
+
 from __future__ import annotations
 
 from datetime import datetime

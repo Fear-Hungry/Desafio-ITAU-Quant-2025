@@ -1,3 +1,8 @@
+"""Universo ARARA e utilitários relacionados.
+
+Define a lista de tickers ARARA e helpers para expor o universo.
+"""
+
 from __future__ import annotations
 
 from typing import List
@@ -20,5 +25,3 @@ ARARA_TICKERS: List[str] = [
 
 def get_arara_universe() -> List[str]:
     return list(ARARA_TICKERS)
-
-

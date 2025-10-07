@@ -1,3 +1,9 @@
+"""Paths e diretórios de dados.
+
+Resolve a raiz do projeto e expõe caminhos padrão: DATA_DIR,
+RAW_DATA_DIR e PROCESSED_DATA_DIR.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path

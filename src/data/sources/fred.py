@@ -1,3 +1,8 @@
+"""Fonte de dados: FRED.
+
+Utilitários para baixar séries macroeconômicas (ex.: DTB3) e derivar r_f diário.
+"""
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -20,5 +25,3 @@ def download_dtb3(
     rf_daily = (s / 100.0) / 360.0
     rf_daily.name = "rf_daily"
     return rf_daily.asfreq("B").ffill()
-
-

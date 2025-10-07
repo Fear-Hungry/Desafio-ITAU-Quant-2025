@@ -1,3 +1,8 @@
+"""Fonte de dados: yfinance.
+
+Funções para baixar séries de preços/volumes via API pública do Yahoo Finance.
+"""
+
 from __future__ import annotations
 
 from datetime import datetime
