@@ -5,9 +5,13 @@ from pathlib import Path
 from typing import Iterable, List, Optional
 
 import pandas as pd
-import yfinance as yf
-from pandas_datareader import data as pdr
 import logging
+import numpy as np
+from .downloaders import (
+    get_arara_universe,
+    download_prices_yf,
+    download_fred_dtb3,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +20,11 @@ def _find_project_root() -> Path:
     """Resolve a raiz do projeto procurando por pyproject.toml para ser robusto
     a mudanças de localização do arquivo dentro de src/.
     """
-    current = Path(__file__).resolve()
-    for parent in [current, *current.parents]:
+    p = Path(__file__).resolve().parent
+    for parent in [p, *p.parents]:
         if (parent / "pyproject.toml").exists():
             return parent
-    # fallback: três níveis acima mantém compatibilidade com estrutura atual
-    return Path(__file__).resolve().parents[3]
+    return Path.cwd()
 
 
 PROJECT_ROOT = _find_project_root()
@@ -30,63 +33,14 @@ RAW_DATA_DIR = DATA_DIR / "raw"
 PROCESSED_DATA_DIR = DATA_DIR / "processed"
 
 
-# Universo ARARA (37 ETFs)
-ARARA_TICKERS: List[str] = [
-    # Ações EUA (amplo)
-    "SPY",
-    "QQQ",
-    "IWM",
-    # Desenvolvidos ex-US
-    "EFA",
-    # Emergentes
-    "EEM",
-    # Setores EUA
-    "XLC",
-    "XLY",
-    "XLP",
-    "XLE",
-    "XLF",
-    "XLV",
-    "XLK",
-    "XLI",
-    "XLB",
-    "XLRE",
-    "XLU",
-    # Fatores (EUA)
-    "USMV",
-    "MTUM",
-    "QUAL",
-    "VLUE",
-    "SIZE",
-    # Imobiliário
-    "VNQ",
-    "VNQI",
-    # Treasuries (curva)
-    "SHY",
-    "IEI",
-    "IEF",
-    "TLT",
-    # TIPS
-    "TIP",
-    # Crédito
-    "LQD",
-    "HYG",
-    "EMB",
-    "EMLC",
-    # Commodities
-    "GLD",
-    "DBC",
-    # Câmbio USD
-    "UUP",
-    # Cripto (ETFs spot)
-    "IBIT",
-    "ETHA",
+__all__ = [
+    "get_arara_universe",
+    "load_asset_prices",
+    "calculate_returns",
+    "download_and_cache_arara_prices",
+    "preprocess_data",
+    "download_and_preprocess_arara",
 ]
-
-
-def get_arara_universe() -> List[str]:
-    """Retorna a lista de tickers do universo ARARA."""
-    return list(ARARA_TICKERS)
 
 
 def load_asset_prices(file_name: str) -> pd.DataFrame:
@@ -108,7 +62,7 @@ def load_asset_prices(file_name: str) -> pd.DataFrame:
     return df
 
 
-def calculate_returns(prices_df: pd.DataFrame) -> pd.DataFrame:
+def calculate_returns(prices_df: pd.DataFrame, method:str = "log") -> pd.DataFrame:
     """
     Calcula os retornos percentuais (decimais) a partir de um DataFrame de preços.
 
@@ -118,78 +72,17 @@ def calculate_returns(prices_df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame com os retornos dos ativos.
     """
-    return prices_df.pct_change().dropna()
-
-
-def download_prices_yf(
-    tickers: Iterable[str],
-    start: Optional[str | datetime] = None,
-    end: Optional[str | datetime] = None,
-    progress: bool = False,
-) -> pd.DataFrame:
-    """Baixa preços ajustados (Adj Close) via yfinance para os tickers informados.
-
-    Retorna um DataFrame wide (índice datas, colunas tickers) em USD.
-    Falhas por ticker são logadas e ignoradas.
-    """
-    tickers_list = list(dict.fromkeys([t.strip().upper() for t in tickers]))
-    if not tickers_list:
-        raise ValueError("Lista de tickers vazia.")
-
-    logger.info(
-        "Baixando preços com yfinance: %s (start=%s, end=%s)",
-        ",".join(tickers_list),
-        start,
-        end,
-    )
-
-    data = yf.download(
-        tickers=tickers_list,
-        start=start,
-        end=end,
-        auto_adjust=False,
-        progress=progress,
-        group_by="ticker",
-        threads=True,
-    )
-
-    # Extrair Adj Close em formato wide
-    if isinstance(data.columns, pd.MultiIndex):
-        # MultiIndex: nível 0 ticker, nível 1 campo
-        try:
-            adj = data.xs("Adj Close", axis=1, level=1)
-        except Exception:
-            # fallback para 'Close' quando Adj Close ausente
-            logger.warning("Adj Close ausente; usando Close como fallback.")
-            adj = data.xs("Close", axis=1, level=1)
+    prices = prices_df.sort_index()
+    if method == "log":
+        ratio = prices.divide(prices.shift(1))
+        ratio = ratio.where(ratio > 0)
+        rets = np.log(ratio)
     else:
-        # SingleIndex: quando apenas 1 ticker
-        col = "Adj Close" if "Adj Close" in data.columns else "Close"
-        adj = data[[col]].copy()
-        adj.columns = tickers_list[:1]
+        rets = prices.pct_change()
 
-    # Ordenar colunas conforme tickers_list e dropar colunas totalmente vazias
-    adj = adj.reindex(columns=[c for c in tickers_list if c in adj.columns])
-    adj = adj.dropna(how="all")
-
-    # Forward-fill em feriados não coincidentes; remove linhas completamente vazias
-    adj = adj.sort_index().ffill().dropna(how="all")
-    return adj
+    return rets.dropna(how="all")
 
 
-def download_fred_dtb3(
-    start: Optional[str | datetime] = None, end: Optional[str | datetime] = None
-) -> pd.Series:
-    """Baixa a série DTB3 (Secondary Market 3-Month T-Bill, % a.a.) da FRED.
-
-    Converte para taxa diária aproximada: r_f_daily ≈ (DTB3/100)/360.
-    """
-    logger.info("Baixando FRED DTB3 (start=%s, end=%s)", start, end)
-    s = pdr.DataReader("DTB3", "fred", start, end)["DTB3"]
-    s = s.astype(float)
-    rf_daily = s.div(100.0).div(360.0)
-    rf_daily.name = "rf_daily"
-    return rf_daily
 
 
 def download_and_cache_arara_prices(
