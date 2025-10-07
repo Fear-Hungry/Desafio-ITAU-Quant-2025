@@ -2,35 +2,17 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Optional
 
 import pandas as pd
 import logging
-import numpy as np
-from .downloaders import (
-    get_arara_universe,
-    download_prices_yf,
-    download_fred_dtb3,
-)
+from .paths import RAW_DATA_DIR, PROCESSED_DATA_DIR
+from .universe import get_arara_universe
+from .sources.yf import download_prices as yf_download
+from .sources.fred import download_dtb3 as fred_download_dtb3
+from .processing.returns import calculate_returns as _calculate_returns
 
 logger = logging.getLogger(__name__)
-
-
-def _find_project_root() -> Path:
-    """Resolve a raiz do projeto procurando por pyproject.toml para ser robusto
-    a mudanças de localização do arquivo dentro de src/.
-    """
-    p = Path(__file__).resolve().parent
-    for parent in [p, *p.parents]:
-        if (parent / "pyproject.toml").exists():
-            return parent
-    return Path.cwd()
-
-
-PROJECT_ROOT = _find_project_root()
-DATA_DIR = PROJECT_ROOT / "data"
-RAW_DATA_DIR = DATA_DIR / "raw"
-PROCESSED_DATA_DIR = DATA_DIR / "processed"
 
 
 __all__ = [
@@ -40,6 +22,7 @@ __all__ = [
     "download_and_cache_arara_prices",
     "preprocess_data",
     "download_and_preprocess_arara",
+    "download_fred_dtb3",
 ]
 
 
@@ -63,24 +46,7 @@ def load_asset_prices(file_name: str) -> pd.DataFrame:
 
 
 def calculate_returns(prices_df: pd.DataFrame, method: str = "log") -> pd.DataFrame:
-    """
-    Calcula os retornos percentuais (decimais) a partir de um DataFrame de preços.
-
-    Args:
-        prices_df: DataFrame com preços dos ativos.
-
-    Returns:
-        DataFrame com os retornos dos ativos.
-    """
-    prices = prices_df.sort_index()
-    if method == "log":
-        ratio = prices.divide(prices.shift(1))
-        ratio = ratio.where(ratio > 0)
-        rets = np.log(ratio)
-    else:
-        rets = prices.pct_change()
-
-    return rets.dropna(how="all")
+    return _calculate_returns(prices_df, method=method)
 
 
 def download_and_cache_arara_prices(
@@ -93,7 +59,7 @@ def download_and_cache_arara_prices(
     Retorna o caminho do arquivo salvo.
     """
     RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    prices = download_prices_yf(get_arara_universe(), start=start, end=end)
+    prices = yf_download(get_arara_universe(), start=start, end=end)
     out_path = RAW_DATA_DIR / raw_file_name
     prices.to_csv(out_path, index=True)
     logger.info("Preços ARARA salvos em %s", out_path)
@@ -141,3 +107,8 @@ def download_and_preprocess_arara(
     """
     raw_path = download_and_cache_arara_prices(start=start, end=end)
     return preprocess_data(raw_path.name, processed_file_name)
+
+
+def download_fred_dtb3(start: Optional[str | datetime] = None, end: Optional[str | datetime] = None) -> pd.Series:
+    """Wrapper público para baixar r_f diário aproximado (DTB3)."""
+    return fred_download_dtb3(start=start, end=end)
