@@ -1,6 +1,6 @@
-"""IO utilitários.
+"""Persistência de dados (Parquet/CSV).
 
-Salvar/carregar CSV/Parquet com compressão e versionamento simples.
+Funções auxiliares para salvar/carregar objetos pandas com compressão `zstd`.
 """
 
 from __future__ import annotations

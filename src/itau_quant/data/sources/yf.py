@@ -1,6 +1,7 @@
 """Fonte de dados: yfinance.
 
 Funções para baixar séries de preços/volumes via API pública do Yahoo Finance.
+Retorna preços ajustados (Adj Close) e, opcionalmente, volume por ticker.
 """
 
 from __future__ import annotations
@@ -9,6 +10,7 @@ from datetime import datetime
 from typing import Iterable, Optional, Tuple
 
 import logging
+import time
 import pandas as pd
 import yfinance as yf
 
@@ -21,6 +23,7 @@ def download_prices(
     end: Optional[str | datetime] = None,
     progress: bool = False,
     with_volume: bool = False,
+    sleep_seconds: float = 0.25,
 ) -> Tuple[pd.DataFrame, Optional[pd.DataFrame]]:
     tickers_list = list(dict.fromkeys([t.strip().upper() for t in tickers]))
     if not tickers_list:
@@ -30,6 +33,10 @@ def download_prices(
         "Baixando preços (yfinance): %s (start=%s, end=%s)",
         ",".join(tickers_list), start, end,
     )
+    # Throttle leve para evitar rate limit/ban de IP em ambientes CI
+    if sleep_seconds and sleep_seconds > 0:
+        time.sleep(sleep_seconds)
+
     data = yf.download(
         tickers=tickers_list,
         start=start,

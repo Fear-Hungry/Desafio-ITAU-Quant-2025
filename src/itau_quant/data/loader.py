@@ -1,8 +1,16 @@
 """Fachada de dados ARARA.
 
-Responsável por orquestrar operações de alto nível: baixar preços/r_f,
-calcular retornos e persistir artefatos. Delega a submódulos em
-`data.paths`, `data.universe`, `data.sources.*` e `data.processing.*`.
+Responsável por orquestrar operações de alto nível: baixar preços e r_f,
+normalizar/validar o painel, calcular retornos e excess returns, gerar calendário
+de rebalance (BMS/BME/weekly) e persistir artefatos Parquet com compressão zstd.
+
+Delegação de responsabilidades:
+- `paths`: diretórios do projeto e áreas de dados
+- `universe`: universo ARARA (tickers)
+- `sources.*`: provedores (yfinance, FRED)
+- `processing.*`: limpeza, retornos, calendário
+- `storage`: IO Parquet
+- `cache`: hashing de pedidos para reprodutibilidade
 """
 
 from __future__ import annotations
