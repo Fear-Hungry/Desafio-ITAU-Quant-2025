@@ -126,3 +126,51 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+
+# Data and artifacts
+data/raw/**
+data/processed/**
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.h5
+*.hdf5
+*.xls
+*.xlsx
+*.zip
+*.gz
+*.bz2
+*.xz
+*.zst
+*.pickle
+*.pkl
+*.joblib
+*.feather
+*.npz
+*.npy
+reports/**/*.pdf
+reports/**/*.html
+notebooks/.ipynb_checkpoints/**
+notebooks/**.ipynb
+!notebooks/README.md
+# Credentials & local configs
+secrets/**
+*.key
+*.pem
+*.crt
+*.cert
+*.jks
+*.p12
+*.pfx
+*.env.local
+.envrc
+.envrc.private
+# Cache & build artifacts
+**/__pycache__/**
+**/.ruff_cache/**
+**/.pytest_cache/**
+**/.mypy_cache/**
+**/.ipynb_checkpoints/**
+**/.DS_Store
+
