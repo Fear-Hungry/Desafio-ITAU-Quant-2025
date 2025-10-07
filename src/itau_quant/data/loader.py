@@ -8,8 +8,9 @@ calcular retornos e persistir artefatos. Delega a submódulos em
 from __future__ import annotations
 
 from datetime import datetime
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Iterable
 
 import pandas as pd
 import logging
@@ -17,7 +18,14 @@ from .paths import RAW_DATA_DIR, PROCESSED_DATA_DIR
 from .universe import get_arara_universe
 from .sources.yf import download_prices as yf_download
 from .sources.fred import download_dtb3 as fred_download_dtb3
-from .processing.returns import calculate_returns as _calculate_returns
+from .processing.returns import (
+	calculate_returns as _calculate_returns,
+	compute_excess_returns,
+)
+from .processing.clean import normalize_index, validate_panel
+from .processing.calendar import rebalance_schedule
+from .storage import save_parquet
+from .cache import request_hash
 
 logger = logging.getLogger(__name__)
 
@@ -119,3 +127,41 @@ def download_and_preprocess_arara(
 def download_fred_dtb3(start: Optional[str | datetime] = None, end: Optional[str | datetime] = None) -> pd.Series:
     """Wrapper público para baixar r_f diário aproximado (DTB3)."""
     return fred_download_dtb3(start=start, end=end)
+
+
+@dataclass(frozen=True)
+class DataBundle:
+	prices: pd.DataFrame
+	returns: pd.DataFrame
+	rf_daily: pd.Series
+	excess_returns: pd.DataFrame
+	bms: pd.DatetimeIndex
+	inception_mask: pd.Series
+
+
+class DataLoader:
+	def __init__(self, tickers: Optional[Iterable[str]] = None, start: Optional[str | datetime] = None, end: Optional[str | datetime] = None, mode: str = "BMS") -> None:
+		self.tickers = list(tickers) if tickers is not None else get_arara_universe()
+		self.start = start
+		self.end = end
+		self.mode = mode
+
+	def load(self) -> DataBundle:
+		logger.info("DataLoader: iniciando carga (tickers=%d, start=%s, end=%s, mode=%s)", len(self.tickers), self.start, self.end, self.mode)
+		prices = yf_download(self.tickers, start=self.start, end=self.end)
+		prices = normalize_index(prices)
+		validate_panel(prices)
+
+		returns = _calculate_returns(prices, method="log")
+		rf = fred_download_dtb3(self.start, self.end)
+		excess = compute_excess_returns(returns, rf)
+		bms = rebalance_schedule(prices.index, mode=self.mode)
+		inception_mask = prices.apply(lambda s: s.first_valid_index())
+
+		# salvar com hash do pedido
+		hash_id = request_hash(self.tickers, self.start, self.end)
+		save_parquet(PROCESSED_DATA_DIR / f"returns_{hash_id}.parquet", returns)
+		save_parquet(PROCESSED_DATA_DIR / f"excess_returns_{hash_id}.parquet", excess)
+
+		logger.info("DataLoader: janela efetiva [%s → %s], BMS=%d", prices.index.min(), prices.index.max(), len(bms))
+		return DataBundle(prices=prices, returns=returns, rf_daily=rf, excess_returns=excess, bms=bms, inception_mask=inception_mask)

@@ -18,3 +18,12 @@ def calculate_returns(prices_df: pd.DataFrame, method: str = "log") -> pd.DataFr
     else:
         rets = prices.pct_change()
     return rets.dropna(how="all")
+
+
+def compute_excess_returns(returns: pd.DataFrame, rf_daily: pd.Series) -> pd.DataFrame:
+    """Alinha e subtrai r_f diário dos retornos.
+
+    r_f é broadcast por índice de datas.
+    """
+    rf = rf_daily.reindex(returns.index).fillna(method="ffill")
+    return returns.sub(rf, axis=0)
