@@ -19,8 +19,8 @@ from .universe import get_arara_universe
 from .sources.yf import download_prices as yf_download
 from .sources.fred import download_dtb3 as fred_download_dtb3
 from .processing.returns import (
-	calculate_returns as _calculate_returns,
-	compute_excess_returns,
+    calculate_returns as _calculate_returns,
+    compute_excess_returns,
 )
 from .processing.clean import normalize_index, validate_panel
 from .processing.calendar import rebalance_schedule
@@ -38,6 +38,8 @@ __all__ = [
     "preprocess_data",
     "download_and_preprocess_arara",
     "download_fred_dtb3",
+    "DataLoader",
+    "DataBundle",
 ]
 
 
@@ -74,7 +76,8 @@ def download_and_cache_arara_prices(
     Retorna o caminho do arquivo salvo.
     """
     RAW_DATA_DIR.mkdir(parents=True, exist_ok=True)
-    prices = yf_download(get_arara_universe(), start=start, end=end)
+    prices, _ = yf_download(get_arara_universe(),
+                            start=start, end=end, with_volume=False)
     out_path = RAW_DATA_DIR / raw_file_name
     prices.to_csv(out_path, index=True)
     logger.info("Preços ARARA salvos em %s", out_path)
@@ -131,37 +134,67 @@ def download_fred_dtb3(start: Optional[str | datetime] = None, end: Optional[str
 
 @dataclass(frozen=True)
 class DataBundle:
-	prices: pd.DataFrame
-	returns: pd.DataFrame
-	rf_daily: pd.Series
-	excess_returns: pd.DataFrame
-	bms: pd.DatetimeIndex
-	inception_mask: pd.Series
+    prices: pd.DataFrame
+    returns: pd.DataFrame
+    rf_daily: pd.Series
+    excess_returns: pd.DataFrame
+    bms: pd.DatetimeIndex
+    inception_mask: pd.Series
 
 
 class DataLoader:
-	def __init__(self, tickers: Optional[Iterable[str]] = None, start: Optional[str | datetime] = None, end: Optional[str | datetime] = None, mode: str = "BMS") -> None:
-		self.tickers = list(tickers) if tickers is not None else get_arara_universe()
-		self.start = start
-		self.end = end
-		self.mode = mode
+    def __init__(
+        self,
+        tickers: Optional[Iterable[str]] = None,
+        start: Optional[str | datetime] = None,
+        end: Optional[str | datetime] = None,
+        mode: str = "BMS",
+    ) -> None:
+        self.tickers = list(
+            tickers) if tickers is not None else get_arara_universe()
+        self.start = start
+        self.end = end
+        self.mode = mode
 
-	def load(self) -> DataBundle:
-		logger.info("DataLoader: iniciando carga (tickers=%d, start=%s, end=%s, mode=%s)", len(self.tickers), self.start, self.end, self.mode)
-		prices = yf_download(self.tickers, start=self.start, end=self.end)
-		prices = normalize_index(prices)
-		validate_panel(prices)
+    def load(self) -> DataBundle:
+        logger.info(
+            "DataLoader: iniciando carga (tickers=%d, start=%s, end=%s, mode=%s)",
+            len(self.tickers),
+            self.start,
+            self.end,
+            self.mode,
+        )
 
-		returns = _calculate_returns(prices, method="log")
-		rf = fred_download_dtb3(self.start, self.end)
-		excess = compute_excess_returns(returns, rf)
-		bms = rebalance_schedule(prices.index, mode=self.mode)
-		inception_mask = prices.apply(lambda s: s.first_valid_index())
+        prices, _vol = yf_download(
+            self.tickers, start=self.start, end=self.end, with_volume=True
+        )
+        prices = normalize_index(prices)
+        validate_panel(prices)
 
-		# salvar com hash do pedido
-		hash_id = request_hash(self.tickers, self.start, self.end)
-		save_parquet(PROCESSED_DATA_DIR / f"returns_{hash_id}.parquet", returns)
-		save_parquet(PROCESSED_DATA_DIR / f"excess_returns_{hash_id}.parquet", excess)
+        returns = _calculate_returns(prices, method="log")
+        rf = fred_download_dtb3(self.start, self.end)
+        excess = compute_excess_returns(returns, rf)
+        bms = rebalance_schedule(prices.index, mode=self.mode)
+        inception_mask = prices.apply(lambda s: s.first_valid_index())
 
-		logger.info("DataLoader: janela efetiva [%s → %s], BMS=%d", prices.index.min(), prices.index.max(), len(bms))
-		return DataBundle(prices=prices, returns=returns, rf_daily=rf, excess_returns=excess, bms=bms, inception_mask=inception_mask)
+        # salvar com hash do pedido
+        hash_id = request_hash(self.tickers, self.start, self.end)
+        save_parquet(PROCESSED_DATA_DIR /
+                     f"returns_{hash_id}.parquet", returns)
+        save_parquet(PROCESSED_DATA_DIR /
+                     f"excess_returns_{hash_id}.parquet", excess)
+
+        logger.info(
+            "DataLoader: janela efetiva [%s → %s], BMS=%d",
+            prices.index.min(),
+            prices.index.max(),
+            len(bms),
+        )
+        return DataBundle(
+            prices=prices,
+            returns=returns,
+            rf_daily=rf,
+            excess_returns=excess,
+            bms=bms,
+            inception_mask=inception_mask,
+        )

@@ -21,9 +21,15 @@ def calculate_returns(prices_df: pd.DataFrame, method: str = "log") -> pd.DataFr
 
 
 def compute_excess_returns(returns: pd.DataFrame, rf_daily: pd.Series) -> pd.DataFrame:
-    """Alinha e subtrai r_f diário dos retornos.
+    """Calcula excess returns alinhando r_f a dias úteis e index de returns.
 
-    r_f é broadcast por índice de datas.
+    - Converte rf para business-days (B) e faz forward-fill
+    - Reindexa para o índice de returns e subtrai por broadcast
     """
-    rf = rf_daily.reindex(returns.index).fillna(method="ffill")
-    return returns.sub(rf, axis=0)
+    if rf_daily is None or len(rf_daily) == 0:
+        return returns.copy()
+    rf_b = rf_daily.asfreq("B").ffill()
+    rf_aligned = rf_b.reindex(returns.index).ffill()
+    # broadcast por linha
+    xr = returns.sub(rf_aligned, axis=0)
+    return xr

@@ -6,7 +6,7 @@ Funções para baixar séries de preços/volumes via API pública do Yahoo Finan
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Iterable, Optional
+from typing import Iterable, Optional, Tuple
 
 import logging
 import pandas as pd
@@ -20,7 +20,8 @@ def download_prices(
     start: Optional[str | datetime] = None,
     end: Optional[str | datetime] = None,
     progress: bool = False,
-) -> pd.DataFrame:
+    with_volume: bool = False,
+) -> Tuple[pd.DataFrame, Optional[pd.DataFrame]]:
     tickers_list = list(dict.fromkeys([t.strip().upper() for t in tickers]))
     if not tickers_list:
         raise ValueError("Lista de tickers vazia.")
@@ -38,16 +39,26 @@ def download_prices(
         group_by="ticker",
         threads=True,
     )
+    vol = None
     if isinstance(data.columns, pd.MultiIndex):
         try:
             adj = data.xs("Adj Close", axis=1, level=1)
         except Exception:
             logger.warning("Adj Close ausente; usando Close.")
             adj = data.xs("Close", axis=1, level=1)
+        if with_volume and ("Volume" in data.columns.get_level_values(1)):
+            vol = data.xs("Volume", axis=1, level=1)
     else:
         col = "Adj Close" if "Adj Close" in data.columns else "Close"
         adj = data[[col]].copy()
         adj.columns = tickers_list[:1]
+        if with_volume and "Volume" in data.columns:
+            vol = data[["Volume"]].copy()
+            vol.columns = tickers_list[:1]
     adj = adj.reindex(columns=[c for c in tickers_list if c in adj.columns])
     adj = adj.sort_index().ffill().dropna(how="all")
-    return adj
+    if with_volume and vol is not None:
+        vol = vol.reindex(columns=[c for c in tickers_list if c in (
+            vol.columns if vol is not None else [])])
+        vol = vol.sort_index().fillna(0)
+    return adj, vol
