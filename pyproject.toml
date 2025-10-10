@@ -14,6 +14,8 @@ scikit-learn = "^1.4.2"
 osqp = "^0.6.5"
 ecos = "^2.0.13"
 clarabel = "^0.8.0"
+yfinance = "^0.2.41"
+pandas-datareader = "^0.10.0"
 
 
 [tool.poetry.group.dev.dependencies]
