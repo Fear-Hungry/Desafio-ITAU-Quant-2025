@@ -1,6 +1,5 @@
-"""Loaders alternativos (CSV/Parquet).
+"""Ingestao de dados locais em CSV/Excel.
 
-Implementações simples de leitura/escrita para formatos tabulares locais.
+Implementar funcoes que validam schema, timezone, moeda e retornam dados
+limpos prontos para a camada de processamento.
 """
-
-from __future__ import annotations

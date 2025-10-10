@@ -1,27 +1,6 @@
-"""Paths e diretórios de dados.
+"""Resolve caminhos canonicos de dados e artefatos.
 
-Resolve a raiz do projeto e expõe caminhos padrão: DATA_DIR,
-RAW_DATA_DIR e PROCESSED_DATA_DIR.
+Implementar funcoes que retornam paths raw/interim/processed/model usando as
+configuracoes carregadas e criar helpers para versionamento simples por hash
+de parametros.
 """
-
-from __future__ import annotations
-
-from pathlib import Path
-
-
-def find_project_root() -> Path:
-    """Resolve a raiz do projeto procurando por pyproject.toml.
-
-    Retorna cwd como fallback para ambientes não versionados.
-    """
-    p = Path(__file__).resolve().parent
-    for parent in [p, *p.parents]:
-        if (parent / "pyproject.toml").exists():
-            return parent
-    return Path.cwd()
-
-
-PROJECT_ROOT: Path = find_project_root()
-DATA_DIR: Path = PROJECT_ROOT / "data"
-RAW_DATA_DIR: Path = DATA_DIR / "raw"
-PROCESSED_DATA_DIR: Path = DATA_DIR / "processed"
