@@ -1,5 +1,50 @@
-"""Construcao do universo de ativos negociaveis.
+"""ARARA universe helpers."""
 
-Implementar logica que combina listas obrigatorias (SPY, QQQ, IWM, etc.),
-filtra liquidez, historico minimo e retorna DataFrame/Series com metadata.
-"""
+from __future__ import annotations
+
+from typing import List
+
+ARARA_TICKERS: List[str] = [
+    "SPY",
+    "QQQ",
+    "IWM",
+    "EFA",
+    "EEM",
+    "XLC",
+    "XLY",
+    "XLP",
+    "XLE",
+    "XLF",
+    "XLV",
+    "XLK",
+    "XLI",
+    "XLB",
+    "XLRE",
+    "XLU",
+    "USMV",
+    "MTUM",
+    "QUAL",
+    "VLUE",
+    "SIZE",
+    "VNQ",
+    "VNQI",
+    "SHY",
+    "IEI",
+    "IEF",
+    "TLT",
+    "TIP",
+    "LQD",
+    "HYG",
+    "EMB",
+    "EMLC",
+    "GLD",
+    "DBC",
+    "UUP",
+    "IBIT",
+    "ETHA",
+]
+
+
+def get_arara_universe() -> List[str]:
+    """Return a copy of the canonical ARARA tickers list."""
+    return list(ARARA_TICKERS)
