@@ -1,6 +1,14 @@
-"""Funções de processamento de retornos.
+"""Transformações relacionadas a retornos.
 
-Cálculo de retornos log/percentual e helpers relacionados.
+`calculate_returns(prices_df, method="log")`
+    - Ordena o índice temporal.
+    - Calcula retornos log (default) via `np.log(price_t / price_{t-1})` ou
+      percentuais (`pct_change`).
+    - Descarta linhas iniciais totalmente nulas após o shift.
+
+`compute_excess_returns(returns, rf_daily)`
+    - Reindexa o risk-free diário para as mesmas datas do painel.
+    - Aplica forward-fill para lacunas e subtrai linha a linha.
 """
 
 from __future__ import annotations
@@ -25,5 +33,5 @@ def compute_excess_returns(returns: pd.DataFrame, rf_daily: pd.Series) -> pd.Dat
 
     r_f é broadcast por índice de datas.
     """
-    rf = rf_daily.reindex(returns.index).fillna(method="ffill")
+    rf = rf_daily.reindex(returns.index).ffill()
     return returns.sub(rf, axis=0)

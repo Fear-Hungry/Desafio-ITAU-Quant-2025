@@ -1,4 +1,23 @@
-"""High-level facade for ARARA data pipelines."""
+"""Orquestra o pipeline de dados da carteira ARARA.
+
+Componentes principais:
+- `load_asset_prices(file_name)`: lê CSVs brutos em `data/raw/`.
+- `calculate_returns(prices_df, method)`: thin wrapper para `processing.returns`.
+- `download_and_cache_arara_prices(...)`: baixa preços via Yahoo Finance,
+  salvando snapshot raw.
+- `preprocess_data(raw_file_name, processed_file_name)`: converte preços em
+  retornos e persiste em `data/processed/`.
+- `download_fred_dtb3(...)`: proxy público para `sources.fred`.
+- `DataLoader`: fachada de alto nível a ser usada por backtests. Fluxo:
+      1. Baixa preços (`sources.yf.download_prices`).
+      2. Normaliza índice, aplica filtros de liquidez e valida painel.
+      3. Calcula retornos log, risk-free diário, excess returns.
+      4. Gera agenda de rebalance (`processing.calendar`).
+      5. Salva Parquets com hash determinístico (`cache.request_hash` + `storage`).
+      6. Retorna `DataBundle` contendo prices/returns/rf/excess/bms/inception_mask.
+- `DataBundle`: dataclass que encapsula os artefatos prontos para consumo pelas
+  camadas de otimização/backtesting.
+"""
 
 from __future__ import annotations
 
@@ -13,7 +32,7 @@ import pandas as pd
 from .cache import request_hash
 from .paths import PROCESSED_DATA_DIR, RAW_DATA_DIR
 from .processing.calendar import rebalance_schedule
-from .processing.clean import normalize_index, validate_panel
+from .processing.clean import filter_liquid_assets, normalize_index, validate_panel
 from .processing.returns import calculate_returns as _calculate_returns
 from .processing.returns import compute_excess_returns
 from .sources.fred import download_dtb3 as fred_download_dtb3
@@ -132,6 +151,19 @@ class DataLoader:
         )
         prices = yf_download(self.tickers, start=self.start, end=self.end)
         prices = normalize_index(prices)
+        prices, liquidity_stats = filter_liquid_assets(prices)
+        illiquid: list[str] = []
+        if not liquidity_stats.empty:
+            liquidity_flags = liquidity_stats["is_liquid"]
+            illiquid = liquidity_flags.index[~liquidity_flags].tolist()
+        if illiquid:
+            logger.warning(
+                "Removendo %d ativos com baixa liquidez: %s",
+                len(illiquid),
+                ", ".join(illiquid),
+            )
+        if prices.shape[1] == 0:
+            raise ValueError("Nenhum ativo restante após filtros de liquidez.")
         validate_panel(prices)
 
         returns = _calculate_returns(prices, method="log")

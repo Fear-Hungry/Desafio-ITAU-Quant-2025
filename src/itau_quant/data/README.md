@@ -1,6 +1,8 @@
 # itau_quant.data — Camada de Dados
 
-Camada de aquisição, limpeza, calendário, transformações e armazenamento de dados para a carteira ARARA. Estruturada para reprodutibilidade (seed e cache), substituição de fontes (yfinance ↔ CSV/API) e testes unitários.
+Camada de aquisição, limpeza, calendário, transformações e armazenamento de dados
+para a carteira ARARA. Estruturada para reprodutibilidade (seed e cache),
+substituição de fontes (yfinance ↔ CSV/API) e testes unitários.
 
 ## Visão Geral
 

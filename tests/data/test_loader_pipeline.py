@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import pandas as pd
 import pytest
+
+pd = pytest.importorskip("pandas")
 
 from itau_quant.data.loader import download_and_cache_arara_prices, preprocess_data
 from itau_quant.data.paths import RAW_DATA_DIR, PROCESSED_DATA_DIR

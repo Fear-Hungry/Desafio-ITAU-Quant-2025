@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import pytest
+
+pytest.importorskip("pandas")
+
 from itau_quant.data.loader import DataLoader
 
 

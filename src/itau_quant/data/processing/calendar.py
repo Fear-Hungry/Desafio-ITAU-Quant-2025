@@ -1,11 +1,24 @@
-"""
-Calendário e regrinhas BMS.
+"""Calendário derivado do índice de negociação observado.
 
-Helpers para alinhamento de datas de negócios usando o PRÓPRIO índice de preços,
-incluindo Business Month Start (BMS) e variações de agenda de rebalance.
+Principais utilitários
+----------------------
+`business_month_starts(idx)` / `business_month_ends(idx)`
+    Primeiro/último pregão observado em cada mês.
 
-Regra de ouro: derive tudo do índice de negociação (prices.index). Isso já embute
-feriados e pregões perdidos do provedor e evita inconsistências com 'B' puro.
+`weekly_last_trading_day(idx, anchor)`
+    Último pregão por semana ancorada (ex.: ``W-FRI``).
+
+`next_trading_day(index, when)` / `prev_trading_day(index, when)`
+    Navegação temporal relativa ao índice recebido.
+
+`clamp_to_index(index, dates)`
+    Interseção simples entre datas de interesse e calendário observado.
+
+`rebalance_schedule(index, mode, ...)`
+    Gera agenda de rebalance (BMS/BME/Weekly) com recortes opcionais de início/fim.
+
+Regra de ouro: derive tudo de ``prices.index`` para incorporar automaticamente
+feriados e sessões ausentes da fonte de mercado.
 """
 
 from __future__ import annotations

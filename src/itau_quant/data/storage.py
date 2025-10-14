@@ -1,4 +1,16 @@
-"""Parquet IO utilities with simple conventions."""
+"""Persistência em Parquet seguindo convenções do projeto.
+
+Rotinas expostas
+----------------
+`save_parquet(path, obj)`
+    - Cria hierarquia de diretórios automaticamente.
+    - Serializa DataFrame/Series com compressão ``zstd`` e índice preservado.
+    - Utilizada por ``DataLoader`` e stages de pré-processamento.
+
+`load_parquet(path)`
+    - Retorna pandas DataFrame/Series com o schema original.
+    - Serve tanto para reprocessamento quanto para consumo em notebooks.
+"""
 
 from __future__ import annotations
 
