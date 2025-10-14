@@ -1,6 +1,12 @@
-"""Fonte de dados: yfinance.
+"""Integração com Yahoo Finance (yfinance).
 
-Funções para baixar séries de preços/volumes via API pública do Yahoo Finance.
+`download_prices(tickers, start=None, end=None, progress=False)`
+    - Limpa a lista de tickers (stripping/case/ordem).
+    - Chamadas a ``yf.download`` usam `auto_adjust=False` para permitir cálculo
+      manual de ajustes.
+    - Extrai ``Adj Close`` quando disponível (fallback para ``Close``).
+    - Reordena colunas conforme solicitação original, aplica forward-fill e
+      remove colunas totalmente vazias.
 """
 
 from __future__ import annotations

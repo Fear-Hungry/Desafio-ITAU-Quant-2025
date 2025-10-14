@@ -1,7 +1,9 @@
 from __future__ import annotations
 
-import pandas as pd
 import numpy as np
+import pytest
+
+pd = pytest.importorskip("pandas")
 
 from itau_quant.data.processing.returns import compute_excess_returns
 

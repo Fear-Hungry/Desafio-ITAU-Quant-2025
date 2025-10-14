@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-import pandas as pd
 import pytest
+
+pd = pytest.importorskip("pandas")
 
 from itau_quant.data.sources.fred import download_dtb3
 

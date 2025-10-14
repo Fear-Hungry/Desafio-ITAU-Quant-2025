@@ -4,9 +4,10 @@ version = "0.1.0"
 description = "Quantitative asset allocation strategy for the ITAU-Quant challenge."
 authors = ["Your Name <you@example.com>"]
 readme = "README.md"
+packages = [{include = "itau_quant", from = "src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.12"
+python = ">=3.9,<3.14"
 pandas = "^2.2.2"
 numpy = "^1.26.4"
 cvxpy = "^1.4.3"
@@ -36,3 +37,7 @@ ignore = ["E501"]
 [tool.black]
 line-length = 88
 target-version = ['py39']
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

@@ -1,6 +1,12 @@
-"""Fonte de dados: FRED.
+"""Integração com FRED (Federal Reserve Economic Data).
 
-Utilitários para baixar séries macroeconômicas (ex.: DTB3) e derivar r_f diário.
+`download_dtb3(start=None, end=None)`
+    - Usa ``pandas_datareader`` para puxar a série DTB3 (% a.a.).
+    - Converte para taxa diária (divide por 360 e normaliza para decimal).
+    - Reamostra para frequência de negócios (``B``) com forward-fill, retornando
+      ``pd.Series`` nomeada ``rf_daily``.
+    - Lança ``ImportError`` amigável quando a dependência opcional não está
+      instalada, sugerindo como habilitar.
 """
 
 from __future__ import annotations
@@ -9,10 +15,14 @@ from datetime import datetime
 from typing import Optional
 
 import logging
-from pandas_datareader import data as pdr
 import pandas as pd
 
 logger = logging.getLogger(__name__)
+
+try:
+    from pandas_datareader import data as pdr
+except ImportError:  # pragma: no cover - depende de extra opcional
+    pdr = None
 
 
 def download_dtb3(
@@ -20,6 +30,11 @@ def download_dtb3(
     end: Optional[str | datetime] = None,
 ) -> pd.Series:
     """Baixa DTB3 (% a.a.) e retorna r_f diário aproximado (BR business days)."""
+    if pdr is None:
+        raise ImportError(
+            "pandas_datareader não está instalado. "
+            "Instale com 'poetry add pandas-datareader' para usar download_dtb3."
+        )
     logger.info("Baixando FRED DTB3 (start=%s, end=%s)", start, end)
     s = pdr.DataReader("DTB3", "fred", start, end)["DTB3"].astype(float)
     rf_daily = (s / 100.0) / 360.0
