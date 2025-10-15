@@ -75,7 +75,7 @@ def temporal_split(
         train_pre = np.arange(0, start)
         train_post = np.arange(stop, n_samples)
         train_idx = np.concatenate([train_pre, train_post])
-        if len(train_pre) < min_train:
+        if train_idx.size < min_train:
             raise ValueError("Training window shorter than min_train.")
         test_idx = np.arange(start, stop)
         splits.append((train_idx, test_idx))
@@ -128,8 +128,13 @@ def apply_embargo(
     if embargo_pct == 0 or test_arr.size == 0:
         return np.sort(train_arr)
 
+    if train_arr.size == 0:
+        return np.array([], dtype=int)
+
     if total_observations is None:
-        total_observations = int(max(train_arr.max(initial=-1), test_arr.max()) + 1)
+        max_train = int(train_arr.max()) if train_arr.size > 0 else 0
+        max_test = int(test_arr.max()) if test_arr.size > 0 else 0
+        total_observations = max(max_train, max_test) + 1
 
     embargo_count = int(np.ceil(total_observations * embargo_pct))
     if embargo_count <= 0:
@@ -185,7 +190,9 @@ class PurgedKFold:
 
 
 def evaluate_estimator(
-    estimator_fn: Callable[[pd.DataFrame, pd.DataFrame], Union[pd.Series, pd.DataFrame]],
+    estimator_fn: Callable[
+        [pd.DataFrame, pd.DataFrame], Union[pd.Series, pd.DataFrame]
+    ],
     data: pd.DataFrame,
     scoring: Callable[[pd.DataFrame, Union[pd.Series, pd.DataFrame]], float],
     splitter: PurgedKFold,

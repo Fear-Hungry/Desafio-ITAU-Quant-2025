@@ -27,7 +27,9 @@ __all__ = [
 ]
 
 
-def _to_dataframe(data: DataLike, *, columns: Optional[Iterable[str]] = None) -> pd.DataFrame:
+def _to_dataframe(
+    data: DataLike, *, columns: Optional[Iterable[str]] = None
+) -> pd.DataFrame:
     """Convert supported inputs into a float DataFrame with unique index."""
 
     if isinstance(data, pd.DataFrame):
@@ -50,8 +52,8 @@ def _to_dataframe(data: DataLike, *, columns: Optional[Iterable[str]] = None) ->
 def _winsorize(df: pd.DataFrame, lower: float, upper: float) -> pd.DataFrame:
     """Clip extreme observations column-wise according to quantile cut-offs."""
 
-    lower_bounds = df.quantile(lower)
-    upper_bounds = df.quantile(upper)
+    lower_bounds = df.quantile(lower, interpolation="linear")
+    upper_bounds = df.quantile(upper, interpolation="linear")
     return df.clip(lower=lower_bounds, upper=upper_bounds, axis=1)
 
 
@@ -117,9 +119,7 @@ def prepare_factor_data(
     asset_returns = asset_returns.loc[common_index]
     factor_df = factor_df.loc[common_index]
 
-    mask = (
-        asset_returns.notna().all(axis=1) & factor_df.notna().all(axis=1)
-    )
+    mask = asset_returns.notna().all(axis=1) & factor_df.notna().all(axis=1)
     asset_returns = asset_returns.loc[mask]
     factor_df = factor_df.loc[mask]
 
@@ -191,11 +191,17 @@ def time_series_regression(
         alphas = None
         beta_values = coef
 
-    betas = pd.DataFrame(beta_values, index=factor_names[1:] if add_constant else factor_names, columns=returns_df.columns)
+    betas = pd.DataFrame(
+        beta_values,
+        index=factor_names[1:] if add_constant else factor_names,
+        columns=returns_df.columns,
+    )
 
     fitted = X @ coef
     resid = returns_df.to_numpy() - fitted
-    residuals_df = pd.DataFrame(resid, index=returns_df.index, columns=returns_df.columns)
+    residuals_df = pd.DataFrame(
+        resid, index=returns_df.index, columns=returns_df.columns
+    )
 
     return betas, alphas, residuals_df
 
@@ -274,7 +280,9 @@ def shrink_betas(
     elif method == "lasso":
         values = betas_df.to_numpy()
         shrunk_values = np.sign(values) * np.maximum(np.abs(values) - alpha, 0.0)
-        shrunk = pd.DataFrame(shrunk_values, index=betas_df.index, columns=betas_df.columns)
+        shrunk = pd.DataFrame(
+            shrunk_values, index=betas_df.index, columns=betas_df.columns
+        )
     elif method == "grand_mean":
         mean_beta = betas_df.mean(axis=1)
         target = pd.DataFrame(
@@ -370,6 +378,9 @@ def principal_component_factors(
     if n_components > min(n_samples, n_assets):
         raise ValueError("n_components exceeds the allowable rank.")
 
+    if n_samples < 2:
+        raise ValueError("At least two return observations are required.")
+
     demeaned = returns_df - returns_df.mean(axis=0)
     matrix = demeaned.to_numpy(dtype=float)
 
@@ -383,10 +394,14 @@ def principal_component_factors(
     factor_ts = U * singular_values
     loadings = Vt.T
 
-    component_names = [f"PC{i+1}" for i in range(comps)]
+    component_names = [f"PC{i + 1}" for i in range(comps)]
 
-    factor_returns = pd.DataFrame(factor_ts, index=returns_df.index, columns=component_names)
-    loadings_df = pd.DataFrame(loadings, index=returns_df.columns, columns=component_names)
+    factor_returns = pd.DataFrame(
+        factor_ts, index=returns_df.index, columns=component_names
+    )
+    loadings_df = pd.DataFrame(
+        loadings, index=returns_df.columns, columns=component_names
+    )
 
     variance = (singular_values**2) / (n_samples - 1)
     total_variance = (np.linalg.norm(matrix, ord="fro") ** 2) / (n_samples - 1)

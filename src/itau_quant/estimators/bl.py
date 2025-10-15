@@ -118,7 +118,9 @@ def reverse_optimization(
     if weights_series.isnull().any():
         raise ValueError("weights must include all assets present in cov.")
 
-    total_weight = weights_series.sum()
+    total_weight = float(weights_series.sum())
+    if np.isclose(total_weight, 0.0):
+        raise ValueError("weights must sum to a non-zero value.")
     if not np.isclose(total_weight, 1.0):
         weights_series = weights_series / total_weight
 
@@ -133,14 +135,14 @@ def reverse_optimization(
         if market_return is None:
             raise ValueError("market_return required when risk_aversion is None.")
         port_var = float(weights_vec @ cov_matrix @ weights_vec)
-        if port_var <= 0:
+        if port_var <= 0 or np.isclose(port_var, 0.0):
             raise ValueError(
-                "Portfolio variance must be positive to infer risk aversion."
+                "Portfolio variance must be strictly positive to infer risk aversion."
             )
         risk_premium = float(market_return - risk_free)
-        if np.isclose(port_var, 0.0):
+        if np.isclose(risk_premium, 0.0):
             raise ValueError(
-                "Portfolio variance numerically zero; cannot infer risk aversion."
+                "market_return must differ from risk_free to infer risk_aversion."
             )
         inferred_delta = risk_premium / port_var
         if inferred_delta <= 0:
@@ -199,8 +201,8 @@ def build_projection_matrix(
             raise ValueError("Each view must declare a 'type'.")
         vtype = view["type"]
         confidence = float(view.get("confidence", 1.0))
-        if confidence < 0:
-            raise ValueError("View confidence must be non-negative.")
+        if confidence < 0 or confidence > 1:
+            raise ValueError("View confidence must be in [0, 1].")
 
         row = np.zeros(len(asset_list), dtype=float)
 
@@ -402,8 +404,13 @@ def posterior_returns(
 
     Notes
     -----
-    Quando tau → 0, o prior domina: μ_BL = π e a matriz de incerteza do mean
-    retornada é nula.
+    Quando tau → 0 e não há views (P vazio), o prior domina: μ_BL = π e
+    a matriz de incerteza do mean retornada é nula.
+    Se não houver views (P vazio) e tau > 0, mantemos σ_post = tau * Σ,
+    preservando a incerteza original do prior.
+    Quando há views (k > 0) e tau <= 0, retornamos o prior e σ_post = 0.
+    Quando add_mean_uncertainty e return_sigma_posterior são ambos falsos,
+    evitamos calcular σ_post para reduzir custo computacional.
     """
     if isinstance(cov, pd.DataFrame):
         cov_df = cov.astype(float)
@@ -421,59 +428,90 @@ def posterior_returns(
         pi_array = np.asarray(pi, dtype=float).flatten()
         pi_series = pd.Series(pi_array, index=assets, dtype=float)
 
-    if P.size == 0 or Q.size == 0 or tau <= 0:
-        cov_base = cov_df.copy()
+    tau_value = float(tau)
+    cov_array = cov_df.to_numpy()
+    n = cov_df.shape[0]
+
+    P_matrix = np.asarray(P, dtype=float)
+    if P_matrix.ndim != 2:
+        raise ValueError("P must be a 2D array.")
+    k, n_cols = P_matrix.shape
+    if n_cols != n:
+        raise ValueError("P must have the same number of columns as assets.")
+
+    if k == 0:
+        mu_series = pi_series.copy()
+        sigma_post_arr = (
+            cov_array * tau_value if tau_value > 0 else np.zeros_like(cov_array)
+        )
+        cov_values = cov_array.copy()
+        if add_mean_uncertainty:
+            cov_values = cov_values + sigma_post_arr
+        cov_bl = pd.DataFrame(cov_values, index=cov_df.index, columns=cov_df.columns)
+        if return_sigma_posterior or add_mean_uncertainty:
+            sigma_post_df = pd.DataFrame(
+                sigma_post_arr,
+                index=cov_df.index,
+                columns=cov_df.columns,
+            )
+        else:
+            sigma_post_df = None
+        return mu_series, cov_bl, sigma_post_df
+
+    if tau_value <= 0:
+        mu_series = pi_series.copy()
+        sigma_post_arr = np.zeros_like(cov_array)
+        cov_values = cov_array.copy()
+        if add_mean_uncertainty:
+            cov_values = cov_values + sigma_post_arr
+        cov_bl = pd.DataFrame(cov_values, index=cov_df.index, columns=cov_df.columns)
+        sigma_post_df = (
+            pd.DataFrame(
+                sigma_post_arr,
+                index=cov_df.index,
+                columns=cov_df.columns,
+            )
+            if (return_sigma_posterior or add_mean_uncertainty)
+            else None
+        )
+        return mu_series, cov_bl, sigma_post_df
+
+    Q_vec = np.asarray(Q, dtype=float).reshape(-1)
+    if Q_vec.shape[0] != k:
+        raise ValueError("Q length must match number of views.")
+
+    Omega_array = np.asarray(Omega, dtype=float)
+    if Omega_array.shape != (k, k):
+        raise ValueError("Omega must be (k, k).")
+
+    tau_sigma = tau_value * cov_array
+    pi_vec = pi_series.to_numpy()
+
+    P_pi = P_matrix @ pi_vec
+    A = P_matrix @ tau_sigma @ P_matrix.T + Omega_array
+    adjustment_rhs = (Q_vec - P_pi)[:, None]
+    middle = _solve_psd(A, adjustment_rhs, jitter=solver_jitter).ravel()
+    mu_vec = pi_vec + tau_sigma @ P_matrix.T @ middle
+
+    cov_bl_values = cov_array.copy()
+    sigma_post_df: Optional[pd.DataFrame] = None
+
+    if return_sigma_posterior or add_mean_uncertainty:
+        inv_tau_sigma = _solve_psd(tau_sigma, np.eye(n), jitter=solver_jitter)
+        Omega_inv = _solve_psd(Omega_array, np.eye(k), jitter=solver_jitter)
+        posterior_precision = inv_tau_sigma + P_matrix.T @ Omega_inv @ P_matrix
+        sigma_post = _solve_psd(posterior_precision, np.eye(n), jitter=solver_jitter)
+        sigma_post = 0.5 * (sigma_post + sigma_post.T)
+        if add_mean_uncertainty:
+            cov_bl_values = cov_bl_values + sigma_post
         sigma_post_df = pd.DataFrame(
-            np.zeros_like(cov_df.to_numpy()),
+            sigma_post,
             index=cov_df.index,
             columns=cov_df.columns,
         )
-        if add_mean_uncertainty:
-            cov_base = cov_base + sigma_post_df
-        return (
-            pi_series.copy(),
-            cov_base,
-            sigma_post_df if return_sigma_posterior else None,
-        )
-
-    n = cov_df.shape[0]
-    k = P.shape[0]
-    if P.shape[1] != n:
-        raise ValueError("P must have the same number of columns as assets.")
-    if Q.shape[0] != k:
-        raise ValueError("Q length must match number of views.")
-    if Omega.shape != (k, k):
-        raise ValueError("Omega must be (k, k).")
-
-    tau_sigma = tau * cov_df.to_numpy()
-    pi_vec = pi_series.to_numpy()
-    Q_vec = Q.reshape(-1)
-
-    P_pi = P @ pi_vec
-    A = P @ tau_sigma @ P.T + Omega
-    adjustment_rhs = (Q_vec - P_pi)[:, None]
-    middle = _solve_psd(A, adjustment_rhs, jitter=solver_jitter).ravel()
-    mu_vec = pi_vec + tau_sigma @ P.T @ middle
-
-    inv_tau_sigma = _solve_psd(tau_sigma, np.eye(n), jitter=solver_jitter)
-    Omega_inv = _solve_psd(Omega, np.eye(k), jitter=solver_jitter)
-    posterior_precision = inv_tau_sigma + P.T @ Omega_inv @ P
-    sigma_post = _solve_psd(posterior_precision, np.eye(n), jitter=solver_jitter)
-    sigma_post = 0.5 * (sigma_post + sigma_post.T)
-
-    cov_base = cov_df.to_numpy()
-    if add_mean_uncertainty:
-        cov_bl_values = cov_base + sigma_post
-    else:
-        cov_bl_values = cov_base
 
     mu_bl = pd.Series(mu_vec, index=pi_series.index, dtype=float)
     cov_bl = pd.DataFrame(cov_bl_values, index=cov_df.index, columns=cov_df.columns)
-    sigma_post_df = (
-        pd.DataFrame(sigma_post, index=cov_df.index, columns=cov_df.columns)
-        if return_sigma_posterior or add_mean_uncertainty
-        else None
-    )
 
     return mu_bl, cov_bl, sigma_post_df
 
@@ -499,15 +537,15 @@ def _project_psd(mat: np.ndarray, epsilon: float) -> np.ndarray:
     return 0.5 * (projected + projected.T)
 
 
-def _solve_psd(A: np.ndarray, B: np.ndarray, jitter: float = 1e-10) -> np.ndarray:
+def _solve_psd(lhs: np.ndarray, rhs: np.ndarray, jitter: float = 1e-10) -> np.ndarray:
     """
     Resolve sistemas lineares assumindo matriz PSD via Cholesky com jitter.
 
     Parameters
     ----------
-    A : ndarray
+    lhs : ndarray
         Matriz (n,n) simétrica/PSD.
-    B : ndarray
+    rhs : ndarray
         Matriz (n, m) ou vetor (n,).
     jitter : float
         Perturbação adicionada à diagonal para estabilidade numérica.
@@ -515,23 +553,23 @@ def _solve_psd(A: np.ndarray, B: np.ndarray, jitter: float = 1e-10) -> np.ndarra
     Returns
     -------
     ndarray
-        Solução X tal que A X = B.
+        Solução do sistema `lhs * X = rhs`.
     """
-    A = np.asarray(A, dtype=float)
-    if A.ndim != 2 or A.shape[0] != A.shape[1]:
-        raise ValueError("Matrix A must be square.")
+    matrix = np.asarray(lhs, dtype=float)
+    if matrix.ndim != 2 or matrix.shape[0] != matrix.shape[1]:
+        raise ValueError("lhs must be a square matrix.")
 
-    B_arr = np.asarray(B, dtype=float)
-    sym_A = 0.5 * (A + A.T)
-    jittered = sym_A + jitter * np.eye(sym_A.shape[0])
+    rhs_arr = np.asarray(rhs, dtype=float)
+    sym_matrix = 0.5 * (matrix + matrix.T)
+    jittered = sym_matrix + jitter * np.eye(sym_matrix.shape[0])
 
     try:
-        L = np.linalg.cholesky(jittered)
-        Y = np.linalg.solve(L, B_arr)
-        X = np.linalg.solve(L.T, Y)
+        chol = np.linalg.cholesky(jittered)
+        intermediate = np.linalg.solve(chol, rhs_arr)
+        solution = np.linalg.solve(chol.T, intermediate)
     except np.linalg.LinAlgError:
-        X, *_ = np.linalg.lstsq(jittered, B_arr, rcond=None)
-    return X
+        solution, *_ = np.linalg.lstsq(jittered, rhs_arr, rcond=None)
+    return solution
 
 
 def black_litterman(
@@ -639,10 +677,25 @@ def black_litterman(
 
     P, Q, confidences = build_projection_matrix(views, assets_list)
 
+    sigma_post: Optional[pd.DataFrame] = None
+    omega_matrix: np.ndarray = np.zeros((0, 0))
+
     if P.shape[0] == 0:
         mu_bl = pi_series.copy()
-        cov_bl = cov_df.copy()
-        sigma_post = None
+        cov_values = cov_df.to_numpy()
+        if add_mean_uncertainty or return_intermediates:
+            if tau > 0:
+                sigma_arr = cov_values * tau
+            else:
+                sigma_arr = np.zeros_like(cov_values)
+            sigma_post = pd.DataFrame(
+                sigma_arr,
+                index=cov_df.index,
+                columns=cov_df.columns,
+            )
+            if add_mean_uncertainty:
+                cov_values = cov_values + sigma_arr
+        cov_bl = pd.DataFrame(cov_values, index=cov_df.index, columns=cov_df.columns)
     else:
         Omega = view_uncertainty(
             views=views,
@@ -665,6 +718,7 @@ def black_litterman(
             return_sigma_posterior=return_intermediates,
             solver_jitter=solver_jitter,
         )
+        omega_matrix = Omega
 
     if ensure_psd:
         cov_values = _project_psd(cov_bl.to_numpy(), psd_epsilon)
@@ -673,6 +727,8 @@ def black_litterman(
     result = {"mu_bl": mu_bl, "cov_bl": cov_bl}
 
     if return_intermediates:
+        if pi_series is None:
+            raise RuntimeError("pi_series is not defined.")
         if sigma_post is None:
             sigma_post = pd.DataFrame(
                 np.zeros_like(cov_df.to_numpy()),
@@ -683,7 +739,7 @@ def black_litterman(
             "pi": pi_series,
             "P": P,
             "Q": Q,
-            "Omega": np.zeros((0, 0)) if P.shape[0] == 0 else Omega,
+            "Omega": omega_matrix,
             "tau": tau,
             "delta": delta_used,
             "confidences": confidences,

@@ -162,3 +162,13 @@ def test_principal_component_factors_reconstructs_data():
     demeaned = returns_df - returns_df.mean(axis=0)
     np.testing.assert_allclose(reconstructed, demeaned.to_numpy(), atol=1e-10)
     assert explained.sum() == pytest.approx(1.0, rel=1e-9)
+
+
+def test_principal_component_factors_requires_two_samples():
+    returns = pd.DataFrame(
+        {"AssetA": [0.01], "AssetB": [0.02]},
+        index=pd.date_range("2024-01-01", periods=1, freq="D"),
+    )
+
+    with pytest.raises(ValueError, match="At least two return observations"):
+        factors_mod.principal_component_factors(returns, n_components=1)

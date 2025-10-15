@@ -161,8 +161,8 @@ def student_t_mean(
             mu = mu_new
             break
         mu = mu_new
-        scale = (weights * (values - mu) ** 2).sum(axis=0) / weights.sum(axis=0)
-        scale = np.where(scale <= 1e-8, 1e-6, scale)
+        weighted_var = (weights * (values - mu) ** 2).sum(axis=0) / weights.sum(axis=0)
+        scale = np.where(weighted_var <= 1e-8, 1e-4, weighted_var)
 
     return pd.Series(mu, index=clean.columns, dtype=float)
 

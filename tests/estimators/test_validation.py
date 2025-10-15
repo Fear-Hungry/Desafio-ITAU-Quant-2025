@@ -20,6 +20,17 @@ def test_temporal_split_generates_expected_windows():
         assert len(test_idx) == 5
         assert len(train_idx) == len(idx) - 5
         assert np.intersect1d(train_idx, test_idx).size == 0
+        # Ensure both sides of the test window contribute to the training set.
+        assert np.any(train_idx > test_idx.max())
+
+
+def test_temporal_split_counts_full_training_length():
+    idx = _build_index(18)
+    splits = validation.temporal_split(idx, n_splits=2, min_train=8, min_test=4)
+
+    for train_idx, test_idx in splits:
+        assert train_idx.size >= 8
+        assert train_idx.size == len(idx) - test_idx.size
 
 
 def test_purge_train_indices_removes_recent_observations():
