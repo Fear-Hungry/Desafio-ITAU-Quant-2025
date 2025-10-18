@@ -1,7 +1,7 @@
 """Covariance estimators used across the allocation stack.
 
 The implementations below provide a mix of classical (sample, Ledoit-Wolf),
-robust (Tyler M-estimator), and heavy-tail (Student-t) estimators together
+robust (Tyler M-estimator), and heavy-tail (Student-\t) estimators together
 with a few utility helpers.  Each routine accepts a ``pandas.DataFrame``
 containing aligned asset returns so that labels are preserved end-to-end.
 
@@ -180,7 +180,7 @@ def ledoit_wolf_shrinkage(
     if n_samples <= 1:
         raise ValueError("At least two observations required for shrinkage.")
 
-    emp_cov = (values.T @ values) / float(n_samples - 1)
+    emp_cov = (values.T @ values) / float(n_samples)
     mu = np.trace(emp_cov) / n_assets
     target = np.eye(n_assets) * mu
 
@@ -301,9 +301,7 @@ def tyler_m_estimator(
         if diff <= tol * max(norm, 1.0):
             break
     else:
-        warnings.warn(
-            "Tyler estimator did not converge within max_iter.", RuntimeWarning
-        )
+        warnings.warn("Tyler estimator did not converge within max_iter.", RuntimeWarning)
 
     cov = _format_matrix(scatter, clean.columns)
     cov = project_to_psd(cov, epsilon=1e-9)
@@ -366,6 +364,7 @@ def regularize_cov(
         raise ValueError("matrix must be square.")
 
     method = method.lower()
+    2. Integrar esses estimadores no pipeline de otimização/backtest e, se for o caso, adicionar cenários de dados reais
 
     if method == "diag":
         diag = np.diag(array).copy()
