@@ -1,37 +1,74 @@
-"""Blueprint for CVXPy solver utility helpers.
+"""Utility helpers for CVXPy-based solvers."""
 
-Objetivo
---------
-Fornecer utilitários padronizados para configurar, executar e monitorar solvers
-quando resolvemos problemas convexos do portfólio.
+from __future__ import annotations
 
-Componentes sugeridos
----------------------
-- `select_solver(preferred=None, fallback=True)`
-    Seleciona solver disponível (ECOS, OSQP, SCS, MOSEK) seguindo prioridade.
-- `set_solver_seed(solver, seed)`
-    Ajusta seeds quando suportado (ex.: SCS, GUROBI) para reprodutibilidade.
-- `solve_problem(problem, solver, solver_kwargs)`
-    Wrapper que executa `problem.solve`, captura logs, tempo, convergência.
-- `process_status(problem)`
-    Converte `problem.status` em enum customizado (`OPTIMAL`, `INFEASIBLE`, etc.).
-- `handle_warnings(problem, logger)`
-    Emite avisos quando solver converge com warnings (ex.: status ``OPTIMAL_INACCURATE``).
-- `warm_start(problem, previous_solution)`
-    Lida com warm-start caso disponível.
+from dataclasses import dataclass
+import time
+from typing import Any, Mapping
 
-Considerações
--------------
-- Centralizar configuração de tolerâncias (`eps`, `max_iters`, `acceleration`).
-- Garantir compatibilidade com logs estruturados (`utils.logging_config`).
-- Fornecer caminhos de fallback (tentar outro solver se o primeiro falhar).
-- Opcional: medir métricas de performance (tempo, iterações) para telemetry.
+import cvxpy as cp
 
-Testes recomendados
--------------------
-- `tests/optimization/test_solver_utils.py` com mocks de problemas:
-    * seleção de solver quando preferido indisponível,
-    * propagação adequada de ``solver_kwargs`` para `problem.solve`,
-    * conversão de status (ex.: ``cp.settings.OPTIMAL`` → ``Status.OPTIMAL``),
-    * fallback automático quando solver retorna erro.
-"""
+__all__ = [
+    "SolverSummary",
+    "select_solver",
+    "solve_problem",
+]
+
+
+@dataclass(frozen=True)
+class SolverSummary:
+    status: str
+    solver: str
+    value: float
+    runtime: float
+    primal_residual: float | None
+    dual_residual: float | None
+
+    def is_optimal(self) -> bool:
+        status = (self.status or "").lower()
+        return status in {cp.settings.OPTIMAL, cp.settings.OPTIMAL_INACCURATE}
+
+
+def select_solver(preferred: str | None = None) -> str:
+    """Return an installed solver name following a priority order."""
+
+    installed = {solver.upper() for solver in cp.installed_solvers()}
+    if preferred:
+        candidate = preferred.upper()
+        if candidate in installed:
+            return candidate
+    for solver in ("ECOS", "SCS", "OSQP"):
+        if solver in installed:
+            return solver
+    if installed:
+        return sorted(installed)[0]
+    raise RuntimeError("No CVXPy solver available. Install ECOS, OSQP or SCS.")
+
+
+def solve_problem(
+    problem: cp.Problem,
+    *,
+    solver: str | None = None,
+    solver_kwargs: Mapping[str, Any] | None = None,
+) -> SolverSummary:
+    """Solve ``problem`` and return a structured summary."""
+
+    chosen_solver = select_solver(solver)
+    kwargs = dict(solver_kwargs or {})
+
+    start = time.perf_counter()
+    problem.solve(solver=chosen_solver, **kwargs)
+    runtime = time.perf_counter() - start
+
+    status = problem.status or cp.settings.UNKNOWN
+    primal = getattr(problem, "primal_residual", None)
+    dual = getattr(problem, "dual_residual", None)
+
+    return SolverSummary(
+        status=status,
+        solver=chosen_solver,
+        value=float(problem.value) if problem.value is not None else float("nan"),
+        runtime=float(runtime),
+        primal_residual=float(primal) if primal is not None else None,
+        dual_residual=float(dual) if dual is not None else None,
+    )

@@ -1,12 +1,26 @@
-"""High-level portfolio orchestration package.
+"""High-level portfolio orchestration package."""
 
-Componentes expostos
---------------------
-- `rebalancer` → pipeline principal de rebalance.
-- `rounding` → ajustes discretos de pesos/ordens.
-- `scheduler` → agenda regular de rebalanceamentos.
-- `triggers` → monitoramento de gatilhos extraordinários.
+from .rebalancer import (
+    MarketData,
+    RebalanceMetrics,
+    RebalanceResult,
+    rebalance,
+    prepare_inputs,
+)
+from .rounding import rounding_pipeline
+from .scheduler import scheduler, generate_schedule, next_rebalance_date
+from .triggers import trigger_engine, TriggerEvent
 
-Consumidores externos devem importar via ``from itau_quant.portfolio import ...``
-para manter encapsulamento da lógica interna.
-"""
+__all__ = [
+    "MarketData",
+    "RebalanceMetrics",
+    "RebalanceResult",
+    "rebalance",
+    "prepare_inputs",
+    "rounding_pipeline",
+    "scheduler",
+    "generate_schedule",
+    "next_rebalance_date",
+    "trigger_engine",
+    "TriggerEvent",
+]

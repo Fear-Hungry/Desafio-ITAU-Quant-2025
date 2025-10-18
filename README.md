@@ -79,6 +79,18 @@ poetry run python -m itau_quant.backtesting.engine \
 > O módulo `backtesting.engine` está em rascunho. Verifique o roadmap para prioridade
 > de implementação.
 
+## 🔧 Variáveis de Ambiente
+
+Todas as chaves são prefixadas com `ITAU_QUANT_` e alimentam `itau_quant.config.get_settings()`:
+
+- `PROJECT_ROOT`: força o diretório raiz quando o auto-detect não é desejado.
+- `DATA_DIR`, `RAW_DATA_DIR`, `PROCESSED_DATA_DIR`: sobrescrevem caminhos padrão de dados.
+- `CONFIGS_DIR`, `LOGS_DIR`, `CACHE_DIR`, `REPORTS_DIR`, `NOTEBOOKS_DIR`: personalizam demais pastas utilizadas pelo pipeline.
+- `ENVIRONMENT`: define o modo de execução (`development`, `staging`, `production`).
+- `RANDOM_SEED`: inteiro base para inicializar geradores pseudo-aleatórios.
+- `BASE_CURRENCY`: moeda padrão utilizada em relatórios (default `BRL`).
+- `STRUCTURED_LOGGING`: aceita `true/false` para habilitar logs JSON.
+
 ### Configuração de exemplo (`configs/optimizer_example.yaml`)
 
 ```yaml

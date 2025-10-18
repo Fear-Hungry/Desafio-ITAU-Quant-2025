@@ -7,16 +7,16 @@ readme = "README.md"
 packages = [{include = "itau_quant", from = "src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.14"
+python = ">=3.11,<3.14"
 pandas = "^2.2.2"
-numpy = "^1.26.4"
+numpy = "^2.1.0"
 cvxpy = "^1.4.3"
 scikit-learn = "^1.4.2"
 osqp = "^0.6.5"
-ecos = "^2.0.13"
 clarabel = "^0.8.0"
 yfinance = "^0.2.41"
 pandas-datareader = "^0.10.0"
+matplotlib = "^3.8.4"
 
 
 [tool.poetry.group.dev.dependencies]

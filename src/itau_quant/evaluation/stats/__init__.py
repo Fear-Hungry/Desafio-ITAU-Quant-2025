@@ -1,10 +1,61 @@
-"""Convenience exports for evaluation statistics.
+"""Convenience exports for evaluation statistics."""
 
-Sugestão de interface pública:
-- `from .performance import aggregate_performance`
-- `from .risk import aggregate_risk_metrics`
-- `from .bootstrap import bootstrap_metric`
+from .performance import (
+    ExcessMetrics,
+    aggregate_performance,
+    annualized_return,
+    annualized_volatility,
+    calmar_ratio,
+    cumulative_return,
+    excess_vs_benchmark,
+    hit_rate,
+    sharpe_ratio,
+    sortino_ratio,
+)
+from .risk import (
+    RiskContributionResult,
+    RiskSummary,
+    aggregate_risk_metrics,
+    beta_to_benchmark,
+    conditional_value_at_risk,
+    drawdown_series,
+    max_drawdown,
+    realized_leverage,
+    risk_contribution,
+    tracking_error,
+)
+from .bootstrap import (
+    block_bootstrap,
+    bootstrap_metric,
+    compare_vs_benchmark,
+    confidence_interval,
+    stationary_bootstrap,
+)
 
-Outros módulos devem importar via este pacote para manter encapsulamento e
-facilitar futuras reorganizações.
-"""
+__all__ = [
+    "aggregate_performance",
+    "annualized_return",
+    "annualized_volatility",
+    "sharpe_ratio",
+    "sortino_ratio",
+    "calmar_ratio",
+    "hit_rate",
+    "cumulative_return",
+    "excess_vs_benchmark",
+    "ExcessMetrics",
+    "drawdown_series",
+    "max_drawdown",
+    "conditional_value_at_risk",
+    "tracking_error",
+    "beta_to_benchmark",
+    "realized_leverage",
+    "risk_contribution",
+    "RiskContributionResult",
+    "aggregate_risk_metrics",
+    "RiskSummary",
+    "block_bootstrap",
+    "stationary_bootstrap",
+    "bootstrap_metric",
+    "confidence_interval",
+    "compare_vs_benchmark",
+]

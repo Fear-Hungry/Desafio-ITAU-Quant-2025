@@ -1,41 +1,149 @@
-"""Blueprint for reusable portfolio risk constraints.
+"""Reusable portfolio risk constraints."""
 
-Objetivo
---------
-Disponibilizar construtores modulares de restrições que podem ser plugados em
-diversos otimizadores (MV, CVaR, Sharpe, GA).
+from __future__ import annotations
 
-Componentes sugeridos
----------------------
-- `weight_sum_constraint(weights, target=1.0)`
-    Garante soma dos pesos igual ao target.
-- `box_constraints(weights, lower, upper)`
-    Bounds por ativo, incluindo tratamento de ativos sem short (lower=0).
-- `group_constraints(weights, groups, limits)`
-    Limites por cluster/segmento (usa budgets do módulo `risk.budgets`).
-- `factor_exposure_constraints(weights, factor_loadings, exposure_limits)`
-    Restringe exposição a fatores sistemáticos.
-- `leverage_constraint(weights, max_leverage)`
-    Impõe ∑ |w| ≤ L_max.
-- `tracking_error_constraint(weights, benchmark_weights, cov, max_te)`
-    Controla tracking error via restrição quadrática.
-- `turnover_constraint(weights, prev_weights, max_turnover)`
-    Opcional: ∑ |w - w_prev| ≤ limite.
-- `build_constraints(config, context)`
-    Orquestrador: traduz config declarativa em lista de `cvxpy.Constraint`.
+from typing import Iterable, Mapping, Sequence
 
-Considerações
--------------
-- Garantir que cada função retorne lista de restrições e metadados para logging.
-- Incluir asserts para shapes/dtypes e mensagens claras em caso de erro.
-- Integrar com `optimization.core.constraints_builder` como camada subjacente.
-- Permitir uso independente (ex.: validar portfólio ex-post).
+import cvxpy as cp
+import numpy as np
+import pandas as pd
 
-Testes recomendados
--------------------
-- `tests/risk/test_constraints.py` cobrindo:
-    * soma de pesos = 1,
-    * limites por setor com dados sintéticos,
-    * tracking error calculado corretamente (usando QA manual),
-    * comportamento com constraints conflitantes (deve lançar exceção).
-"""
+from .budgets import RiskBudget, budgets_to_constraints
+
+__all__ = [
+    "weight_sum_constraint",
+    "box_constraints",
+    "group_constraints",
+    "factor_exposure_constraints",
+    "leverage_constraint",
+    "tracking_error_constraint",
+    "turnover_constraint",
+    "build_constraints",
+]
+
+
+def weight_sum_constraint(weights: cp.Variable, target: float = 1.0) -> cp.Constraint:
+    return cp.sum(weights) == float(target)
+
+
+def box_constraints(
+    weights: cp.Variable,
+    lower: Sequence[float] | float,
+    upper: Sequence[float] | float,
+) -> list[cp.Constraint]:
+    lower_array = np.asarray(lower, dtype=float)
+    upper_array = np.asarray(upper, dtype=float)
+    return [weights >= lower_array, weights <= upper_array]
+
+
+def group_constraints(
+    weights: cp.Variable,
+    budgets: Iterable[RiskBudget],
+    asset_index: Sequence[str],
+) -> list[cp.Constraint]:
+    return budgets_to_constraints(weights, budgets, asset_index)
+
+
+def factor_exposure_constraints(
+    weights: cp.Variable,
+    factor_loadings: pd.DataFrame,
+    exposure_limits: Mapping[str, tuple[float | None, float | None]],
+) -> list[cp.Constraint]:
+    constraints: list[cp.Constraint] = []
+    for factor, (lower, upper) in exposure_limits.items():
+        loading = factor_loadings.loc[:, factor].to_numpy(dtype=float)
+        exposure = loading @ weights
+        if lower is not None:
+            constraints.append(exposure >= float(lower))
+        if upper is not None:
+            constraints.append(exposure <= float(upper))
+    return constraints
+
+
+def leverage_constraint(weights: cp.Variable, max_leverage: float) -> cp.Constraint:
+    return cp.norm1(weights) <= float(max_leverage)
+
+
+def tracking_error_constraint(
+    weights: cp.Variable,
+    benchmark_weights: Sequence[float],
+    cov: np.ndarray,
+    max_te: float,
+) -> cp.Constraint:
+    diff = weights - np.asarray(benchmark_weights, dtype=float)
+    return cp.quad_form(diff, cov) <= float(max_te) ** 2
+
+
+def turnover_constraint(
+    weights: cp.Variable,
+    previous_weights: Sequence[float],
+    max_turnover: float,
+) -> cp.Constraint:
+    return cp.norm1(weights - np.asarray(previous_weights, dtype=float)) <= float(max_turnover)
+
+
+def build_constraints(
+    config: Mapping[str, object],
+    context: Mapping[str, object],
+) -> list[cp.Constraint]:
+    """Build constraints from declarative configuration."""
+
+    constraints: list[cp.Constraint] = []
+    weights_var: cp.Variable = context["weights_var"]
+
+    if config.get("weight_sum"):
+        constraints.append(weight_sum_constraint(weights_var, target=float(config["weight_sum"])))
+
+    if "box" in config:
+        box_cfg = config["box"]
+        constraints.extend(box_constraints(weights_var, box_cfg["lower"], box_cfg["upper"]))
+
+    if "budgets" in config:
+        budgets_cfg = load_budget_objects(config["budgets"])
+        constraints.extend(group_constraints(weights_var, budgets_cfg, context["asset_index"]))
+
+    if "factor_exposure" in config:
+        fe_cfg = config["factor_exposure"]
+        constraints.extend(
+            factor_exposure_constraints(
+                weights_var,
+                context["factor_loadings"],
+                fe_cfg,
+            )
+        )
+
+    if "max_leverage" in config:
+        constraints.append(leverage_constraint(weights_var, float(config["max_leverage"])))
+
+    if "tracking_error" in config:
+        te_cfg = config["tracking_error"]
+        constraints.append(
+            tracking_error_constraint(
+                weights_var,
+                te_cfg["benchmark"],
+                context["covariance"],
+                te_cfg["max_te"],
+            )
+        )
+
+    if "turnover" in config:
+        turnover_cfg = config["turnover"]
+        constraints.append(
+            turnover_constraint(weights_var, turnover_cfg["previous"], turnover_cfg["max_turnover"])
+        )
+
+    return constraints
+
+
+def load_budget_objects(raw_budgets: Iterable[Mapping[str, object]]) -> list[RiskBudget]:
+    budgets: list[RiskBudget] = []
+    for entry in raw_budgets:
+        budgets.append(
+            RiskBudget(
+                name=str(entry["name"]),
+                tickers=list(entry.get("tickers", [])),
+                min_weight=entry.get("min_weight"),
+                max_weight=entry.get("max_weight"),
+            )
+        )
+    return budgets
