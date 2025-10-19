@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pandas as pd
 
-__all__ = ["read_dataframe", "read_vector"]
+__all__ = ["read_dataframe", "read_vector", "to_datetime_index"]
 
 
 def read_dataframe(path: Path) -> pd.DataFrame | pd.Series:
@@ -35,3 +35,12 @@ def read_vector(path: Path) -> pd.Series:
     if obj.shape[1] == 1:
         return obj.iloc[:, 0].astype(float)
     raise ValueError("Cannot infer vector from data frame; please provide series or single row.")
+
+
+def to_datetime_index(index: pd.Index | pd.DatetimeIndex) -> pd.DatetimeIndex:
+    if isinstance(index, pd.DatetimeIndex):
+        return index
+    result = pd.to_datetime(index)
+    if result.tz is not None:
+        result = result.tz_convert(None)
+    return pd.DatetimeIndex(result)

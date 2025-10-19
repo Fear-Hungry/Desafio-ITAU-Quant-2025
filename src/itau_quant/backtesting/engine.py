@@ -151,6 +151,8 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
     if linear_costs and "linear_bps" not in portfolio_costs:
         portfolio_costs.setdefault("linear_bps", linear_costs)
     returns_window_portfolio = int(portfolio_section.get("returns_window", wf_defaults["train_days"]))
+    baseline_config = portfolio_section.get("baseline")
+
 
     optimizer_config = {
         "risk_aversion": risk_aversion,
@@ -184,6 +186,8 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
     }
     if risk_section:
         portfolio_config["risk"] = risk_section
+    if baseline_config:
+        portfolio_config["baseline"] = baseline_config
 
     return BacktestConfig(
         config_path=path,
@@ -306,6 +310,10 @@ def _run_simulation(
                 "rounding_cost": rounding_cost,
                 "status": turnover_status,
                 "solver_status": rebalance_result.log.get("solver", {}).get("status"),
+                "allocator": rebalance_result.allocator,
+                "weights_pre_rounding": rebalance_result.log.get("weights_pre_rounding"),
+                "heuristic_method": rebalance_result.log.get("heuristic", {}).get("method"),
+                "heuristic_diagnostics": rebalance_result.log.get("heuristic", {}).get("diagnostics"),
             }
         )
 

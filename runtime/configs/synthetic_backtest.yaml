@@ -1,0 +1,21 @@
+base_currency: USD
+data:
+  returns: /home/marcusvinicius/Void/Desafio-ITAU-Quant/runtime/data/processed/returns_pipeline.parquet
+walkforward:
+  train_days: 120
+  test_days: 20
+  purge_days: 5
+  embargo_days: 2
+optimizer:
+  lambda: 4.0
+  eta: 0.1
+  tau: 0.25
+estimators:
+  mu:
+    method: simple
+  sigma:
+    method: ledoit_wolf
+portfolio:
+  capital: 1_000_000
+  rounding:
+    lot_sizes: 0.0001

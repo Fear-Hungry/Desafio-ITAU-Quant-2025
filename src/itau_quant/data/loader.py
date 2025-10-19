@@ -25,7 +25,7 @@ from dataclasses import dataclass
 from datetime import datetime
 import logging
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Iterable, Mapping, Optional
 
 import pandas as pd
 
@@ -134,11 +134,13 @@ class DataLoader:
         start: Optional[str | datetime] = None,
         end: Optional[str | datetime] = None,
         mode: str = "BMS",
+        actions: Optional[list[Mapping[str, object]]] = None,
     ) -> None:
         self.tickers = list(tickers) if tickers is not None else get_arara_universe()
         self.start = start
         self.end = end
         self.mode = mode
+        self.actions = actions
 
     def load(self) -> DataBundle:
         """Download prices/r_f, compute returns and persist Parquet snapshots."""
@@ -151,6 +153,15 @@ class DataLoader:
         )
         prices = yf_download(self.tickers, start=self.start, end=self.end)
         prices = normalize_index(prices)
+
+        actions_cfg = {
+            "records": None,
+        }
+        if self.actions:
+            actions = load_corporate_actions(self.tickers, actions=self.actions)
+            factors = calculate_adjustment_factors(actions, prices.index)
+            prices = apply_price_adjustments(prices, factors)
+
         prices, liquidity_stats = filter_liquid_assets(prices)
         illiquid: list[str] = []
         if not liquidity_stats.empty:
@@ -190,3 +201,8 @@ class DataLoader:
             bms=bms,
             inception_mask=inception_mask,
         )
+from .processing.corporate_actions import (
+    apply_price_adjustments,
+    calculate_adjustment_factors,
+    load_corporate_actions,
+)

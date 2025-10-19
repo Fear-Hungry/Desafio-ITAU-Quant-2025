@@ -1,4 +1,4 @@
-"""Mean-variance quadratic program with optional turnover and costs."""
+"""Programa quadrático média-variância com turnover e custos opcionais."""
 
 from __future__ import annotations
 

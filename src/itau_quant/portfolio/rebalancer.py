@@ -9,6 +9,7 @@ import pandas as pd
 
 from itau_quant.costs.transaction_costs import transaction_cost_vector
 from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
+from itau_quant.optimization.heuristics.hrp import heuristic_allocation
 from itau_quant.portfolio.rounding import RoundingResult, rounding_pipeline
 
 __all__ = [
@@ -62,6 +63,7 @@ class RebalanceResult:
     trades: pd.Series
     log: Mapping[str, Any]
     rounding: RoundingResult
+    allocator: str
     notes: list[str] = field(default_factory=list)
 
 
@@ -204,20 +206,27 @@ def build_rebalance_log(
     date: pd.Timestamp,
     metrics: RebalanceMetrics,
     solver_summary: Any,
+    *,
+    extra: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Assemble a serialisable log structure."""
 
-    payload = {
+    payload: dict[str, Any] = {
         "date": pd.Timestamp(date).isoformat(),
         "metrics": metrics.to_dict(),
     }
     if solver_summary is not None:
-        payload["solver"] = {
-            "status": solver_summary.status,
-            "value": solver_summary.value,
-            "solver": solver_summary.solver,
-            "runtime": solver_summary.runtime,
-        }
+        if isinstance(solver_summary, Mapping):
+            payload["solver"] = dict(solver_summary)
+        else:
+            payload["solver"] = {
+                "status": solver_summary.status,
+                "value": solver_summary.value,
+                "solver": solver_summary.solver,
+                "runtime": solver_summary.runtime,
+            }
+    if extra:
+        payload.update({key: value for key, value in extra.items() if value is not None})
     return payload
 
 
@@ -234,7 +243,7 @@ def rebalance(
     config = dict(config or {})
     optimizer_cfg = dict(config.get("optimizer", {}))
     rounding_cfg = config.get("rounding", {})
-    cost_cfg = config.get("costs", {})
+    cost_cfg = dict(config.get("costs", {}) or {})
     estimator_cfg = config.get("estimators", {})
     risk_cfg: dict[str, Any] = {}
 
@@ -255,35 +264,99 @@ def rebalance(
         sigma_config=estimator_cfg.get("sigma"),
     )
 
-    opt_weights, mv_config, mv_result = optimize_portfolio(
-        mu,
-        cov,
-        previous_weights,
-        optimizer_cfg,
-        risk_config=risk_cfg or None,
-    )
-    optimizer_cost = compute_costs(opt_weights, previous_weights, capital=capital, cost_config=cost_cfg)
+    baseline_cfg_raw = config.get("baseline")
+    allocation_method = "optimizer"
+    solver_summary: Any | None = None
+    solver_extra: dict[str, Any] = {}
 
-    rounding_result = apply_postprocessing(opt_weights, prices_at_date, capital, rounding_cfg)
+    if baseline_cfg_raw:
+        if isinstance(baseline_cfg_raw, Mapping):
+            baseline_cfg = dict(baseline_cfg_raw)
+        elif isinstance(baseline_cfg_raw, str):
+            baseline_cfg = {"method": baseline_cfg_raw}
+        else:
+            raise TypeError("baseline configuration must be a mapping or string")
+        method = baseline_cfg.pop("method", baseline_cfg.pop("name", None))
+        if method is None:
+            raise ValueError("baseline configuration must define a method")
+        heuristic_data = {
+            "assets": list(mu.index),
+            "asset_index": list(mu.index),
+            "covariance": cov,
+            "returns": historical_returns,
+        }
+        heuristic_result = heuristic_allocation(
+            heuristic_data,
+            method=method,
+            config=baseline_cfg,
+        )
+        target_weights = heuristic_result.weights.reindex(mu.index).fillna(0.0).astype(float)
+        cov_aligned = cov.reindex(index=target_weights.index, columns=target_weights.index).astype(float)
+        mu_vector = mu.reindex(target_weights.index).to_numpy(dtype=float)
+        weights_array = target_weights.to_numpy(dtype=float)
+        optimizer_expected_return = float(mu_vector @ weights_array)
+        optimizer_variance = float(weights_array @ cov_aligned.to_numpy(dtype=float) @ weights_array)
+        optimizer_turnover = float(
+            np.abs(
+                target_weights - previous_weights.reindex(target_weights.index).fillna(0.0)
+            ).sum()
+        )
+        optimizer_cost = compute_costs(target_weights, previous_weights, capital=capital, cost_config=cost_cfg)
+        allocation_method = f"heuristic:{heuristic_result.method}"
+        heuristic_payload = {"method": heuristic_result.method}
+        if heuristic_result.diagnostics:
+            heuristic_payload["diagnostics"] = heuristic_result.diagnostics
+        solver_extra = {
+            "allocation": allocation_method,
+            "weights_pre_rounding": target_weights.to_dict(),
+            "heuristic": heuristic_payload,
+        }
+    else:
+        opt_weights, mv_config, mv_result = optimize_portfolio(
+            mu,
+            cov,
+            previous_weights,
+            optimizer_cfg,
+            risk_config=risk_cfg or None,
+        )
+        target_weights = opt_weights.astype(float)
+        optimizer_cost = compute_costs(target_weights, previous_weights, capital=capital, cost_config=cost_cfg)
+        optimizer_expected_return = mv_result.expected_return
+        optimizer_variance = mv_result.variance
+        optimizer_turnover = mv_result.turnover
+        solver_summary = mv_result.summary
+        solver_extra = {
+            "allocation": allocation_method,
+            "weights_pre_rounding": target_weights.to_dict(),
+            "risk_aversion": mv_config.risk_aversion,
+            "turnover_penalty": mv_config.turnover_penalty,
+        }
 
-    rounded_weights = rounding_result.rounded_weights.reindex(opt_weights.index, fill_value=0.0)
+    rounding_result = apply_postprocessing(target_weights, prices_at_date, capital, rounding_cfg)
+
+    rounded_weights = rounding_result.rounded_weights.reindex(target_weights.index, fill_value=0.0)
     trades = rounded_weights - previous_weights.reindex(rounded_weights.index).fillna(0.0)
     realized_turnover = float(trades.abs().sum())
 
     metrics = RebalanceMetrics(
-        optimizer_expected_return=mv_result.expected_return,
-        optimizer_variance=mv_result.variance,
-        optimizer_turnover=mv_result.turnover,
+        optimizer_expected_return=optimizer_expected_return,
+        optimizer_variance=optimizer_variance,
+        optimizer_turnover=optimizer_turnover,
         optimizer_cost=optimizer_cost,
         rounding_cost=rounding_result.rounding_cost,
         realized_turnover=realized_turnover,
     )
 
-    log = build_rebalance_log(date, metrics, mv_result.summary)
+    log = build_rebalance_log(
+        date,
+        metrics,
+        solver_summary,
+        extra=solver_extra,
+    )
 
     return RebalanceResult(
         date=pd.Timestamp(date),
-        weights=opt_weights.astype(float),
+        weights=target_weights.astype(float),
         rounded_weights=rounded_weights.astype(float),
         shares=rounding_result.shares.astype(float),
         cash=float(rounding_result.residual_cash),
@@ -291,4 +364,5 @@ def rebalance(
         trades=trades.astype(float),
         log=log,
         rounding=rounding_result,
+        allocator=allocation_method,
     )
