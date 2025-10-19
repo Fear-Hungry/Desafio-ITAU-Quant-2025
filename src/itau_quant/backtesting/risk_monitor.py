@@ -8,6 +8,8 @@ from typing import Iterable, Literal
 import numpy as np
 import pandas as pd
 
+from itau_quant.costs.turnover import l1_turnover
+
 TurnoverBandStatus = Literal["below", "within", "above"]
 
 __all__ = [
@@ -36,8 +38,14 @@ def apply_turnover_cap(
     prev = previous_weights.reindex(target_weights.index, fill_value=0.0).astype(float)
     target = target_weights.reindex(prev.index, fill_value=0.0).astype(float)
 
+    if prev.isna().any() or target.isna().any():
+        raise ValueError("weights must not contain NaN values")
+
+    if max_turnover is not None and max_turnover < 0:
+        raise ValueError("max_turnover must be non-negative")
+
     diff = target - prev
-    turnover = float(np.abs(diff).sum())
+    turnover = float(l1_turnover(target, prev))
 
     if max_turnover is None or max_turnover <= 0 or turnover <= max_turnover + tol:
         return target, turnover
@@ -47,7 +55,8 @@ def apply_turnover_cap(
 
     scale = float(max_turnover / turnover)
     adjusted = prev + diff * scale
-    turnover_adjusted = float(np.abs(adjusted - prev).sum())
+    adjusted.name = target_weights.name
+    turnover_adjusted = float(l1_turnover(adjusted, prev))
     return adjusted, turnover_adjusted
 
 
