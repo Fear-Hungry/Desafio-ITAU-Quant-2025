@@ -44,12 +44,15 @@ A importação direta de tipos como `from pandas import DataFrame` requer:
 
 import os
 from dataclasses import dataclass
-from typing import Any, Dict, List, Protocol, TYPE_CHECKING, Union
+from typing import Any, Dict, Protocol, TYPE_CHECKING, Union
 
-try:  # Python < 3.10 fallback
-    from typing import TypeAlias  # type: ignore[attr-defined]
-except ImportError:  # pragma: no cover - executed only on older interpreters
+import typing as _typing
+
+_TypeAlias = getattr(_typing, "TypeAlias", None)
+if _TypeAlias is None:  # pragma: no cover - exercised via regression test
     from typing_extensions import TypeAlias  # type: ignore[assignment]
+else:
+    TypeAlias = _TypeAlias
 
 # --- Exposição explícita dos tipos públicos ---
 __all__ = [

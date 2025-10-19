@@ -364,7 +364,6 @@ def regularize_cov(
         raise ValueError("matrix must be square.")
 
     method = method.lower()
-    2. Integrar esses estimadores no pipeline de otimização/backtest e, se for o caso, adicionar cenários de dados reais
 
     if method == "diag":
         diag = np.diag(array).copy()

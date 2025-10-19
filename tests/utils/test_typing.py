@@ -12,7 +12,7 @@ def test_typing_module_fallback_without_typealias(monkeypatch):
     if not hasattr(typing_module, "TypeAlias"):
         pytest.skip("Runtime already lacks typing.TypeAlias")
 
-    monkeypatch.delattr(typing_module, "TypeAlias", raising=False)
+    monkeypatch.setattr(typing_module, "TypeAlias", None, raising=False)
 
     module = importlib.import_module(module_name)
 
