@@ -33,34 +33,41 @@ Testes recomendados
     * integração com solver_utils (mock) setando seed corretamente.
 """
 
-import logging
-
-def set_solver_seed(seed: int):
-    """
-    Função mock para configurar a seed de solvers de otimização.
-    Em um projeto real, isso chamaria as APIs específicas dos solvers (ex: SCS).
-    """
-    logging.info(f"[SOLVER MOCK] Configurando seed do solver para: {seed}")
-    # Exemplo:
-    # from cvxpy.reductions.solvers.defines import SCS
-    # SCS.override_solver_setting("seed", seed)
-    pass
-    
-import random
 import hashlib
 import json
 import logging
+import random
 from contextlib import contextmanager
 from typing import Any, Dict, Optional
 
 import numpy as np
-import pandas as pd  # Importado para referência, embora use o seed do numpy
-
-# Importa a função (real ou mock) do módulo de utilidades do solver
-import solver_utils 
 
 # Constante para normalização da seed
 MAX_SEED_VALUE = 2**32
+
+
+def set_solver_seed(seed: int) -> None:
+    """
+    Função mock para configurar a seed de solvers de otimização.
+
+    Tenta delegar para ``itau_quant.optimization.core.solver_utils.set_solver_seed``
+    caso esteja disponível; caso contrário, apenas informa via log.
+    """
+    logging.info(f"[SOLVER MOCK] Configurando seed do solver para: {seed}")
+
+    try:
+        from itau_quant.optimization.core import solver_utils as core_solver_utils
+    except ImportError:
+        logging.debug("solver_utils indisponível; pulando configuração do solver.")
+        return
+
+    delegate = getattr(core_solver_utils, "set_solver_seed", None)
+    if callable(delegate):
+        delegate(seed)
+    else:
+        logging.debug(
+            "solver_utils.set_solver_seed não implementado; sem configuração adicional."
+        )
 
 def set_global_seeds(
     seed: int,
@@ -106,7 +113,7 @@ def set_global_seeds(
         
     if cvxpy:
         # Delega a configuração específica do solver para um módulo dedicado
-        solver_utils.set_solver_seed(seed)
+        set_solver_seed(seed)
         logging.debug(f"Tentativa de configurar seed de solvers via solver_utils com {seed}.")
 
 @contextmanager

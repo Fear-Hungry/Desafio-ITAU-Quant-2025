@@ -85,10 +85,12 @@ def parallel_map(
     job_name = getattr(func, '__name__', 'anonymous_job')
     logging.info(f"Iniciando job paralelo '{job_name}' com backend '{backend}'...")
     start_time = time.time()
+
+    items = list(iterable)
     
     # Fallback para execução sequencial (ótimo para debugging)
     if backend == 'sequential' or max_workers == 1:
-        results = [func(item) for item in iterable]
+        results = [func(item) for item in items]
         end_time = time.time()
         logging.info(f"Job '{job_name}' concluído em {end_time - start_time:.2f}s.")
         return results
@@ -103,29 +105,33 @@ def parallel_map(
         # Usando concurrent.futures (ThreadPoolExecutor ou ProcessPoolExecutor)
         # Usar submit em vez de map para ter controle fino sobre exceções e timeouts
         with executor_map[backend](max_workers=max_workers) as executor:
-            future_to_item = {executor.submit(func, item): item for item in iterable}
-            results = {}
+            future_to_index = {
+                executor.submit(func, item): index for index, item in enumerate(items)
+            }
+            results = [None] * len(items)
             try:
-                for future in as_completed(future_to_item, timeout=timeout):
-                    item = future_to_item[future]
+                for future in as_completed(future_to_index, timeout=timeout):
+                    index = future_to_index[future]
                     try:
-                        results[item] = future.result()
+                        results[index] = future.result()
                     except Exception as e:
                         # Captura a exceção e a armazena para análise posterior
-                        logging.error(f"Worker para o item '{item}' gerou uma exceção: {e}")
-                        results[item] = e # Armazena a exceção no lugar do resultado
+                        logging.error(
+                            f"Worker para o índice '{index}' gerou uma exceção: {e}"
+                        )
+                        results[index] = e  # Armazena a exceção no lugar do resultado
             except TimeoutError:
                 logging.error(f"Job '{job_name}' excedeu o timeout global de {timeout}s.")
                 raise
         
         # Reordena os resultados e coleta exceções
-        ordered_results = [results[item] for item in iterable]
+        ordered_results = results
 
     elif backend == 'joblib':
         # Usando Joblib, que é ótimo para tarefas com numpy
         # 'loky' é o backend de processo padrão e mais robusto do joblib
-        joblib_backend = 'threading' if backend == 'thread' else 'loky'
-        tasks = [delayed(func)(item) for item in iterable]
+        joblib_backend = 'loky'
+        tasks = [delayed(func)(item) for item in items]
         ordered_results = Parallel(n_jobs=max_workers, backend=joblib_backend)(tasks)
         
     else:

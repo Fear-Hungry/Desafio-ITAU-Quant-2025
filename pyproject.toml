@@ -17,6 +17,7 @@ clarabel = "^0.8.0"
 yfinance = "^0.2.41"
 pandas-datareader = "^0.10.0"
 matplotlib = "^3.8.4"
+typing-extensions = "^4.11.0"
 
 
 [tool.poetry.group.dev.dependencies]
