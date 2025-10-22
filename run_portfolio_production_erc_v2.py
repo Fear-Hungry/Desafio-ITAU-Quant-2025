@@ -135,12 +135,12 @@ else:
     w_prev = np.ones(len(valid_tickers)) / len(valid_tickers)
     costs = np.full(len(valid_tickers), TRANSACTION_COST_DECIMAL)
 
-    # Passo 1: Calibrar γ para vol target
+    # Passo 1: Calibrar γ para vol target (SEM turnover penalty)
     print(f"   📐 Calibrando γ para vol target {VOL_TARGET:.1%}...")
     w_vol, gamma_opt, vol_realized = calibrate_gamma_for_vol(
         cov=cov_annual.values,
         w_prev=w_prev,
-        eta=0.01,  # Penalidade baixa inicial
+        eta=0.0,  # SEM turnover penalty (calibrar vol pura)
         costs=costs,
         w_max=MAX_POSITION,
         groups=GROUPS,
