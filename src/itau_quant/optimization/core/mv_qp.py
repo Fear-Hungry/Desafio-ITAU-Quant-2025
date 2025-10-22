@@ -33,6 +33,8 @@ class MeanVarianceConfig:
     solver_kwargs: Mapping[str, Any] | None = None
     risk_config: Mapping[str, Any] | None = None
     factor_loadings: pd.DataFrame | None = None
+    ridge_penalty: float = 0.0  # γ for L2 weight regularization
+    target_vol: float | None = None  # Target volatility (auto-calibrate λ)
 
 
 @dataclass(frozen=True)
