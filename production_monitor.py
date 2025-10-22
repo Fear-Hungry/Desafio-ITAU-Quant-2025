@@ -7,8 +7,8 @@ quando triggers são violados.
 
 Triggers:
 1. Sharpe 6M ≤ 0.0
-2. CVaR 5% > -2% (daily)
-3. Max DD > 10%
+2. CVaR 5% < -2% (daily) - valores mais negativos que -2% ativam fallback
+3. Max DD < -10% - drawdowns piores que -10% ativam fallback
 """
 
 from dataclasses import dataclass
