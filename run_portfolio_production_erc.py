@@ -87,6 +87,12 @@ returns = calculate_returns(prices, method="log").dropna()
 
 valid_tickers = list(returns.columns)
 print(f"   ✅ Dados carregados: {len(returns)} dias, {len(valid_tickers)} ativos válidos")
+
+if len(returns) == 0:
+    print("   ❌ ERRO: Nenhum dado disponível (timeout ou problema de rede)")
+    print("   Tente novamente ou use dados salvos em data/processed/")
+    exit(1)
+
 print(f"   Período: {returns.index[0].date()} a {returns.index[-1].date()}")
 print()
 
