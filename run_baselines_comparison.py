@@ -229,10 +229,10 @@ def hrp_portfolio(train_returns):
 
 
 def mv_robust_shrunk(train_returns):
-    """Mean-Variance com Bayesian Shrinkage 50% (conservador)"""
+    """Mean-Variance com Bayesian Shrinkage 20% (equilibrado)"""
     from itau_quant.estimators.mu import bayesian_shrinkage_mean
 
-    mu_daily = bayesian_shrinkage_mean(train_returns, prior=0.0, strength=0.5)
+    mu_daily = bayesian_shrinkage_mean(train_returns, prior=0.0, strength=0.2)
     mu = mu_daily * 252
 
     cov, _ = ledoit_wolf_shrinkage(train_returns)
