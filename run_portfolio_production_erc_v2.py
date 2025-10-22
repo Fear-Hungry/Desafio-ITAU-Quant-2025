@@ -135,55 +135,92 @@ else:
     w_prev = np.ones(len(valid_tickers)) / len(valid_tickers)
     costs = np.full(len(valid_tickers), TRANSACTION_COST_DECIMAL)
 
-    # Passo 1: Calibrar γ para vol target (SEM turnover penalty)
-    print(f"   📐 Calibrando γ para vol target {VOL_TARGET:.1%}...")
-    w_vol, gamma_opt, vol_realized = calibrate_gamma_for_vol(
+    # NOVA ESTRATÉGIA: Primeiro enforcar cardinalidade, DEPOIS calibrar
+    # (cardinalidade muda drasticamente a vol, então precisa calibrar no suporte fixo)
+
+    # Passo 1: Resolver ERC unconstrained para selecionar top-K
+    print(f"   📐 Selecionando top-{CARDINALITY_K} ativos...")
+    from erc_calibrated import solve_erc_core
+    w_unconstrained, _ = solve_erc_core(
         cov=cov_annual.values,
         w_prev=w_prev,
-        eta=0.0,  # SEM turnover penalty (calibrar vol pura)
+        gamma=1.0,  # Valor inicial razoável
+        eta=0.0,
         costs=costs,
         w_max=MAX_POSITION,
         groups=GROUPS,
         asset_names=valid_tickers,
-        vol_target=VOL_TARGET,
-        vol_tolerance=VOL_TOLERANCE,
-        max_iter=25,
         verbose=False,
     )
+
+    # Selecionar top-K
+    top_k_indices = np.argsort(w_unconstrained)[-CARDINALITY_K:]
+    support_mask = np.zeros(len(w_unconstrained), dtype=bool)
+    support_mask[top_k_indices] = True
+    active_tickers = [valid_tickers[i] for i in range(len(valid_tickers)) if support_mask[i]]
+    print(f"      Top-{CARDINALITY_K}: {', '.join(active_tickers[:5])}...")
+
+    # Passo 2: Calibrar γ NO SUPORTE FIXO para vol target
+    print(f"   📐 Calibrando γ para vol target {VOL_TARGET:.1%} (suporte fixo)...")
+    # Criar função wrapper que mantém suporte fixo
+    def solve_with_fixed_support(cov, w_prev, gamma, eta, costs, w_max, groups, asset_names):
+        w, status = solve_erc_core(
+            cov, w_prev, gamma, eta, costs, w_max, groups, asset_names,
+            support_mask=support_mask, verbose=False
+        )
+        return w, status
+
+    # Bisection manual para γ
+    lo_gamma, hi_gamma = 1e-3, 1e3
+    for i in range(25):
+        gamma_test = np.sqrt(lo_gamma * hi_gamma)
+        w_test, _ = solve_with_fixed_support(
+            cov_annual.values, w_prev, gamma_test, 0.0, costs,
+            MAX_POSITION, GROUPS, valid_tickers
+        )
+        vol_test = np.sqrt(w_test @ cov_annual.values @ w_test)
+
+        if abs(vol_test - VOL_TARGET) < VOL_TOLERANCE:
+            break
+
+        if vol_test > VOL_TARGET + VOL_TOLERANCE:
+            hi_gamma = gamma_test
+        else:
+            lo_gamma = gamma_test
+
+    gamma_opt = gamma_test
+    vol_realized = vol_test
     print(f"      γ* = {gamma_opt:.6f}, vol = {vol_realized:.4f}")
 
-    # Passo 2: Calibrar η para turnover target
-    print(f"   📐 Calibrando η para turnover target {TURNOVER_TARGET:.1%}...")
-    w_turnover, eta_opt, to_realized = calibrate_eta_for_turnover(
-        cov=cov_annual.values,
-        w_prev=w_prev,
-        gamma=gamma_opt,
-        costs=costs,
-        w_max=MAX_POSITION,
-        groups=GROUPS,
-        asset_names=valid_tickers,
-        target_turnover=TURNOVER_TARGET,
-        tolerance=TURNOVER_TOLERANCE,
-        max_iter=20,
-        verbose=False,
-    )
+    # Passo 3: Calibrar η NO SUPORTE FIXO para turnover target
+    print(f"   📐 Calibrando η para turnover target {TURNOVER_TARGET:.1%} (suporte fixo)...")
+    lo_eta, hi_eta = 1e-5, 5.0
+    for i in range(20):
+        eta_test = (lo_eta + hi_eta) / 2
+        w_test, _ = solve_with_fixed_support(
+            cov_annual.values, w_prev, gamma_opt, eta_test, costs,
+            MAX_POSITION, GROUPS, valid_tickers
+        )
+        to_test = np.sum(np.abs(w_test - w_prev))
+
+        if abs(to_test - TURNOVER_TARGET) < TURNOVER_TOLERANCE:
+            break
+
+        if to_test > TURNOVER_TARGET + TURNOVER_TOLERANCE:
+            lo_eta = eta_test
+        else:
+            hi_eta = eta_test
+
+    eta_opt = eta_test
+    to_realized = to_test
     print(f"      η* = {eta_opt:.6f}, turnover = {to_realized:.4f}")
 
-    # Passo 3: Enforcar cardinalidade K=15
-    print(f"   📐 Enforcando cardinalidade K={CARDINALITY_K}...")
-    w_final, n_active = solve_erc_with_cardinality(
-        cov=cov_annual.values,
-        w_prev=w_prev,
-        gamma=gamma_opt,
-        eta=eta_opt,
-        costs=costs,
-        w_max=MAX_POSITION,
-        groups=GROUPS,
-        asset_names=valid_tickers,
-        K=CARDINALITY_K,
-        verbose=False,
+    # Passo 4: Solução final
+    w_final, _ = solve_with_fixed_support(
+        cov_annual.values, w_prev, gamma_opt, eta_opt, costs,
+        MAX_POSITION, GROUPS, valid_tickers
     )
-    print(f"      N_active = {n_active}")
+    n_active = int((w_final > 1e-4).sum())
 
     # Converter para Series
     weights = pd.Series(w_final, index=valid_tickers)
