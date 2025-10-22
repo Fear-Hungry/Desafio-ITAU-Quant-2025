@@ -48,7 +48,7 @@ EMBARGO_WINDOW = 5
 STRENGTH_LEVELS = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7]
 
 print("📥 Carregando dados...")
-prices = download_data_yfinance(TICKERS, start_date=START_DATE, end_date=END_DATE)
+prices = download_prices(TICKERS, start=START_DATE, end=END_DATE)
 returns = calculate_log_returns(prices).dropna()
 print(f"   ✅ {len(returns)} dias, {len(returns.columns)} ativos")
 print()
