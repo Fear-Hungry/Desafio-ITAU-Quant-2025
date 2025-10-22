@@ -241,12 +241,12 @@ def calibrate_gamma_for_vol(
             return w, gamma, vol
 
         # Bisection logic
-        # γ controla log-barrier: γ maior → mais equalização → MENOS concentração → MENOS vol
+        # γ controla log-barrier: γ↑ → mais equalização → MENOS vol
         if vol > vol_target + vol_tolerance:
-            # Vol muito alta → precisa diminuir vol → aumenta γ
+            # Vol muito alta → aumenta γ para equalizar mais
             lo = gamma
         else:
-            # Vol muito baixa → precisa aumentar vol → diminui γ
+            # Vol muito baixa → diminui γ para concentrar mais
             hi = gamma
 
         best = (w, gamma, vol)
