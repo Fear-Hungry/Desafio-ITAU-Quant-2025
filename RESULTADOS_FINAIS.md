@@ -123,24 +123,33 @@ if config.budgets:
 
 ### Para Uso em Produção
 
-**Opção 1: Equal-Weight (1/N)** ✅ RECOMENDADO
-- Sharpe OOS: 1.05 (melhor)
-- Implementação trivial
+**✅ DECISÃO FINAL (2025-10-22): Risk Parity (ERC) com Fallback 1/N**
+
+Após validação rigorosa, implementamos sistema de produção com:
+
+**Estratégia Principal: Risk Parity (ERC)**
+- Sharpe OOS: 1.05 (empata com 1/N)
+- Controle explícito de risco por contribuição
+- Vol target: 11% anualizado
+- Turnover ≤12%/mês
+- **Sistema implementado em:** `run_portfolio_production_erc.py`
+
+**Fallback Automático: 1/N**
+- Ativa quando Sharpe 6M ≤ 0, CVaR < -2%, ou DD < -10%
 - Zero estimation error
-- Turnover mínimo
-- **Use quando:** Simplicidade e robustez são prioridades
+- Implementação robusta
+- **Sistema de triggers em:** `production_monitor.py`
 
-**Opção 2: Risk Parity** ✅ RECOMENDADO
-- Sharpe OOS: 1.05 (empate com 1/N)
-- Diversificação por risco (não por capital)
-- Mais sophisticado que 1/N
-- **Use quando:** Quer balancear contribuições de risco
+**Logging e Monitoramento:**
+- Logs estruturados em `results/production/`
+- Dashboard via `production_logger.py`
+- Runbook completo em `RUNBOOK_PRODUCAO.md`
 
-**Opção 3: MV Huber (melhor MV testado)**
-- Sharpe OOS: 0.81 (perde 0.24 para 1/N)
-- Permite customização via constraints
-- Budget constraints funcionam
-- **Use quando:** Precisa de constraints específicas (ex: ESG, regulatórias)
+### Estratégias Descartadas
+
+**❌ MV Huber** - Sharpe 0.81 (perde 0.24 para baselines)
+**❌ MV Shrunk50** - Sharpe 0.75 (ainda pior)
+**❌ MV Shrunk20** - Sharpe 0.71 (paradoxo: mais conservador = pior OOS)
 
 ### Por Que Não Shrinkage?
 
