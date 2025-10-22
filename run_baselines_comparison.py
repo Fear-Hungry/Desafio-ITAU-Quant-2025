@@ -178,8 +178,8 @@ def risk_parity_erc(train_returns):
     cov, _ = ledoit_wolf_shrinkage(train_returns)
 
     try:
-        result = solve_risk_parity(cov, method="log_barrier")
-        weights = result["weights"]
+        result = risk_parity(cov, config={"method": "log_barrier"})
+        weights = result.weights
 
         # Aplicar bounds
         weights = weights.clip(0, MAX_POSITION)
