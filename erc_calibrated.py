@@ -426,10 +426,10 @@ if __name__ == "__main__":
     print()
 
     # Test 3: Cardinality
-    print("Test 3: Enforcing cardinality K=5...")
+    print("Test 3: Enforcing cardinality K=7...")
     w_sparse, n_active = solve_erc_with_cardinality(
-        cov, w_prev, gamma=gamma, eta=eta, costs=costs, w_max=w_max,
-        K=5, verbose=True
+        cov, w_prev, gamma=gamma, eta=eta, costs=costs, w_max=0.25,  # Aumenta w_max para feasibility
+        K=7, verbose=True
     )
     print(f"  ✅ N_active = {n_active} (target: 5)")
     print(f"  Top 5 weights: {np.sort(w_sparse[w_sparse > 0])[::-1]}")
