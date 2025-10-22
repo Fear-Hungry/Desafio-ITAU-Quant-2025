@@ -169,6 +169,10 @@ def solve_mean_variance(
         cost_vec = config.cost_vector.reindex(assets).fillna(0.0).to_numpy(dtype=float)
         objective_terms.append(-cp.sum(cp.multiply(cost_vec, cp.abs(trades))))
 
+    # Ridge penalty (L2 regularization on weights)
+    if config.ridge_penalty > 0:
+        objective_terms.append(-config.ridge_penalty * cp.sum_squares(w))
+
     objective = cp.Maximize(cp.sum(objective_terms))
 
     constraints = [cp.sum(w) == 1.0]
