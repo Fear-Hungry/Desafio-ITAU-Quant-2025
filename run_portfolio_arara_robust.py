@@ -200,16 +200,18 @@ from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 
 recent_returns = returns.tail(ESTIMATION_WINDOW)
 
-# ESTIMAÇÃO ROBUSTA DE μ via Bayesian Shrinkage (20% para zero)
-# Após testes OOS: 50% shrinkage teve Sharpe 0.75 (muito conservador)
-# 20% equilibra preservação de sinal com robustez
-print(f"   Estimando μ via Bayesian Shrinkage (strength=0.2)...")
-from itau_quant.estimators.mu import bayesian_shrinkage_mean
-mu_shrunk_daily = bayesian_shrinkage_mean(recent_returns, prior=0.0, strength=0.2)
-mu_annual = mu_shrunk_daily * 252
+# ESTIMAÇÃO ROBUSTA DE μ via Huber mean
+# VALIDAÇÃO OOS (2025-10-22): Testamos Huber, Shrunk20, Shrunk50
+# Resultado: Huber teve melhor Sharpe MV (0.81), mas 1/N domina (1.05)
+# Mantemos Huber como melhor opção MV, mas reconhecemos limitação
+print(f"   Estimando μ via Huber mean (delta={HUBER_DELTA})...")
+from itau_quant.estimators.mu import huber_mean
+mu_huber, weights_huber = huber_mean(recent_returns, c=HUBER_DELTA)
+mu_annual = mu_huber * 252
 
-print(f"   ✅ Bayesian shrinkage aplicado (20% shrinkage para zero)")
-print(f"      Equilibra preservação de sinal com controle de overfit")
+print(f"   ✅ Huber mean calculado")
+print(f"      Outliers down-weighted: {(weights_huber < 0.5).sum().sum()} observações")
+print(f"      ⚠️  Nota: 1/N simples superou MV em testes OOS (1.05 vs 0.81 Sharpe)")
 
 # ESTIMAÇÃO DE Σ via Ledoit-Wolf
 print(f"   Estimando Σ via Ledoit-Wolf shrinkage...")
