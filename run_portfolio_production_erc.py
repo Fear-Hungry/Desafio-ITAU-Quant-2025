@@ -91,9 +91,7 @@ print(f"   Período: {returns.index[0].date()} a {returns.index[-1].date()}")
 print()
 
 # ============================================================================
-# 2. CALCULAR PORTF
-
-OLIO RETURNS (últimos 6M para triggers)
+# 2. CALCULAR PORTFOLIO RETURNS (últimos 6M para triggers)
 # ============================================================================
 
 print("📊 [2/5] Calculando portfolio returns histórico...")
