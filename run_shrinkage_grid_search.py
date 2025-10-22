@@ -10,7 +10,7 @@ import numpy as np
 from pathlib import Path
 
 # Carregar dados
-from itau_quant.data.sources.yf import download_data_yfinance
+from itau_quant.data.sources.yf import download_prices
 from itau_quant.data.processing.returns import calculate_log_returns
 from itau_quant.estimators.mu import bayesian_shrinkage_mean
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
