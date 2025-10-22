@@ -127,7 +127,18 @@ def solve_mean_variance(
     cov: pd.DataFrame,
     config: MeanVarianceConfig,
 ) -> MeanVarianceResult:
-    """Solve a convex mean-variance allocation problem."""
+    """Solve a convex mean-variance allocation problem.
+
+    If config.target_vol is specified, automatically calibrates risk_aversion
+    to achieve the target volatility via bisection search.
+    """
+
+    # Auto-calibrate λ if target_vol specified
+    if config.target_vol is not None:
+        result, lambda_cal = calibrate_lambda_for_target_vol(
+            mu, cov, config, config.target_vol
+        )
+        return result
 
     if mu.empty:
         raise ValueError("mu must not be empty")
