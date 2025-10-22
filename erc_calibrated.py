@@ -128,9 +128,17 @@ def solve_erc_core(
 
     # Objetivo: risk parity via log-barrier
     # min: 0.5*w'Σw - γ*Σlog(w_i) + η*||dw||₁ + c'|dw|
+
+    # Se temos suporte fixo, só aplicar log-barrier aos ativos ativos
+    if support_mask is not None:
+        active_indices = np.where(support_mask)[0]
+        log_barrier_term = cp.sum(cp.log(w[active_indices] + 1e-10))
+    else:
+        log_barrier_term = cp.sum(cp.log(w + 1e-10))
+
     objective = (
         0.5 * cp.quad_form(w, cov)
-        - gamma * cp.sum(cp.log(w + 1e-10))  # log-barrier para equalização
+        - gamma * log_barrier_term  # log-barrier para equalização
         + eta * cp.norm1(dw)  # turnover penalty
         + costs @ cp.abs(dw)  # transaction costs
     )
