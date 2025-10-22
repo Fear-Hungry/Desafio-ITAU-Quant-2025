@@ -16,6 +16,7 @@ __all__ = [
     "MeanVarianceConfig",
     "MeanVarianceResult",
     "solve_mean_variance",
+    "calibrate_lambda_for_target_vol",
 ]
 
 
