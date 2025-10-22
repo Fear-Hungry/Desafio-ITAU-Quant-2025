@@ -50,12 +50,20 @@ print(f"📥 [1/4] Carregando dados históricos...")
 print(f"   Período: {START_DATE.date()} a {END_DATE.date()}")
 print(f"   Tickers: {len(TICKERS)} ativos")
 
-prices = yf.download(
+data = yf.download(
     TICKERS,
     start=START_DATE,
     end=END_DATE,
     progress=False,
-)["Adj Close"]
+    auto_adjust=True,
+)
+
+if "Close" in data.columns:
+    prices = data["Close"]
+elif isinstance(data.columns, pd.MultiIndex):
+    prices = data.xs("Close", level=0, axis=1)
+else:
+    prices = data
 
 if isinstance(prices, pd.Series):
     prices = prices.to_frame()
