@@ -139,7 +139,7 @@ print("🔧 [2/3] Definindo estratégias...")
 from itau_quant.estimators.mu import huber_mean
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
-from itau_quant.optimization.core.risk_parity import solve_risk_parity
+from itau_quant.optimization.core.risk_parity import risk_parity
 from itau_quant.optimization.heuristics.hrp import hierarchical_risk_parity
 
 
