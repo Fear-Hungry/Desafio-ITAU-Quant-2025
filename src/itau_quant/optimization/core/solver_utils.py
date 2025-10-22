@@ -56,14 +56,10 @@ def solve_problem(
     kwargs = dict(solver_kwargs or {})
 
     start = time.perf_counter()
-    # Convert solver string to cp constant
-    solver_constant = getattr(cp, chosen_solver, None)
-    if solver_constant is None:
-        solver_constant = chosen_solver  # Fallback to string
-    problem.solve(solver=solver_constant, **kwargs)
+    problem.solve(solver=chosen_solver, **kwargs)
     runtime = time.perf_counter() - start
 
-    status = problem.status or cp.settings.UNKNOWN
+    status = problem.status or cp.UNKNOWN
     primal = getattr(problem, "primal_residual", None)
     dual = getattr(problem, "dual_residual", None)
 
