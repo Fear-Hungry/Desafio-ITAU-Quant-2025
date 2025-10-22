@@ -25,8 +25,7 @@ class SolverSummary:
     dual_residual: float | None
 
     def is_optimal(self) -> bool:
-        status = (self.status or "").lower()
-        return status in {cp.settings.OPTIMAL, cp.settings.OPTIMAL_INACCURATE}
+        return self.status in {cp.OPTIMAL, cp.OPTIMAL_INACCURATE}
 
 
 def select_solver(preferred: str | None = None) -> str:
@@ -57,7 +56,11 @@ def solve_problem(
     kwargs = dict(solver_kwargs or {})
 
     start = time.perf_counter()
-    problem.solve(solver=chosen_solver, **kwargs)
+    # Convert solver string to cp constant
+    solver_constant = getattr(cp, chosen_solver, None)
+    if solver_constant is None:
+        solver_constant = chosen_solver  # Fallback to string
+    problem.solve(solver=solver_constant, **kwargs)
     runtime = time.perf_counter() - start
 
     status = problem.status or cp.settings.UNKNOWN
