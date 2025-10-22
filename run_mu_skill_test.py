@@ -92,7 +92,7 @@ print()
 
 print(f"🔧 [3/4] Definindo estimadores de μ...")
 
-from itau_quant.estimators.mu import huber_mean, sample_mean
+from itau_quant.estimators.mu import huber_mean
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 
 
