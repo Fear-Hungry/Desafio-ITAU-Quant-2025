@@ -4,10 +4,11 @@ PRISM-R - Portfolio Risk Intelligence System
 Carteira ARARA ROBUSTA - ITAU Quant Challenge
 
 Script ROBUSTO para otimização de portfolio com:
-- Estimação robusta de retornos (Bayesian Shrinkage 50%)
+- Estimação robusta de retornos (Huber mean - melhor MV testado)
 - Limites realistas por classe de ativo
 - Custos de transação e turnover no solver
 - Universo corrigido (IBIT spot vs BITO futuros)
+- Budget constraints FUNCIONANDO ✅
 
 CORREÇÕES APLICADAS:
 - BITO → IBIT (ETF spot sem contango drag)
@@ -15,8 +16,17 @@ CORREÇÕES APLICADAS:
 - Limites por classe: Crypto ≤ 10%, Precious ≤ 15%, Commodities ≤ 25%, China ≤ 10%
 - Custos: 30 bps round-trip
 - Turnover cap: 12% por rebalance
-- μ estimado via Bayesian Shrinkage (50% para zero) após Huber falhar OOS
-  Validação OOS (2025-10-22): Huber Sharpe=0.81 < 1/N Sharpe=1.05
+- μ estimado via Huber (robusto)
+
+VALIDAÇÃO OOS (2025-10-22) - Walk-Forward 4 anos:
+- MV Huber: Sharpe 0.81, Max DD -16.80%
+- MV Shrunk50: Sharpe 0.75 (pior)
+- MV Shrunk20: Sharpe 0.71 (ainda pior)
+- 1/N baseline: Sharpe 1.05 ★ MELHOR
+- Risk Parity: Sharpe 1.05 ★ EMPATE
+
+CONCLUSÃO: Estratégias simples superaram MV neste universo/período.
+Para produção real, recomenda-se 1/N ou Risk Parity.
 """
 
 import sys
