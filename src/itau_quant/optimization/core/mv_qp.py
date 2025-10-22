@@ -49,6 +49,79 @@ class MeanVarianceResult:
     summary: SolverSummary
 
 
+def calibrate_lambda_for_target_vol(
+    mu: pd.Series,
+    cov: pd.DataFrame,
+    config: MeanVarianceConfig,
+    target_vol: float,
+    *,
+    lam_lo: float = 1e-4,
+    lam_hi: float = 1e3,
+    tol: float = 1e-4,
+    max_iter: int = 40,
+) -> tuple[MeanVarianceResult, float]:
+    """Calibrate risk_aversion λ to hit target volatility via bisection.
+
+    Parameters
+    ----------
+    mu, cov, config : as in solve_mean_variance
+    target_vol : float
+        Target annualized volatility
+    lam_lo, lam_hi : float
+        Search bounds for λ
+    tol : float
+        Tolerance for vol matching
+    max_iter : int
+        Maximum iterations
+
+    Returns
+    -------
+    result : MeanVarianceResult
+        Optimized portfolio at calibrated λ
+    lambda_calibrated : float
+        The λ that achieves target_vol
+    """
+    for _ in range(max_iter):
+        lam_mid = np.sqrt(lam_lo * lam_hi)
+
+        # Create temporary config with this λ
+        config_temp = MeanVarianceConfig(
+            risk_aversion=lam_mid,
+            turnover_penalty=config.turnover_penalty,
+            turnover_cap=config.turnover_cap,
+            lower_bounds=config.lower_bounds,
+            upper_bounds=config.upper_bounds,
+            previous_weights=config.previous_weights,
+            cost_vector=config.cost_vector,
+            budgets=config.budgets,
+            solver=config.solver,
+            solver_kwargs=config.solver_kwargs,
+            risk_config=config.risk_config,
+            factor_loadings=config.factor_loadings,
+            ridge_penalty=config.ridge_penalty,
+            target_vol=None,  # Disable recursion
+        )
+
+        result = solve_mean_variance(mu, cov, config_temp)
+
+        if not result.summary.is_optimal():
+            raise RuntimeError(f"Calibration failed at λ={lam_mid:.4f}, status={result.summary.status}")
+
+        vol = np.sqrt(result.variance)
+
+        if abs(vol - target_vol) < tol:
+            return result, lam_mid
+
+        # Bisection logic
+        if vol > target_vol:
+            lam_lo = lam_mid  # Increase risk aversion
+        else:
+            lam_hi = lam_mid  # Decrease risk aversion
+
+    # Return best attempt after max_iter
+    return result, lam_mid
+
+
 def solve_mean_variance(
     mu: pd.Series,
     cov: pd.DataFrame,
