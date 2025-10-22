@@ -228,9 +228,11 @@ def hrp_portfolio(train_returns):
         return equal_weight(train_returns)
 
 
-def mv_robust_huber(train_returns):
-    """Mean-Variance com Huber mean (robusto)"""
-    mu_daily, _ = huber_mean(train_returns, c=1.5)
+def mv_robust_shrunk(train_returns):
+    """Mean-Variance com Bayesian Shrinkage 50% (conservador)"""
+    from itau_quant.estimators.mu import bayesian_shrinkage_mean
+
+    mu_daily = bayesian_shrinkage_mean(train_returns, prior=0.0, strength=0.5)
     mu = mu_daily * 252
 
     cov, _ = ledoit_wolf_shrinkage(train_returns)
