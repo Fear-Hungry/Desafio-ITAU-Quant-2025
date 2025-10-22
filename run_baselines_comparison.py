@@ -263,7 +263,7 @@ STRATEGIES = {
     "Risk Parity": risk_parity_erc,
     "60/40": sixty_forty,
     "HRP": hrp_portfolio,
-    "MV Robust (Huber)": mv_robust_huber,
+    "MV Robust (Shrunk50)": mv_robust_shrunk,
 }
 
 print(f"   ✅ {len(STRATEGIES)} estratégias definidas:")
