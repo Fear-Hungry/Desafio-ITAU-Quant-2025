@@ -1,0 +1,59 @@
+# Production ERC v2 Configuration
+# Equal Risk Contribution with calibrated volatility and turnover targets
+
+vol_target: 0.11  # 11% annualized
+vol_tolerance: 0.01  # ±1%
+
+turnover_target: 0.12  # 12% monthly
+turnover_tolerance: 0.01  # ±1%
+
+max_position: 0.10  # 10% per asset
+cardinality_k: 15  # Target number of active positions
+
+transaction_cost_bps: 15  # 15 bps one-way (30 bps round-trip)
+estimation_window: 252
+
+# Group constraints
+groups:
+  commodities:
+    assets:
+      - DBC
+      - USO
+      - GLD
+      - SLV
+    max: 0.25  # ≤25% total
+
+  energy:
+    assets:
+      - DBC
+      - USO
+    max: 0.20  # ≤20% energy
+
+  crypto:
+    assets:
+      - IBIT
+      - ETHA
+    max: 0.12  # ≤12% total
+    per_asset_max: 0.08  # ≤8% per asset
+
+  us_equity:
+    assets:
+      - SPY
+      - QQQ
+      - IWM
+      - VTV
+      - VUG
+    max: 0.55  # ≤55%
+
+  treasuries:
+    assets:
+      - IEF
+      - TLT
+      - SHY
+    max: 0.45  # ≤45%
+
+# Estimator settings
+estimators:
+  window_days: 252
+  mu_method: simple
+  sigma_method: ledoit_wolf

@@ -1,0 +1,77 @@
+# Scripts Directory
+
+This directory contains executable Python scripts organized by purpose. All scripts can be run directly via Python or through the unified `itau-quant` CLI.
+
+## Directory Structure
+
+```
+scripts/
+├── examples/     # Demonstration and tutorial scripts
+├── research/     # Research and analysis scripts
+└── production/   # Production deployment scripts
+```
+
+## Usage
+
+### Direct Execution
+```bash
+# Run a script directly
+python scripts/examples/run_portfolio_arara.py
+```
+
+### Via CLI (Recommended)
+```bash
+# Install CLI entry point
+poetry install
+
+# Run through unified interface
+poetry run itau-quant run-example arara
+poetry run itau-quant compare-baselines
+poetry run itau-quant production-deploy --version v2
+```
+
+## Script Categories
+
+### Examples (`examples/`)
+Demonstration scripts for learning and testing:
+- `run_portfolio_arara.py` - Basic ARARA portfolio example
+- `run_portfolio_arara_robust.py` - Robust optimization with advanced features
+
+**CLI:** `poetry run itau-quant run-example [arara|robust]`
+
+### Research (`research/`)
+Analysis and experimentation scripts:
+- `run_baselines_comparison.py` - Compare baseline strategies (1/N, MV, RP)
+- `run_estimator_comparison.py` - Compare μ and Σ estimators
+- `run_grid_search_shrinkage.py` - Grid search for shrinkage parameters
+- `run_mu_skill_test.py` - Test μ forecasting skill
+- `run_backtest_walkforward.py` - Walk-forward backtest validation
+- `run_shrinkage_grid_search.py` - Alternative shrinkage grid search
+
+**CLI:**
+```bash
+poetry run itau-quant compare-baselines
+poetry run itau-quant compare-estimators
+poetry run itau-quant grid-search
+poetry run itau-quant test-skill
+poetry run itau-quant walkforward
+```
+
+### Production (`production/`)
+Production-ready deployment scripts:
+- `run_portfolio_production_erc.py` - Risk Parity (ERC) production system
+- `run_portfolio_production_erc_v2.py` - Calibrated ERC system (recommended)
+
+**CLI:** `poetry run itau-quant production-deploy [--version v1|v2]`
+
+## Development
+
+All scripts in this directory:
+1. Import from `src/itau_quant` package (not from root)
+2. Can be run standalone or via CLI
+3. Follow the project's code style (ruff, black)
+4. Are version controlled with git
+
+## Migration Notes
+
+These scripts were previously located in the project root directory. They have been reorganized into this structure for better maintainability and clarity.

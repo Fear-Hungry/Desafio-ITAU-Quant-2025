@@ -1,0 +1,20 @@
+# Basic Portfolio Configuration
+# Standard mean-variance optimization with moderate parameters
+
+risk_aversion: 3.0
+max_position: 0.15  # 15% per asset
+min_position: 0.0   # long-only
+turnover_penalty: 0.10
+estimation_window: 252  # 1 year
+shrinkage_method: ledoit_wolf
+
+# Estimator configuration
+estimators:
+  window_days: 252
+  mu_method: simple
+  sigma_method: ledoit_wolf
+
+# Data loading configuration
+data:
+  lookback_years: 3
+  min_history_days: 302  # window + 50 days buffer

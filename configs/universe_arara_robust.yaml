@@ -1,0 +1,51 @@
+# ARARA Robust Universe Configuration
+# Enhanced universe with spot Bitcoin/Ethereum ETFs
+
+name: ARARA_ROBUST
+description: |
+  Robust version of ARARA universe with spot crypto ETFs (IBIT, ETHA)
+  instead of futures-based BITO to avoid contango drag.
+
+tickers:
+  # US Equity (5)
+  - SPY
+  - QQQ
+  - IWM
+  - VTV
+  - VUG
+
+  # Developed Markets Equity (5)
+  - EFA
+  - VGK
+  - EWJ
+  - EWU
+  - EWG
+
+  # Emerging Markets Equity (5)
+  - EEM
+  - VWO
+  - EWZ
+  - FXI
+  - INDA
+
+  # Fixed Income (6)
+  - TLT
+  - IEF
+  - SHY
+  - LQD
+  - HYG
+  - EMB
+
+  # Commodities (4)
+  - GLD
+  - SLV
+  - DBC
+  - USO
+
+  # Real Estate (2)
+  - VNQ
+  - VNQI
+
+  # Crypto Spot ETFs (2)
+  - IBIT  # Bitcoin Spot ETF (BlackRock)
+  - ETHA  # Ethereum Spot ETF

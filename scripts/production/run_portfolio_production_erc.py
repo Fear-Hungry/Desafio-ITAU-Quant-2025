@@ -16,8 +16,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from production_monitor import should_fallback_to_1N, calculate_portfolio_metrics
-from production_logger import ProductionLogger
+from itau_quant.utils.production_monitor import should_fallback_to_1N, calculate_portfolio_metrics
+from itau_quant.utils.production_logger import ProductionLogger
 
 print("=" * 80)
 print("  PRISM-R - Sistema de Produção: Risk Parity (ERC)")

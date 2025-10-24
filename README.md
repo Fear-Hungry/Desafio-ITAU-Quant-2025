@@ -49,11 +49,48 @@ poetry install
 ### 2. Validar instalação
 
 ```bash
+# Run all tests
 poetry run pytest
+
+# Run specific test suite
+poetry run pytest tests/data/ tests/estimators/
+
+# Code quality checks
 poetry run ruff check src tests
+poetry run black --check src tests
 ```
 
-### 3. Pipeline mínimo de dados
+### 3. CLI Unificada
+
+O projeto oferece uma interface unificada via `itau-quant` CLI:
+
+```bash
+# Ver todos os comandos disponíveis
+poetry run itau-quant --help
+
+# Executar exemplo básico
+poetry run itau-quant run-example arara
+
+# Comparar estratégias baseline
+poetry run itau-quant compare-baselines
+
+# Deploy para produção
+poetry run itau-quant production-deploy --version v2
+
+# Ver configurações do sistema
+poetry run itau-quant show-settings --json
+```
+
+**Comandos principais:**
+- `run-example [arara|robust]` - Exemplos de portfolio
+- `compare-baselines` - Comparação de estratégias
+- `compare-estimators` - Análise de estimadores
+- `grid-search` - Grid search de parâmetros
+- `production-deploy` - Deploy produção
+
+📖 Ver `docs/QUICK_START_COMMANDS.md` para guia completo de comandos.
+
+### 4. Pipeline mínimo de dados
 
 ```python
 from itau_quant.data.loader import preprocess_data
@@ -67,17 +104,6 @@ print(returns.tail())
 
 1. Coloque o CSV bruto em `data/raw/` com a coluna de data como índice.
 2. O pipeline salva retornos em `data/processed/`, prontos para os estimadores.
-
-### 4. Executar backtest (quando o motor estiver ativo)
-
-```bash
-poetry run python -m itau_quant.backtesting.engine \
-  --config configs/optimizer_example.yaml \
-  --oos-start 2018-01-01
-```
-
-> O módulo `backtesting.engine` está em rascunho. Verifique o roadmap para prioridade
-> de implementação.
 
 ## 🔧 Variáveis de Ambiente
 
@@ -172,17 +198,45 @@ walkforward:
 
 ```
 ITAU-Quant/
-├── data/
-│   ├── raw/              # dumps imutáveis (CSV)
-│   └── processed/        # artefatos derivados (Parquet, Feather)
-├── notebooks/            # exploração e narrativas
-├── reports/              # PDFs finais e anexos
-├── src/itau_quant/       # código de produção (pacote)
-├── tests/                # suíte Pytest espelhando a árvore de src/
-├── configs/              # YAML de universo, otimização, backtests (a criar)
-├── PRD.md                # documento de produto detalhado
-└── README.md
+├── src/itau_quant/              # Código-fonte principal (pacote Python)
+│   ├── data/                    # Data loading e processing
+│   ├── estimators/              # Estimadores de μ, Σ (Huber, Ledoit-Wolf, BL)
+│   ├── optimization/            # Otimizadores (MV-QP, CVaR, Risk Parity, ERC)
+│   ├── backtesting/             # Engine de backtest e métricas
+│   ├── utils/                   # Utilitários (logging, production monitor)
+│   └── cli.py                   # Interface de linha de comando
+│
+├── scripts/                     # Scripts executáveis (organizados por propósito)
+│   ├── examples/                # Demonstrações (run_portfolio_arara.py, etc.)
+│   ├── research/                # Análises (compare_baselines, grid_search, etc.)
+│   └── production/              # Deploy produção (ERC v1, v2)
+│
+├── tests/                       # Testes unitários e integração
+│   ├── data/                    # Testes de data loading
+│   ├── estimators/              # Testes de estimadores
+│   ├── optimization/            # Testes de otimizadores
+│   └── integration/             # Testes de integração end-to-end
+│
+├── docs/                        # Documentação (organizada por categoria)
+│   ├── implementation/          # Notas de implementação
+│   ├── results/                 # Resultados e análises
+│   ├── operations/              # Runbooks de operação
+│   ├── QUICKSTART.md            # Tutorial básico
+│   └── QUICK_START_COMMANDS.md  # Referência de comandos CLI
+│
+├── data/                        # Dados e cache
+│   ├── raw/                     # Dumps imutáveis (CSV)
+│   └── processed/               # Artefatos derivados (Parquet)
+│
+├── configs/                     # Arquivos de configuração YAML
+├── notebooks/                   # Jupyter notebooks para exploração
+├── README.md                    # Este arquivo
+├── PRD.md                       # Product Requirements Document
+├── CLAUDE.md                    # Instruções para assistente AI
+└── pyproject.toml               # Configuração Poetry e CLI entry point
 ```
+
+**Nota:** Scripts foram reorganizados de root para `scripts/` e módulos standalone foram migrados para `src/itau_quant/`. Use a CLI `itau-quant` para acesso unificado.
 
 ## 🌍 Universo ARARA (resumo)
 

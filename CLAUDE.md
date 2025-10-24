@@ -190,31 +190,90 @@ for train_idx, test_idx in splitter.split(returns_df):
 
 ## Configuration System
 
-**Configs live in `configs/`:**
-- `universe_arara.yaml`: Asset universe definition (tickers, limits, groups)
-- `optimizer_example.yaml`: Full optimization spec (objective, constraints, estimators, rebalancing)
+The project uses a **Pydantic + YAML** configuration system for type-safe, validated configurations. All configuration parameters previously hardcoded in scripts have been extracted to YAML files in `configs/`.
 
-**YAML Schema for optimizer config:**
-```yaml
-universe: configs/universe_arara.yaml
-base_currency: BRL
-benchmark: {name: "ACWI60_AGG40_BRUnhedged"}
-rebalancing:
-  frequency: monthly
-  day_rule: first_business_day
-  turnover_target: [0.05, 0.20]
-optimizer:
-  objective: mean_variance_l1_costs
-  lambda: 6.0          # Risk aversion
-  eta: 0.50            # Turnover penalty
-  tau: 0.20            # Turnover cap
-  cardinality_kmin: 20
-  cardinality_kmax: 35
-  solver: ecos
-estimators:
-  mu: {method: huber, window_days: 252, delta: 1.5}
-  sigma: {method: ledoit_wolf, window_days: 252, nonlinear: true}
+### Configuration Files
+
+**Universe Configurations:**
+- `configs/universe_arara.yaml` - Basic ARARA universe (27 tickers)
+- `configs/universe_arara_robust.yaml` - Robust universe with spot crypto ETFs (30 tickers)
+
+**Portfolio Configurations:**
+- `configs/portfolio_arara_basic.yaml` - Standard mean-variance settings
+- `configs/portfolio_arara_robust.yaml` - Conservative settings with Huber estimator
+
+**Production Configurations:**
+- `configs/production_erc_v2.yaml` - ERC v2 with calibrated volatility/turnover targets
+- `configs/asset_groups.yaml` - Group constraints across asset classes
+
+### Configuration Schemas
+
+All configs are validated using Pydantic models in `src/itau_quant/config/schemas.py`:
+
+- **`UniverseConfig`**: Asset universe (name, tickers, description)
+- **`PortfolioConfig`**: Portfolio optimization parameters (risk_aversion, position limits, turnover)
+- **`ProductionConfig`**: Production system settings (vol_target, cardinality, group constraints)
+- **`EstimatorConfig`**: Estimator parameters (window, mu_method, sigma_method, huber_delta)
+- **`DataConfig`**: Data loading parameters (start_date, lookback_years, min_history_days)
+- **`AssetGroupConstraints`**: Group-level constraints (assets list, max, per_asset_max)
+
+### Loading Configurations
+
+```python
+from itau_quant.config import load_config, UniverseConfig, PortfolioConfig
+
+# Load and validate configs
+universe = load_config("configs/universe_arara.yaml", UniverseConfig)
+portfolio = load_config("configs/portfolio_arara_basic.yaml", PortfolioConfig)
+
+# Access validated fields
+tickers = universe.tickers  # List[str], uppercase, validated
+risk_aversion = portfolio.risk_aversion  # float, ge=0
+max_position = portfolio.max_position  # float, 0-1 range validated
 ```
+
+### Example YAML Config
+
+**`configs/portfolio_arara_basic.yaml`:**
+```yaml
+risk_aversion: 3.0
+max_position: 0.15  # 15% per asset
+min_position: 0.0   # long-only
+turnover_penalty: 0.10
+estimation_window: 252  # 1 year
+shrinkage_method: ledoit_wolf
+
+estimators:
+  window_days: 252
+  mu_method: simple
+  sigma_method: ledoit_wolf
+
+data:
+  lookback_years: 3
+  min_history_days: 302
+```
+
+### Using Configs in Scripts
+
+All example and production scripts now accept `--universe` and `--portfolio` (or `--config`) arguments:
+
+```bash
+# Use default configs
+poetry run python scripts/examples/run_portfolio_arara.py
+
+# Use custom configs
+poetry run python scripts/examples/run_portfolio_arara.py \
+    --universe configs/universe_arara_robust.yaml \
+    --portfolio configs/portfolio_arara_robust.yaml
+```
+
+### Configuration Best Practices
+
+1. **Never hardcode parameters** - Extract to YAML configs
+2. **Use Pydantic validation** - Leverage field validators for constraints
+3. **Provide sensible defaults** - Use `Field(default=...)` for optional parameters
+4. **Document in YAML comments** - Add inline comments explaining parameter choices
+5. **Version configs** - Commit config files to git for reproducibility
 
 ## Testing Philosophy
 

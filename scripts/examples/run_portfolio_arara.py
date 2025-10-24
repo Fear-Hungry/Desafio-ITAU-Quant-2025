@@ -4,14 +4,18 @@ PRISM-R - Portfolio Risk Intelligence System
 Carteira ARARA - ITAU Quant Challenge
 
 Script completo para rodar otimização de portfolio com dados reais.
+Agora usa arquivos YAML de configuração para flexibilidade.
 """
 
+import argparse
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+from itau_quant.config import load_config, UniverseConfig, PortfolioConfig
 
 print("=" * 80)
 print("  PRISM-R - Portfolio Risk Intelligence System")
@@ -23,65 +27,60 @@ print()
 # CONFIGURAÇÃO
 # ============================================================================
 
-# Universo ARARA (40+ ativos globais multi-asset)
-TICKERS = [
-    # Ações US
-    "SPY",
-    "QQQ",
-    "IWM",
-    "VTV",
-    "VUG",
-    # Ações Desenvolvidos
-    "EFA",
-    "VGK",
-    "EWJ",
-    "EWU",
-    "EWG",
-    # Ações Emergentes
-    "VWO",
-    "EWZ",
-    "INDA",
-    "EEM",
-    "FXI",
-    # Renda Fixa
-    "TLT",
-    "IEF",
-    "SHY",
-    "LQD",
-    "HYG",
-    "EMB",
-    # Commodities
-    "GLD",
-    "SLV",
-    "DBC",
-    "USO",
-    # Real Estate
-    "VNQ",
-    "VNQI",
-    # Crypto (via ETF)
-    "BITO",
-]
+# Parse command line arguments
+parser = argparse.ArgumentParser(description="Run ARARA portfolio optimization")
+parser.add_argument(
+    "--universe",
+    type=str,
+    default="configs/universe_arara.yaml",
+    help="Path to universe config file",
+)
+parser.add_argument(
+    "--portfolio",
+    type=str,
+    default="configs/portfolio_arara_basic.yaml",
+    help="Path to portfolio config file",
+)
+args = parser.parse_args()
+
+# Load configurations
+try:
+    universe_config = load_config(args.universe, UniverseConfig)
+    portfolio_config = load_config(args.portfolio, PortfolioConfig)
+except Exception as e:
+    print(f"❌ Error loading configuration: {e}")
+    sys.exit(1)
+
+# Extract parameters from configs
+TICKERS = universe_config.tickers
+RISK_AVERSION = portfolio_config.risk_aversion
+MAX_POSITION = portfolio_config.max_position
+MIN_POSITION = portfolio_config.min_position
+TURNOVER_PENALTY = portfolio_config.turnover_penalty
+ESTIMATION_WINDOW = portfolio_config.estimation_window
+SHRINKAGE_METHOD = portfolio_config.shrinkage_method
+
+# Data parameters
+if portfolio_config.data:
+    lookback_years = portfolio_config.data.lookback_years
+    min_history_days = portfolio_config.data.min_history_days
+else:
+    lookback_years = 3
+    min_history_days = 302
 
 # Período de análise
 END_DATE = datetime.today()
-START_DATE = END_DATE - timedelta(days=365 * 3)  # 3 anos
-
-# Parâmetros de otimização
-RISK_AVERSION = 3.0  # λ - moderado (2-4)
-MAX_POSITION = 0.15  # 15% max por ativo
-MIN_POSITION = 0.00  # long-only
-TURNOVER_PENALTY = 0.10  # penalidade de giro
-
-# Parâmetros de estimação
-ESTIMATION_WINDOW = 252  # 1 ano
-SHRINKAGE_METHOD = "ledoit_wolf"  # ou 'nonlinear', 'tyler'
+START_DATE = END_DATE - timedelta(days=365 * lookback_years)
 
 print(f"📊 Configuração:")
-print(f"   • Universo: {len(TICKERS)} ativos")
+print(f"   • Universe: {universe_config.name} ({len(TICKERS)} ativos)")
 print(f"   • Período: {START_DATE.date()} a {END_DATE.date()}")
 print(f"   • Risk Aversion: {RISK_AVERSION}")
 print(f"   • Max Position: {MAX_POSITION:.1%}")
 print(f"   • Window: {ESTIMATION_WINDOW} dias")
+print(f"   • Config files:")
+print(f"      - Universe: {args.universe}")
+print(f"      - Portfolio: {args.portfolio}")
 print()
 
 # ============================================================================
@@ -115,7 +114,7 @@ try:
     prices = prices.ffill().bfill()
 
     # Filtrar ativos com dados suficientes
-    min_obs = ESTIMATION_WINDOW + 50
+    min_obs = min_history_days
     valid_tickers = []
     for ticker in TICKERS:
         if ticker in prices.columns and prices[ticker].notna().sum() >= min_obs:

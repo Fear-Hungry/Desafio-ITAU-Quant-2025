@@ -1,0 +1,52 @@
+# Asset Group Constraints
+# Used for enforcing diversification limits across asset classes
+
+groups:
+  crypto:
+    assets:
+      - IBIT
+      - ETHA
+      - BITO
+    max: 0.10  # ≤10% total
+    per_asset_max: 0.08  # ≤8% per asset
+
+  precious:
+    assets:
+      - GLD
+      - SLV
+    max: 0.15  # ≤15% total
+
+  commodities_all:
+    assets:
+      - GLD
+      - SLV
+      - DBC
+      - USO
+    max: 0.25  # ≤25% total
+
+  energy:
+    assets:
+      - DBC
+      - USO
+    max: 0.20  # ≤20% energy
+
+  china:
+    assets:
+      - FXI
+    max: 0.10  # ≤10%
+
+  us_equity:
+    assets:
+      - SPY
+      - QQQ
+      - IWM
+      - VTV
+      - VUG
+    max: 0.70  # ≤70%
+
+  treasuries:
+    assets:
+      - IEF
+      - TLT
+      - SHY
+    max: 0.45  # ≤45%

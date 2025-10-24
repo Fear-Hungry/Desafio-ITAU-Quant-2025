@@ -10,31 +10,18 @@ Script ROBUSTO para otimização de portfolio com:
 - Universo corrigido (IBIT spot vs BITO futuros)
 - Budget constraints FUNCIONANDO ✅
 
-CORREÇÕES APLICADAS:
-- BITO → IBIT (ETF spot sem contango drag)
-- MAX_POSITION: 15% → 10%
-- Limites por classe: Crypto ≤ 10%, Precious ≤ 15%, Commodities ≤ 25%, China ≤ 10%
-- Custos: 30 bps round-trip
-- Turnover cap: 12% por rebalance
-- μ estimado via Huber (robusto)
-
-VALIDAÇÃO OOS (2025-10-22) - Walk-Forward 4 anos:
-- MV Huber: Sharpe 0.81, Max DD -16.80%
-- MV Shrunk50: Sharpe 0.75 (pior)
-- MV Shrunk20: Sharpe 0.71 (ainda pior)
-- 1/N baseline: Sharpe 1.05 ★ MELHOR
-- Risk Parity: Sharpe 1.05 ★ EMPATE
-
-CONCLUSÃO: Estratégias simples superaram MV neste universo/período.
-Para produção real, recomenda-se 1/N ou Risk Parity.
+Agora usa arquivos YAML de configuração para flexibilidade.
 """
 
+import argparse
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+from itau_quant.config import load_config, UniverseConfig, PortfolioConfig
 
 print("=" * 80)
 print("  PRISM-R - Portfolio Risk Intelligence System")
@@ -46,91 +33,72 @@ print()
 # CONFIGURAÇÃO ROBUSTA
 # ============================================================================
 
-# Universo ARARA CORRIGIDO (IBIT spot, não BITO futuros)
-TICKERS = [
-    # Ações US
-    "SPY",
-    "QQQ",
-    "IWM",
-    "VTV",
-    "VUG",
-    # Ações Desenvolvidos
-    "EFA",
-    "VGK",
-    "EWJ",
-    "EWU",
-    "EWG",
-    # Ações Emergentes (amplo + específico)
-    "EEM",
-    "VWO",
-    "EWZ",
-    "FXI",
-    "INDA",
-    # Renda Fixa
-    "TLT",
-    "IEF",
-    "SHY",
-    "LQD",
-    "HYG",
-    "EMB",
-    # Commodities
-    "GLD",
-    "SLV",
-    "DBC",
-    "USO",
-    # Real Estate
-    "VNQ",
-    "VNQI",
-    # Crypto SPOT (CORRIGIDO)
-    "IBIT",  # Bitcoin spot ETF (BlackRock)
-    "ETHA",  # Ethereum spot ETF (opcional)
-]
+# Parse command line arguments
+parser = argparse.ArgumentParser(description="Run ARARA robust portfolio optimization")
+parser.add_argument(
+    "--universe",
+    type=str,
+    default="configs/universe_arara_robust.yaml",
+    help="Path to universe config file",
+)
+parser.add_argument(
+    "--portfolio",
+    type=str,
+    default="configs/portfolio_arara_robust.yaml",
+    help="Path to portfolio config file",
+)
+args = parser.parse_args()
+
+# Load configurations
+try:
+    universe_config = load_config(args.universe, UniverseConfig)
+    portfolio_config = load_config(args.portfolio, PortfolioConfig)
+except Exception as e:
+    print(f"❌ Error loading configuration: {e}")
+    sys.exit(1)
+
+# Extract parameters from configs
+TICKERS = universe_config.tickers
+RISK_AVERSION = portfolio_config.risk_aversion
+MAX_POSITION = portfolio_config.max_position
+MIN_POSITION = portfolio_config.min_position
+TURNOVER_PENALTY = portfolio_config.turnover_penalty
+ESTIMATION_WINDOW = portfolio_config.estimation_window
+SHRINKAGE_METHOD = portfolio_config.shrinkage_method
+
+# Estimator parameters
+if portfolio_config.estimators:
+    HUBER_DELTA = portfolio_config.estimators.huber_delta
+else:
+    HUBER_DELTA = 1.5
+
+# Data parameters
+if portfolio_config.data:
+    lookback_years = portfolio_config.data.lookback_years
+    min_history_days = portfolio_config.data.min_history_days
+else:
+    lookback_years = 3
+    min_history_days = 302
 
 # Período de análise
 END_DATE = datetime.today()
-START_DATE = END_DATE - timedelta(days=365 * 3)  # 3 anos
+START_DATE = END_DATE - timedelta(days=365 * lookback_years)
 
-# Parâmetros ROBUSTOS
-RISK_AVERSION = 4.0  # λ - mais conservador (vs 3.0 original)
-MAX_POSITION = 0.10  # 10% max por ativo (vs 15% original)
-MIN_POSITION = 0.00  # long-only
-TURNOVER_PENALTY = 0.0015  # 15 bps por 1% turnover (vs 0.10 original)
-TURNOVER_CAP = 0.12  # 12% max por rebalance
+# Transaction costs (not in basic schema yet, using hardcoded default)
 TRANSACTION_COST_BPS = 30  # 30 bps round-trip
 
-# Parâmetros de estimação
-ESTIMATION_WINDOW = 252  # 1 ano
-SHRINKAGE_METHOD = "ledoit_wolf"
-HUBER_DELTA = 1.5  # Parâmetro de robustez do Huber mean
-
-# Limites por classe de ativo
-CLASS_LIMITS = {
-    "crypto": 0.10,  # Crypto ≤ 10%
-    "precious": 0.15,  # GLD + SLV ≤ 15%
-    "commodities_all": 0.25,  # Todas commodities ≤ 25%
-    "china": 0.10,  # FXI ≤ 10%
-    "us_equity_min": 0.30,  # US Equity ≥ 30%
-    "us_equity_max": 0.70,  # US Equity ≤ 70%
-}
-
 print(f"📊 Configuração ROBUSTA:")
-print(f"   • Universo: {len(TICKERS)} ativos")
+print(f"   • Universe: {universe_config.name} ({len(TICKERS)} ativos)")
 print(f"   • Período: {START_DATE.date()} a {END_DATE.date()}")
-print(f"   • Risk Aversion: {RISK_AVERSION} (vs 3.0 original)")
-print(f"   • Max Position: {MAX_POSITION:.1%} (vs 15% original)")
-print(f"   • Turnover Cap: {TURNOVER_CAP:.1%} por rebalance")
+print(f"   • Risk Aversion: {RISK_AVERSION}")
+print(f"   • Max Position: {MAX_POSITION:.1%}")
+print(f"   • Turnover Penalty: {TURNOVER_PENALTY}")
 print(f"   • Transaction Costs: {TRANSACTION_COST_BPS} bps round-trip")
 print(f"   • Window: {ESTIMATION_WINDOW} dias")
 print(f"   • μ estimador: Huber (robust, delta={HUBER_DELTA})")
-print()
-print(f"   Limites por classe:")
-print(f"      • Crypto ≤ {CLASS_LIMITS['crypto']:.0%}")
-print(f"      • Precious metals ≤ {CLASS_LIMITS['precious']:.0%}")
-print(f"      • Commodities total ≤ {CLASS_LIMITS['commodities_all']:.0%}")
-print(f"      • China ≤ {CLASS_LIMITS['china']:.0%}")
-print(
-    f"      • US Equity: {CLASS_LIMITS['us_equity_min']:.0%}-{CLASS_LIMITS['us_equity_max']:.0%}"
-)
+print(f"   • Config files:")
+print(f"      - Universe: {args.universe}")
+print(f"      - Portfolio: {args.portfolio}")
 print()
 
 # ============================================================================
@@ -159,7 +127,7 @@ try:
     prices = prices.ffill().bfill()
 
     # Filtrar ativos com dados suficientes
-    min_obs = ESTIMATION_WINDOW + 50
+    min_obs = min_history_days
     valid_tickers = []
     for ticker in TICKERS:
         if ticker in prices.columns and prices[ticker].notna().sum() >= min_obs:

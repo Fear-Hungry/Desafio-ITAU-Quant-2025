@@ -1,0 +1,50 @@
+# ARARA Universe Configuration
+# Multi-asset global portfolio with 27 ETFs
+
+name: ARARA
+description: |
+  Global multi-asset portfolio covering US/Intl/EM equities, fixed income,
+  commodities, real estate, and crypto exposure.
+
+tickers:
+  # US Equity (5)
+  - SPY  # S&P 500
+  - QQQ  # Nasdaq 100
+  - IWM  # Russell 2000
+  - VTV  # Value
+  - VUG  # Growth
+
+  # Developed Markets Equity (5)
+  - EFA  # EAFE
+  - VGK  # Europe
+  - EWJ  # Japan
+  - EWU  # UK
+  - EWG  # Germany
+
+  # Emerging Markets Equity (5)
+  - VWO  # EM Broad
+  - EWZ  # Brazil
+  - INDA # India
+  - EEM  # EM Core
+  - FXI  # China
+
+  # Fixed Income (6)
+  - TLT  # Long-term Treasury
+  - IEF  # Intermediate Treasury
+  - SHY  # Short-term Treasury
+  - LQD  # Investment Grade Corp
+  - HYG  # High Yield
+  - EMB  # EM Bonds
+
+  # Commodities (4)
+  - GLD  # Gold
+  - SLV  # Silver
+  - DBC  # Commodity Index
+  - USO  # Oil
+
+  # Real Estate (2)
+  - VNQ  # US REIT
+  - VNQI # International REIT
+
+  # Crypto (1)
+  - BITO # Bitcoin Futures ETF

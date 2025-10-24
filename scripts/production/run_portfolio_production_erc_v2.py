@@ -16,10 +16,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from production_monitor import should_fallback_to_1N, calculate_portfolio_metrics
-from production_logger import ProductionLogger
+from itau_quant.utils.production_monitor import should_fallback_to_1N, calculate_portfolio_metrics
+from itau_quant.utils.production_logger import ProductionLogger
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from erc_calibrated import (
+from itau_quant.optimization.erc_calibrated import (
     calibrate_gamma_for_vol,
     calibrate_eta_for_turnover,
     solve_erc_with_cardinality,
@@ -140,7 +140,7 @@ else:
 
     # Passo 1: Resolver ERC unconstrained para selecionar top-K
     print(f"   📐 Selecionando top-{CARDINALITY_K} ativos...")
-    from erc_calibrated import solve_erc_core
+    from itau_quant.optimization.erc_calibrated import solve_erc_core
     w_unconstrained, _ = solve_erc_core(
         cov=cov_annual.values,
         w_prev=w_prev,
