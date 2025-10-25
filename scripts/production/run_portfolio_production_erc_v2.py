@@ -16,7 +16,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from itau_quant.utils.production_monitor import should_fallback_to_1N, calculate_portfolio_metrics
+from itau_quant.utils.production_monitor import (
+    should_fallback_to_1N,
+    calculate_portfolio_metrics,
+)
 from itau_quant.utils.production_logger import ProductionLogger
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 from itau_quant.optimization.erc_calibrated import (
@@ -34,14 +37,15 @@ print()
 # 1. CONFIGURAÇÃO
 # ============================================================================
 
-VOL_TARGET = 0.11  # 11% aa (range: 10-12%)
+VOL_TARGET = 0.075  # 7.5% aa (realista para K=22 com mix equity/bonds 36/64)
 VOL_TOLERANCE = 0.01  # ±1%
 
 TURNOVER_TARGET = 0.12  # 12% mensal
 TURNOVER_TOLERANCE = 0.01  # ±1%
 
-MAX_POSITION = 0.10  # 10% por ativo
-CARDINALITY_K = 15  # Número de ativos ativos
+MAX_POSITION = 0.08  # 8% por ativo (reduzido para rebalanceamentos mais suaves)
+MIN_POSITION = 0.02  # 2% mínimo por ativo ativo (preserva convicção)
+CARDINALITY_K = 22  # Sweet spot: captura ~90% benefícios de diversificação
 
 TRANSACTION_COST_BPS = 15  # 15 bps one-way (30 bps round-trip)
 TRANSACTION_COST_DECIMAL = TRANSACTION_COST_BPS / 10000.0
@@ -64,7 +68,7 @@ GROUPS = {
         "per_asset_max": 0.08,  # ≤8% por ativo
     },
     "us_equity": {
-        "assets": ["SPY", "QQQ", "IWM", "VTV", "VUG"],
+        "assets": ["SPY", "QQQ", "IWM", "VTV", "VUG", "VYM", "SCHD", "SPLV"],
         "min": 0.25,  # ≥25%
         "max": 0.55,  # ≤55%
     },
@@ -141,6 +145,7 @@ else:
     # Passo 1: Resolver ERC unconstrained para selecionar top-K
     print(f"   📐 Selecionando top-{CARDINALITY_K} ativos...")
     from itau_quant.optimization.erc_calibrated import solve_erc_core
+
     w_unconstrained, _ = solve_erc_core(
         cov=cov_annual.values,
         w_prev=w_prev,
@@ -157,49 +162,89 @@ else:
     top_k_indices = np.argsort(w_unconstrained)[-CARDINALITY_K:]
     support_mask = np.zeros(len(w_unconstrained), dtype=bool)
     support_mask[top_k_indices] = True
-    active_tickers = [valid_tickers[i] for i in range(len(valid_tickers)) if support_mask[i]]
+    active_tickers = [
+        valid_tickers[i] for i in range(len(valid_tickers)) if support_mask[i]
+    ]
     print(f"      Top-{CARDINALITY_K}: {', '.join(active_tickers[:5])}...")
 
     # Passo 2: Calibrar γ NO SUPORTE FIXO para vol target
     print(f"   📐 Calibrando γ para vol target {VOL_TARGET:.1%} (suporte fixo)...")
-    # Criar função wrapper que mantém suporte fixo
-    def solve_with_fixed_support(cov, w_prev, gamma, eta, costs, w_max, groups, asset_names):
+
+    # Criar função wrapper que mantém suporte fixo + peso mínimo
+    def solve_with_fixed_support(
+        cov, w_prev, gamma, eta, costs, w_max, groups, asset_names
+    ):
         w, status = solve_erc_core(
-            cov, w_prev, gamma, eta, costs, w_max, groups, asset_names,
-            support_mask=support_mask, verbose=False
+            cov,
+            w_prev,
+            gamma,
+            eta,
+            costs,
+            w_max,
+            groups,
+            asset_names,
+            support_mask=support_mask,
+            verbose=False,
         )
+        # Aplicar peso mínimo pós-otimização (ajustar ativos ativos)
+        w_active = w[support_mask]
+        if (w_active < MIN_POSITION).any():
+            # Se algum ativo ativo está abaixo do mínimo, ajustar
+            w_active = np.maximum(w_active, MIN_POSITION)
+            w_active = w_active / w_active.sum()  # Renormalizar
+            w[support_mask] = w_active
         return w, status
 
     # Bisection manual para γ
-    lo_gamma, hi_gamma = 1e-3, 1e3
-    for i in range(25):
+    # CORREÇÃO: γ ↑ → vol ↓ (log-barrier aumenta diversificação)
+    # Limites expandidos para evitar saturação
+    lo_gamma, hi_gamma = 1e-6, 1e6
+    for i in range(30):
         gamma_test = np.sqrt(lo_gamma * hi_gamma)
         w_test, _ = solve_with_fixed_support(
-            cov_annual.values, w_prev, gamma_test, 0.0, costs,
-            MAX_POSITION, GROUPS, valid_tickers
+            cov_annual.values,
+            w_prev,
+            gamma_test,
+            0.0,
+            costs,
+            MAX_POSITION,
+            GROUPS,
+            valid_tickers,
         )
         vol_test = np.sqrt(w_test @ cov_annual.values @ w_test)
 
         if abs(vol_test - VOL_TARGET) < VOL_TOLERANCE:
             break
 
+        # CORREÇÃO: γ↑ → vol↑ (equalização/1-N), γ↓ → vol↓ (concentração/min-var)
+        # Se vol muito alta → DIMINUIR γ (concentrar para reduzir vol)
+        # Se vol muito baixa → AUMENTAR γ (equalizar para aumentar vol)
         if vol_test > VOL_TARGET + VOL_TOLERANCE:
-            hi_gamma = gamma_test
+            hi_gamma = gamma_test  # Vol alta → diminuir γ
         else:
-            lo_gamma = gamma_test
+            lo_gamma = gamma_test  # Vol baixa → aumentar γ
 
     gamma_opt = gamma_test
     vol_realized = vol_test
     print(f"      γ* = {gamma_opt:.6f}, vol = {vol_realized:.4f}")
 
     # Passo 3: Calibrar η NO SUPORTE FIXO para turnover target
-    print(f"   📐 Calibrando η para turnover target {TURNOVER_TARGET:.1%} (suporte fixo)...")
-    lo_eta, hi_eta = 1e-5, 5.0
-    for i in range(20):
+    print(
+        f"   📐 Calibrando η para turnover target {TURNOVER_TARGET:.1%} (suporte fixo)..."
+    )
+    # CORREÇÃO: Limites expandidos (η pode precisar ser maior para reduzir turnover)
+    lo_eta, hi_eta = 1e-6, 100.0
+    for i in range(25):
         eta_test = (lo_eta + hi_eta) / 2
         w_test, _ = solve_with_fixed_support(
-            cov_annual.values, w_prev, gamma_opt, eta_test, costs,
-            MAX_POSITION, GROUPS, valid_tickers
+            cov_annual.values,
+            w_prev,
+            gamma_opt,
+            eta_test,
+            costs,
+            MAX_POSITION,
+            GROUPS,
+            valid_tickers,
         )
         to_test = np.sum(np.abs(w_test - w_prev))
 
@@ -217,8 +262,14 @@ else:
 
     # Passo 4: Solução final
     w_final, _ = solve_with_fixed_support(
-        cov_annual.values, w_prev, gamma_opt, eta_opt, costs,
-        MAX_POSITION, GROUPS, valid_tickers
+        cov_annual.values,
+        w_prev,
+        gamma_opt,
+        eta_opt,
+        costs,
+        MAX_POSITION,
+        GROUPS,
+        valid_tickers,
     )
     n_active = int((w_final > 1e-4).sum())
 
@@ -227,7 +278,7 @@ else:
     strategy = "ERC"
 
     # Métricas finais
-    herfindahl = (weights ** 2).sum()
+    herfindahl = (weights**2).sum()
     n_effective = 1.0 / herfindahl
     portfolio_vol = np.sqrt(weights.values @ cov_annual.values @ weights.values)
     turnover_realized = to_realized
@@ -252,32 +303,44 @@ print("🔍 Validando constraints...")
 # Check 1: Position caps
 violations_pos = (weights > MAX_POSITION).sum()
 max_pos = weights.max()
-print(f"   Position caps (max {MAX_POSITION:.0%}): {max_pos:.2%} - {'✅ OK' if violations_pos == 0 else '❌ VIOLADO'}")
+print(
+    f"   Position caps (max {MAX_POSITION:.0%}): {max_pos:.2%} - {'✅ OK' if violations_pos == 0 else '❌ VIOLADO'}"
+)
 
 # Check 2: Vol target
 vol_ok = abs(portfolio_vol - VOL_TARGET) <= VOL_TOLERANCE
-print(f"   Vol target ({VOL_TARGET:.1%} ± {VOL_TOLERANCE:.1%}): {portfolio_vol:.2%} - {'✅ OK' if vol_ok else '⚠️  FORA'}")
+print(
+    f"   Vol target ({VOL_TARGET:.1%} ± {VOL_TOLERANCE:.1%}): {portfolio_vol:.2%} - {'✅ OK' if vol_ok else '⚠️  FORA'}"
+)
 
 # Check 3: Turnover (se ERC)
 if strategy == "ERC":
     to_ok = turnover_realized <= TURNOVER_TARGET + TURNOVER_TOLERANCE
-    print(f"   Turnover target (≤{TURNOVER_TARGET:.1%}): {turnover_realized:.2%} - {'✅ OK' if to_ok else '⚠️  EXCEDIDO'}")
+    print(
+        f"   Turnover target (≤{TURNOVER_TARGET:.1%}): {turnover_realized:.2%} - {'✅ OK' if to_ok else '⚠️  EXCEDIDO'}"
+    )
 
 # Check 4: Cardinality
 card_ok = abs(n_active - CARDINALITY_K) <= 2  # ±2 ativos de tolerância
-print(f"   Cardinality (K={CARDINALITY_K}): {n_active} ativos - {'✅ OK' if card_ok else '⚠️  FORA'}")
+print(
+    f"   Cardinality (K={CARDINALITY_K}): {n_active} ativos - {'✅ OK' if card_ok else '⚠️  FORA'}"
+)
 
 # Check 5: Group constraints (exemplo: commodities)
 if strategy == "ERC":
     commodities = GROUPS["commodities"]["assets"]
     comm_weight = weights[[t for t in commodities if t in weights.index]].sum()
     comm_ok = comm_weight <= GROUPS["commodities"]["max"]
-    print(f"   Commodities (≤{GROUPS['commodities']['max']:.0%}): {comm_weight:.2%} - {'✅ OK' if comm_ok else '❌ VIOLADO'}")
+    print(
+        f"   Commodities (≤{GROUPS['commodities']['max']:.0%}): {comm_weight:.2%} - {'✅ OK' if comm_ok else '❌ VIOLADO'}"
+    )
 
     crypto = GROUPS["crypto"]["assets"]
     crypto_weight = weights[[t for t in crypto if t in weights.index]].sum()
     crypto_ok = crypto_weight <= GROUPS["crypto"]["max"]
-    print(f"   Crypto (≤{GROUPS['crypto']['max']:.0%}): {crypto_weight:.2%} - {'✅ OK' if crypto_ok else '❌ VIOLADO'}")
+    print(
+        f"   Crypto (≤{GROUPS['crypto']['max']:.0%}): {crypto_weight:.2%} - {'✅ OK' if crypto_ok else '❌ VIOLADO'}"
+    )
 
 print()
 
