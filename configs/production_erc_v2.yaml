@@ -1,10 +1,10 @@
-# Production ERC v2 Configuration - OPTIMIZED FOR EXECUTION
+# Production ERC v2.1 Configuration - WITH DEFENSIVE OVERLAY
 # Equal Risk Contribution with professional cardinality (K=22)
-# Optimized: 2025-10-25 - Transition from K=45 to K=22 sweet spot
+# Optimized: 2025-10-26 - Added defensive overlay (DD validated: -14.8%)
 
-# Volatility targeting
-vol_target: 0.075 # 7.5% annualized (realistic for K=22 with equity/bonds 36/64 mix)
-vol_tolerance: 0.01 # ±1%
+# Volatility targeting (UPDATED - sweet spot for balanced allocation)
+vol_target: 0.12 # 12% annualized (increased to boost equity/growth allocation)
+vol_tolerance: 0.02 # ±2%
 
 # Turnover control
 turnover_target: 0.12 # 12% monthly
@@ -19,8 +19,52 @@ cardinality_k: 22 # Sweet spot: captures ~90% diversification benefits
 transaction_cost_bps: 15 # 15 bps one-way (30 bps round-trip)
 estimation_window: 252 # 1 year rolling window
 
-# Group constraints
+# Defensive Overlay (UPDATED - dynamic CASH allocation)
+defensive_overlay:
+  enabled: true
+  cash_floor_normal: 0.15 # 15% CASH in normal regime (maximizes equity allocation)
+  cash_floor_defensive: 0.40 # 40% CASH when triggers activate (protection)
+  drawdown_limit: 0.15 # Activate defensive mode if DD > 15%
+  recovery_threshold: 0.03 # Deactivate if recovery > 3%
+
+  # Defensive template (applied when triggers activate)
+  template:
+    CASH: 0.40
+    IEF: 0.30
+    TLT: 0.15
+    LQD: 0.10
+    GLD: 0.05
+
+  # SPY trend filters
+  spy_filters:
+    ma200: true # SPY < MA200 → risk-off
+    ma50: true # SPY < MA50 → risk-off
+    momentum_126d: 0.00 # 126d return < 0% → risk-off
+    momentum_63d: -0.02 # 63d return < -2% → risk-off
+
+  blend_weight: 1.0 # 100% defensive when triggers activate
+
+# Group constraints (UPDATED - balanced allocation with CASH 40%)
 groups:
+  # NEW: Cap total bonds to avoid 100% defensive allocation
+  all_bonds:
+    assets:
+      - SHY
+      - IEF
+      - IEI
+      - TLT
+      - AGG
+      - VGSH
+      - VGIT
+      - VCSH
+      - BNDX
+      - LQD
+      - HYG
+      - EMB
+      - EMLC
+      - TIP
+    max: 0.50 # ≤50% total bonds (leaves room for equity + CASH)
+
   commodities:
     assets:
       - DBC
@@ -45,6 +89,7 @@ groups:
     max: 0.12 # ≤12% total
     per_asset_max: 0.08 # ≤8% per asset
 
+  # UPDATED: Adjusted for CASH 40% floor (constraints relaxed for feasibility)
   us_equity:
     assets:
       - SPY
@@ -55,8 +100,33 @@ groups:
       - VYM
       - SCHD
       - SPLV
-    min: 0.25 # ≥25% minimum exposure
-    max: 0.55 # ≤55%
+      - USMV
+      - MTUM
+      - QUAL
+      - VLUE
+      - SIZE
+    min: 0.10 # ≥10% minimum (relaxed from 15% for feasibility)
+    max: 0.50 # ≤50%
+
+  # NEW: Growth assets minimum (subset of us_equity, so lower bound)
+  growth_assets:
+    assets:
+      - SPY
+      - QQQ
+      - VUG
+      - MTUM
+    min: 0.05 # ≥5% growth exposure (relaxed from 10%)
+
+  # NEW: International equity minimum
+  international_equity:
+    assets:
+      - EFA
+      - VGK
+      - VPL
+      - EEM
+      - VWO
+    min: 0.03 # ≥3% international (relaxed from 5%)
+    max: 0.25 # ≤25%
 
   treasuries:
     assets:

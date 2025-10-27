@@ -15,6 +15,7 @@ Agora usa arquivos YAML de configuração para flexibilidade.
 
 import argparse
 import sys
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -87,6 +88,59 @@ START_DATE = END_DATE - timedelta(days=365 * lookback_years)
 # Transaction costs (not in basic schema yet, using hardcoded default)
 TRANSACTION_COST_BPS = 30  # 30 bps round-trip
 
+# Risk budget limits (defaults can be overridden in config if present)
+DEFAULT_CLASS_LIMITS = {
+    "crypto": 0.10,
+    "precious": 0.15,
+    "commodities_all": 0.25,
+    "china": 0.10,
+    "us_equity_min": 0.30,
+    "us_equity_max": 0.70,
+}
+
+CLASS_LIMITS = DEFAULT_CLASS_LIMITS.copy()
+config_class_limits = getattr(portfolio_config, "class_limits", None)
+if config_class_limits:
+    if hasattr(config_class_limits, "model_dump"):
+        CLASS_LIMITS.update(config_class_limits.model_dump())
+    elif isinstance(config_class_limits, dict):
+        CLASS_LIMITS.update(config_class_limits)
+
+TURNOVER_CAP = getattr(portfolio_config, "turnover_cap", 0.15)
+
+MAX_DOWNLOAD_RETRIES = 3
+RETRY_SLEEP_SECONDS = 5
+
+
+def _download_market_data(tickers, start, end):
+    """Download market data with simple retry/backoff."""
+    last_error: Exception | None = None
+    for attempt in range(1, MAX_DOWNLOAD_RETRIES + 1):
+        try:
+            data = yf.download(
+                tickers=tickers,
+                start=start,
+                end=end,
+                progress=False,
+                auto_adjust=True,
+            )
+            if data is None or data.empty:
+                raise RuntimeError("yfinance retornou DataFrame vazio.")
+
+            if attempt > 1:
+                print(f"   ✅ Download concluído na tentativa {attempt}.")
+            return data
+        except Exception as exc:  # noqa: BLE001 - log de erro específico
+            last_error = exc
+            print(
+                f"   ⚠️  Falha na tentativa {attempt}/{MAX_DOWNLOAD_RETRIES}: {exc}"
+            )
+            if attempt < MAX_DOWNLOAD_RETRIES:
+                print(f"   ⏳ Aguardando {RETRY_SLEEP_SECONDS}s antes de tentar novamente...")
+                time.sleep(RETRY_SLEEP_SECONDS)
+
+    raise RuntimeError("Falha ao baixar dados após múltiplas tentativas.") from last_error
+
 print(f"📊 Configuração ROBUSTA:")
 print(f"   • Universe: {universe_config.name} ({len(TICKERS)} ativos)")
 print(f"   • Período: {START_DATE.date()} a {END_DATE.date()}")
@@ -110,13 +164,7 @@ try:
     import yfinance as yf
 
     print(f"   Baixando dados de {len(TICKERS)} ativos...")
-    data = yf.download(
-        tickers=TICKERS,
-        start=START_DATE,
-        end=END_DATE,
-        progress=False,
-        auto_adjust=True,
-    )
+    data = _download_market_data(TICKERS, START_DATE, END_DATE)
 
     if isinstance(data.columns, pd.MultiIndex):
         prices = data["Close"]

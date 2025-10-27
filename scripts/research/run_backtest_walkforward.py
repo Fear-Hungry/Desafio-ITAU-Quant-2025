@@ -48,8 +48,8 @@ TEST_WINDOW = 21  # 1 mês de teste
 REBALANCE_FREQ = 21  # rebalancear mensalmente
 
 # Optimizer config
-RISK_AVERSION = 3.0
-MAX_POSITION = 0.30
+RISK_AVERSION = 8.0
+MAX_POSITION = 0.20
 
 print(f"📊 Configuração Backtest:")
 print(f"   • Universo: {len(TICKERS)} ativos")
@@ -83,6 +83,18 @@ try:
     prices = prices.dropna(how="all")
     prices = prices.ffill().bfill()
 
+    spy_ma200 = None
+    spy_ma50 = None
+    spy_ret126 = None
+    spy_ret63 = None
+    if "SPY" in prices.columns:
+        spy_ma200 = prices["SPY"].rolling(200).mean()
+        spy_ma50 = prices["SPY"].rolling(50).mean()
+        spy_cum126 = prices["SPY"] / prices["SPY"].shift(126) - 1
+        spy_cum63 = prices["SPY"] / prices["SPY"].shift(63) - 1
+        spy_ret126 = spy_cum126
+        spy_ret63 = spy_cum63
+
     # Filtrar ativos válidos
     valid_tickers = []
     for ticker in TICKERS:
@@ -93,7 +105,11 @@ try:
             valid_tickers.append(ticker)
 
     prices = prices[valid_tickers]
+    prices["CASH"] = 1.0
     returns = prices.pct_change().dropna()
+    returns["CASH"] = 0.0
+    if "CASH" not in valid_tickers:
+        valid_tickers.append("CASH")
 
     print(f"   ✅ Dados carregados: {len(returns)} dias, {len(valid_tickers)} ativos")
     print(f"   ✅ Período: {returns.index[0].date()} a {returns.index[-1].date()}")
@@ -142,6 +158,18 @@ from itau_quant.estimators.mu import mean_return
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
 
+DEFENSIVE_BLEND = 1.0
+DEFENSIVE_TEMPLATE = {
+    "CASH": 0.40,
+    "IEF": 0.30,
+    "TLT": 0.15,
+    "LQD": 0.10,
+    "GLD": 0.05,
+}
+DRAWDOWN_LIMIT = 0.15
+RECOVERY_THRESHOLD = 0.03
+
+
 # Armazenar resultados
 portfolio_returns = []
 portfolio_weights_history = []
@@ -150,6 +178,8 @@ dates = []
 initial_capital = 1.0
 nav = initial_capital
 nav_series = []
+nav_peak = nav
+in_drawdown_mode = False
 
 print(f"   Processando {len(splits)} períodos...")
 
@@ -162,30 +192,107 @@ for i, split in enumerate(splits):
         continue
 
     try:
-        # Estimar parâmetros no train set
-        mu = mean_return(train_returns) * 252
-        sigma, _ = ledoit_wolf_shrinkage(train_returns)
-        sigma = sigma * 252
+        if in_drawdown_mode:
+            weights = (
+                pd.Series(DEFENSIVE_TEMPLATE)
+                .reindex(valid_tickers, fill_value=0.0)
+            )
+            if weights.sum() > 0:
+                weights = weights / weights.sum()
+            else:
+                weights = pd.Series(1.0 / len(valid_tickers), index=valid_tickers)
+        else:
+            # Estimar parâmetros no train set
+            mu = mean_return(train_returns) * 252
+            sigma, _ = ledoit_wolf_shrinkage(train_returns)
+            sigma = sigma * 252
+            if isinstance(sigma, pd.DataFrame):
+                if "CASH" in sigma.index:
+                    sigma.loc["CASH", :] = 0.0
+                    sigma.loc[:, "CASH"] = 0.0
+                    sigma.loc["CASH", "CASH"] = 1e-6
+            else:
+                sigma = pd.DataFrame(sigma, index=train_returns.columns, columns=train_returns.columns)
+                sigma.loc["CASH", :] = 0.0
+                sigma.loc[:, "CASH"] = 0.0
+                sigma.loc["CASH", "CASH"] = 1e-6
 
-        # Otimizar
-        config = MeanVarianceConfig(
-            risk_aversion=RISK_AVERSION,
-            turnover_penalty=0.05,
-            turnover_cap=None,
-            lower_bounds=pd.Series(0.0, index=valid_tickers),
-            upper_bounds=pd.Series(MAX_POSITION, index=valid_tickers),
-            previous_weights=pd.Series(0.0, index=valid_tickers),
-            cost_vector=None,
-            solver="CLARABEL",
-        )
+            lower_bounds = pd.Series(0.0, index=valid_tickers)
+            upper_bounds = pd.Series(MAX_POSITION, index=valid_tickers)
+            if "CASH" in upper_bounds:
+                upper_bounds["CASH"] = 1.0
+            if "CASH" in lower_bounds:
+                lower_bounds["CASH"] = 0.50
 
-        result = solve_mean_variance(mu, sigma, config)
+            config = MeanVarianceConfig(
+                risk_aversion=RISK_AVERSION,
+                turnover_penalty=0.05,
+                turnover_cap=None,
+                lower_bounds=lower_bounds,
+                upper_bounds=upper_bounds,
+                previous_weights=pd.Series(0.0, index=valid_tickers),
+                cost_vector=None,
+                solver="CLARABEL",
+            )
 
-        if not result.summary.is_optimal():
-            print(f"      Warning: período {i + 1} não optimal")
-            continue
+            result = solve_mean_variance(mu, sigma, config)
 
-        weights = result.weights
+            if not result.summary.is_optimal():
+                print(f"      Warning: período {i + 1} não optimal")
+                continue
+
+            weights = result.weights
+
+            risk_off = False
+            if "SPY" in prices.columns:
+                test_start = split.test_index[0]
+                if test_start in prices.index:
+                    spy_price = prices.at[test_start, "SPY"]
+                    spy_ma = (
+                        spy_ma200.at[test_start]
+                        if spy_ma200 is not None
+                        else np.nan
+                    )
+                    spy_ma_fast = (
+                        spy_ma50.at[test_start]
+                        if spy_ma50 is not None
+                        else np.nan
+                    )
+                    spy_ret = (
+                        spy_ret126.at[test_start]
+                        if spy_ret126 is not None
+                        else np.nan
+                    )
+                    spy_ret_short = (
+                        spy_ret63.at[test_start]
+                        if spy_ret63 is not None
+                        else np.nan
+                    )
+                    if pd.notna(spy_ma) and spy_price < spy_ma:
+                        risk_off = True
+                    if pd.notna(spy_ma_fast) and spy_price < spy_ma_fast:
+                        risk_off = True
+                    if pd.notna(spy_ret) and spy_ret < 0:
+                        risk_off = True
+                    if pd.notna(spy_ret) and spy_ret < -0.05:
+                        risk_off = True
+                    if pd.notna(spy_ret_short) and spy_ret_short < -0.02:
+                        risk_off = True
+
+            if risk_off:
+                defensive_weights = (
+                    pd.Series(DEFENSIVE_TEMPLATE)
+                    .reindex(valid_tickers, fill_value=0.0)
+                )
+                if defensive_weights.sum() > 0:
+                    defensive_weights = defensive_weights / defensive_weights.sum()
+                    weights = (
+                        (1 - DEFENSIVE_BLEND) * weights
+                        + DEFENSIVE_BLEND * defensive_weights
+                    )
+                    weights = weights.clip(lower=0)
+                    if weights.sum() > 0:
+                        weights = weights / weights.sum()
 
         # Aplicar pesos no test set
         test_portfolio_returns = (test_returns * weights).sum(axis=1)
@@ -194,6 +301,12 @@ for i, split in enumerate(splits):
         for ret in test_portfolio_returns:
             nav *= 1 + ret
             nav_series.append(nav)
+            nav_peak = max(nav_peak, nav)
+            current_drawdown = nav / nav_peak - 1
+            if current_drawdown < -DRAWDOWN_LIMIT:
+                in_drawdown_mode = True
+            elif in_drawdown_mode and current_drawdown > -RECOVERY_THRESHOLD:
+                in_drawdown_mode = False
 
         portfolio_returns.extend(test_portfolio_returns.tolist())
         dates.extend(test_returns.index.tolist())

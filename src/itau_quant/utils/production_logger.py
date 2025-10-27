@@ -16,6 +16,7 @@ import json
 @dataclass
 class RebalanceLog:
     """Log de um evento de rebalance"""
+
     date: str
     strategy: str  # "ERC" ou "1/N"
     turnover_realized: float
@@ -51,10 +52,20 @@ class ProductionLogger:
     def _initialize_log(self):
         """Cria header do CSV de log"""
         headers = [
-            "date", "strategy", "turnover_realized", "cost_bps",
-            "n_active_assets", "n_effective", "sharpe_6m", "cvar_95",
-            "max_dd", "fallback_active", "vol_realized",
-            "trigger_sharpe", "trigger_cvar", "trigger_dd",
+            "date",
+            "strategy",
+            "turnover_realized",
+            "cost_bps",
+            "n_active_assets",
+            "n_effective",
+            "sharpe_6m",
+            "cvar_95",
+            "max_dd",
+            "fallback_active",
+            "vol_realized",
+            "trigger_sharpe",
+            "trigger_cvar",
+            "trigger_dd",
         ]
         pd.DataFrame(columns=headers).to_csv(self.log_file, index=False)
 
@@ -68,6 +79,7 @@ class ProductionLogger:
         metrics: Dict,
         trigger_status: Dict[str, bool],
         fallback_active: bool,
+        force_log: bool = False,
     ):
         """
         Registra um evento de rebalance.
@@ -90,10 +102,12 @@ class ProductionLogger:
             Status dos triggers
         fallback_active : bool
             Se fallback para 1/N está ativo
+        force_log : bool, optional
+            Se True, força log mesmo se for duplicata (default: False)
         """
         # Calcular métricas de portfolio
         n_active = (weights > 0.001).sum()
-        herfindahl = (weights ** 2).sum()
+        herfindahl = (weights**2).sum()
         n_effective = 1.0 / herfindahl if herfindahl > 0 else 0.0
 
         # Criar log entry
@@ -112,13 +126,7 @@ class ProductionLogger:
             vol_realized=metrics.get("vol", None),
         )
 
-        # Salvar pesos
-        weights_file = self.weights_dir / f"weights_{date.strftime('%Y%m%d')}.csv"
-        weights_df = weights.to_frame(name="weight")
-        weights_df.index.name = "ticker"
-        weights_df.to_csv(weights_file)
-
-        # Append ao log CSV
+        # Build log dictionary
         log_dict = {
             "date": log_entry.date,
             "strategy": log_entry.strategy,
@@ -130,12 +138,67 @@ class ProductionLogger:
             "cvar_95": log_entry.cvar_95,
             "max_dd": log_entry.max_dd,
             "fallback_active": log_entry.fallback_active,
-            "vol_realized": log_entry.vol_realized if log_entry.vol_realized is not None else "",
+            "vol_realized": log_entry.vol_realized
+            if log_entry.vol_realized is not None
+            else "",
             "trigger_sharpe": trigger_status.get("sharpe_6m_negative", False),
             "trigger_cvar": trigger_status.get("cvar_breach", False),
             "trigger_dd": trigger_status.get("drawdown_breach", False),
         }
 
+        # Deduplicate: check if this is identical to last entry
+        if not force_log and self.log_file.exists():
+            try:
+                existing_df = pd.read_csv(self.log_file)
+                if not existing_df.empty:
+                    last_row = existing_df.iloc[-1].to_dict()
+
+                    # Compare key fields (ignore minor floating point differences)
+                    keys_to_compare = [
+                        "date",
+                        "strategy",
+                        "n_active_assets",
+                        "fallback_active",
+                        "trigger_sharpe",
+                        "trigger_cvar",
+                        "trigger_dd",
+                    ]
+                    float_keys_to_compare = [
+                        "turnover_realized",
+                        "cost_bps",
+                        "sharpe_6m",
+                        "cvar_95",
+                        "max_dd",
+                    ]
+
+                    # Check exact matches for categorical fields
+                    exact_match = all(
+                        log_dict.get(k) == last_row.get(k) for k in keys_to_compare
+                    )
+
+                    # Check floating point fields with tolerance
+                    float_match = all(
+                        abs(float(log_dict.get(k, 0)) - float(last_row.get(k, 0)))
+                        < 1e-9
+                        for k in float_keys_to_compare
+                    )
+
+                    if exact_match and float_match:
+                        print(
+                            f"⏭️  Rebalance {log_dict['date']} já registrado (pulando duplicata)"
+                        )
+                        return
+            except Exception as e:
+                # If deduplication fails, log anyway (safer to have duplicate than miss a log)
+                print(f"⚠️  Erro ao verificar duplicatas (continuando): {e}")
+
+        # Salvar pesos
+        weights_file = self.weights_dir / f"weights_{date.strftime('%Y%m%d')}.csv"
+        weights_df = weights.to_frame(name="weight")
+        weights_df.index.name = "ticker"
+        weights_df.to_csv(weights_file)
+
+        # Append ao log CSV
         log_df = pd.DataFrame([log_dict])
         log_df.to_csv(self.log_file, mode="a", header=False, index=False)
 
@@ -181,7 +244,9 @@ class ProductionLogger:
 
         recent = log_df.tail(last_n)
 
-        print("Data       | Estratégia | Turnover | Custo | N_eff | Sharpe6M | Fallback")
+        print(
+            "Data       | Estratégia | Turnover | Custo | N_eff | Sharpe6M | Fallback"
+        )
         print("-" * 80)
         for _, row in recent.iterrows():
             fallback_icon = "⚠️ " if row["fallback_active"] else "  "
@@ -195,7 +260,9 @@ class ProductionLogger:
         print("Estatísticas Gerais:")
         print(f"   Turnover médio: {recent['turnover_realized'].mean():.2%}")
         print(f"   Custo médio: {recent['cost_bps'].mean():.1f} bps")
-        print(f"   Fallbacks ativados: {recent['fallback_active'].sum()} de {len(recent)}")
+        print(
+            f"   Fallbacks ativados: {recent['fallback_active'].sum()} de {len(recent)}"
+        )
 
 
 # ============================================================================
