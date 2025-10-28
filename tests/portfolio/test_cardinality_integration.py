@@ -35,7 +35,15 @@ class TestCardinalityPipeline:
     def test_fixed_k_reduces_to_k_assets(self, sample_portfolio):
         """Fixed K mode selects exactly K assets."""
         weights, mu, cov = sample_portfolio
-        config = MeanVarianceConfig(risk_aversion=4.0)
+        config = MeanVarianceConfig(
+            risk_aversion=4.0,
+            turnover_penalty=0.0,
+            turnover_cap=None,
+            lower_bounds=pd.Series(0.0, index=weights.index),
+            upper_bounds=pd.Series(1.0, index=weights.index),
+            previous_weights=pd.Series(0.0, index=weights.index),
+            cost_vector=None,
+        )
         card_config = {"enable": True, "mode": "fixed_k", "k_fixed": 5}
 
         w_card, info = apply_cardinality_constraint(weights, mu, cov, config, card_config)
