@@ -1,0 +1,65 @@
+assets:
+  # US Equity - Large Cap
+  - ticker: SPY
+    name: S&P 500 ETF
+    asset_class: equity
+    region: US
+
+  - ticker: QQQ
+    name: Nasdaq 100 ETF
+    asset_class: equity
+    region: US
+
+  - ticker: IWM
+    name: Russell 2000 ETF
+    asset_class: equity
+    region: US
+
+  # International Equity
+  - ticker: EFA
+    name: EAFE ETF
+    asset_class: equity
+    region: DM_INTL
+
+  - ticker: EEM
+    name: Emerging Markets ETF
+    asset_class: equity
+    region: EM
+
+  # Fixed Income
+  - ticker: AGG
+    name: US Aggregate Bond ETF
+    asset_class: fixed_income
+    region: US
+
+  - ticker: TLT
+    name: Long-Term Treasury ETF
+    asset_class: fixed_income
+    region: US
+
+  - ticker: LQD
+    name: Investment Grade Corp Bond ETF
+    asset_class: fixed_income
+    region: US
+
+  - ticker: HYG
+    name: High Yield Corp Bond ETF
+    asset_class: fixed_income
+    region: US
+
+  - ticker: EMB
+    name: Emerging Markets Bond ETF
+    asset_class: fixed_income
+    region: EM
+
+  # Commodities
+  - ticker: GLD
+    name: Gold ETF
+    asset_class: commodity
+    region: GLOBAL
+
+  # Real Estate
+  - ticker: VNQ
+    name: Real Estate ETF
+    asset_class: real_estate
+    region: US
