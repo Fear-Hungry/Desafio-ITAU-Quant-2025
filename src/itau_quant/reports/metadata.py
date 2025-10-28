@@ -30,10 +30,10 @@ def get_git_commit() -> str:
     try:
         result = subprocess.run(
             ["git", "rev-parse", "HEAD"],
-            capture_output=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
             text=True,
             check=True,
-            stderr=subprocess.DEVNULL,
             timeout=5,
         )
         return result.stdout.strip()
