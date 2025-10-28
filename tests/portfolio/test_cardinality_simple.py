@@ -12,11 +12,13 @@ from itau_quant.portfolio.cardinality_pipeline import apply_cardinality_constrai
 
 @pytest.fixture
 def simple_data():
-    """Create simple test data."""
+    """Create simple test data with 15 assets."""
     np.random.seed(42)
-    n = 10
+    n = 15
     tickers = [f"A{i}" for i in range(n)]
-    weights = pd.Series(np.random.dirichlet([1] * n), index=tickers)
+    # Create concentrated weights (top 8 have most weight)
+    w_vals = np.random.dirichlet([10] * 8 + [0.5] * 7)
+    weights = pd.Series(w_vals, index=tickers)
     mu = pd.Series(np.random.uniform(0.05, 0.15, n), index=tickers)
     A = np.random.randn(n, n)
     cov = pd.DataFrame((A @ A.T + np.eye(n) * 0.1) / 100, index=tickers, columns=tickers)
