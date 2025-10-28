@@ -129,7 +129,7 @@ class TestOptimizationModule:
         from itau_quant.config import Settings
 
         settings = Settings.from_env(
-            overrides={"processed_data_dir": str(tmp_path)}
+            overrides={"PROCESSED_DATA_DIR": str(tmp_path)}
         )
 
         with pytest.raises(FileNotFoundError, match="Σ file not found"):
