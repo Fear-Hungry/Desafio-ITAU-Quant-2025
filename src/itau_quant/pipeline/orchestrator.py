@@ -126,13 +126,25 @@ def run_full_pipeline(
     start_time = time.perf_counter()
     logger.info("Starting full pipeline execution")
 
+    # Collect metadata including git commit and config hash
+    metadata = {
+        "timestamp": datetime.now().isoformat(),
+        "config_path": str(config_path),
+        "start_date": start,
+        "end_date": end,
+        "git_commit": get_git_commit(),
+    }
+
+    # Add config hash if file exists
+    config_file = Path(config_path)
+    if config_file.exists():
+        try:
+            metadata["config_hash"] = hash_file(config_file)
+        except (OSError, FileNotFoundError):
+            logger.warning("Could not hash config file: %s", config_path)
+
     results: dict[str, Any] = {
-        "metadata": {
-            "timestamp": datetime.now().isoformat(),
-            "config_path": str(config_path),
-            "start_date": start,
-            "end_date": end,
-        },
+        "metadata": metadata,
         "stages": {},
     }
 
