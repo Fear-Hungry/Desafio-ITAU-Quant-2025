@@ -1,4 +1,4 @@
-universe: configs/universe_arara.yaml
+universe: configs/universe_liquid.yaml
 base_currency: BRL
 benchmark:
   name: ACWI60_AGG40_BRUnhedged
