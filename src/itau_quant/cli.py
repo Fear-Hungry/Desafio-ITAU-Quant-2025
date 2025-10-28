@@ -62,6 +62,45 @@ def build_parser() -> argparse.ArgumentParser:
     back.add_argument("--json", action="store_true", help="Mostra resultado em JSON")
     back.set_defaults(dry_run=True)
 
+    # Pipeline orchestration
+    pipeline = subparsers.add_parser(
+        "run-full-pipeline",
+        help="Executa pipeline completo: dados → estimação → otimização → backtest"
+    )
+    pipeline.add_argument(
+        "--config",
+        required=True,
+        help="Arquivo YAML de configuração"
+    )
+    pipeline.add_argument(
+        "--start",
+        help="Data inicial (YYYY-MM-DD)"
+    )
+    pipeline.add_argument(
+        "--end",
+        help="Data final (YYYY-MM-DD)"
+    )
+    pipeline.add_argument(
+        "--skip-download",
+        action="store_true",
+        help="Usa dados cached (mais rápido para testes)"
+    )
+    pipeline.add_argument(
+        "--skip-backtest",
+        action="store_true",
+        help="Não executa backtest (apenas otimização)"
+    )
+    pipeline.add_argument(
+        "--output-dir",
+        default="reports",
+        help="Diretório para salvar resultados"
+    )
+    pipeline.add_argument(
+        "--json",
+        action="store_true",
+        help="Output em formato JSON"
+    )
+
     # Examples category
     example = subparsers.add_parser("run-example", help="Executa portfolio de exemplo (ARARA)")
     example.add_argument(
