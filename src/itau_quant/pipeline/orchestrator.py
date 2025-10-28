@@ -242,6 +242,15 @@ def run_full_pipeline(
             results["duration_seconds"],
         )
 
+        # Save results to disk (JSON + Markdown)
+        try:
+            json_path, md_path = save_results(results, output_path)
+            logger.info("Results saved to %s", json_path)
+            logger.info("Markdown report saved to %s", md_path)
+            logger.info("Latest run symlinks updated")
+        except Exception as e:
+            logger.warning("Failed to save results: %s", e)
+
     except Exception as e:
         # Failure - capture error details
         results["status"] = "failed"
