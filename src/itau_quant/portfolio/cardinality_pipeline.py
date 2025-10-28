@@ -159,9 +159,9 @@ def apply_cardinality_constraint(
     try:
         result = solve_mean_variance(mu_k, cov_k, config_k)
         k_info["selected_assets"] = selected.tolist()
-        k_info["reopt_status"] = result.summary.get("status", "completed") if hasattr(result, "summary") else "completed"
-        k_info["reopt_expected_return"] = result.expected_return
-        k_info["reopt_variance"] = result.variance
+        k_info["reopt_status"] = result.summary.status if hasattr(result.summary, "status") else "completed"
+        k_info["reopt_expected_return"] = float(result.expected_return)
+        k_info["reopt_variance"] = float(result.variance)
         return result.weights, k_info
     except Exception as e:
         # Fallback: return unconstrained solution
