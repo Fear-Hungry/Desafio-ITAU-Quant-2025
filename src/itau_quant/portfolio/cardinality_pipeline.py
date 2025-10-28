@@ -125,10 +125,12 @@ def apply_cardinality_constraint(
         epsilon=epsilon,
     )
 
-    # If already at K or fewer, return original
-    if len(selected) >= len(weights[weights > epsilon]):
+    # If no reduction (selected all significant assets), return original
+    significant_count = (weights > epsilon).sum()
+    if len(selected) >= significant_count:
         k_info["selected_assets"] = selected.tolist()
         k_info["reopt_status"] = "not_needed"
+        k_info["note"] = f"No reduction needed: K={k} >= significant_count={significant_count}"
         return weights, k_info
 
     # Step 5: Reoptimize on reduced support
