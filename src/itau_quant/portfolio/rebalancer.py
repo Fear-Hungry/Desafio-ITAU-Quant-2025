@@ -181,6 +181,25 @@ def optimize_portfolio(
         risk_config=risk_section or None,
     )
     result = solve_mean_variance(mu, cov, config)
+
+    # Apply cardinality constraint if enabled
+    cardinality_config = optimizer_config.get("cardinality", {})
+    if cardinality_config.get("enable", False):
+        cost_config = optimizer_config.get("costs")
+        weights_card, card_info = apply_cardinality_constraint(
+            weights=result.weights,
+            mu=mu,
+            cov=cov,
+            mv_config=config,
+            cardinality_config=cardinality_config,
+            cost_config=cost_config,
+        )
+        # Augment result with cardinality info
+        result_dict = result._asdict() if hasattr(result, "_asdict") else {"weights": result.weights}
+        result_dict["weights"] = weights_card
+        result_dict["cardinality"] = card_info
+        return weights_card, config, result_dict
+
     return result.weights, config, result
 
 
