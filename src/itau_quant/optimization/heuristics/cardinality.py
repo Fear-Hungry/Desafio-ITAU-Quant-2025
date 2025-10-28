@@ -267,3 +267,237 @@ def cardinality_pipeline(
         return SelectionResult(assets=selected_assets, weights=weights_series, metadata={"reoptimised": True})
 
     raise ValueError("unsupported cardinality strategy")
+
+
+# ============================================================================
+# N_eff-based Cardinality (Dynamic K Calibration)
+# ============================================================================
+
+
+def compute_effective_number(weights: pd.Series) -> float:
+    """Compute effective number of assets N_eff = 1 / Σw².
+
+    Args:
+        weights: Portfolio weights
+
+    Returns:
+        Effective number (between 1 and len(weights))
+
+    Examples:
+        >>> w = pd.Series([0.25, 0.25, 0.25, 0.25])
+        >>> compute_effective_number(w)
+        4.0
+        >>> w = pd.Series([1.0, 0.0, 0.0])
+        >>> compute_effective_number(w)
+        1.0
+    """
+    w = weights[weights > 0]
+    if len(w) == 0:
+        return 0.0
+    return float(1.0 / (w**2).sum())
+
+
+def suggest_k_from_neff(
+    neff: float,
+    k_min: int,
+    k_max: int,
+    multiplier: float = 0.8,
+) -> int:
+    """Suggest K from N_eff using K ≈ multiplier · N_eff.
+
+    Args:
+        neff: Effective number from unconstrained solution
+        k_min: Minimum K
+        k_max: Maximum K
+        multiplier: Scaling factor (default 0.8)
+
+    Returns:
+        Suggested K
+
+    Examples:
+        >>> suggest_k_from_neff(30.0, k_min=12, k_max=32)
+        24
+        >>> suggest_k_from_neff(10.0, k_min=12, k_max=32)
+        12
+    """
+    k_target = int(np.floor(multiplier * neff))
+    return max(k_min, min(k_max, k_target))
+
+
+def suggest_k_from_costs(
+    costs_bps: pd.Series,
+    k_min: int = 12,
+    k_max: int = 36,
+) -> tuple[int, int]:
+    """Suggest K range based on cost distribution.
+
+    Args:
+        costs_bps: Cost in bps for each asset
+        k_min: Absolute minimum K
+        k_max: Absolute maximum K
+
+    Returns:
+        (k_suggested_min, k_suggested_max) tuple
+
+    Examples:
+        >>> costs = pd.Series([8, 8, 10, 12, 15])
+        >>> suggest_k_from_costs(costs)  # Mostly cheap
+        (28, 32)
+    """
+    median_cost = costs_bps.median()
+    mean_cost = costs_bps.mean()
+    avg_cost = (median_cost + mean_cost) / 2
+
+    if avg_cost <= 10:
+        return (max(k_min, 28), min(k_max, 36))
+    elif avg_cost <= 25:
+        return (max(k_min, 18), min(k_max, 26))
+    else:
+        return (max(k_min, 12), min(k_max, 18))
+
+
+def suggest_k_dynamic(
+    neff: float,
+    costs_bps: pd.Series,
+    k_min: int = 12,
+    k_max: int = 32,
+    neff_multiplier: float = 0.8,
+) -> dict[str, float | int | tuple[int, int]]:
+    """Combine N_eff and cost analysis for K suggestion.
+
+    Args:
+        neff: Effective number
+        costs_bps: Cost in bps per asset
+        k_min: Minimum K
+        k_max: Maximum K
+        neff_multiplier: Multiplier for N_eff
+
+    Returns:
+        Dict with k_suggested, k_from_neff, k_range_from_cost, neff, avg_cost_bps
+    """
+    k_from_neff = suggest_k_from_neff(neff, k_min, k_max, neff_multiplier)
+    k_cost_min, k_cost_max = suggest_k_from_costs(costs_bps, k_min, k_max)
+
+    k_final = max(k_cost_min, min(k_cost_max, k_from_neff))
+
+    return {
+        "k_suggested": k_final,
+        "k_from_neff": k_from_neff,
+        "k_range_from_cost": (k_cost_min, k_cost_max),
+        "neff": neff,
+        "avg_cost_bps": float(costs_bps.mean()),
+    }
+
+
+def smart_topk_score(
+    weights: pd.Series,
+    weights_prev: pd.Series | None = None,
+    mu: pd.Series | None = None,
+    costs_bps: pd.Series | None = None,
+    alpha_weight: float = 1.0,
+    alpha_turnover: float = -0.2,
+    alpha_return: float = 0.1,
+    alpha_cost: float = -0.15,
+) -> pd.Series:
+    """Compute smart score for asset ranking.
+
+    score = α_w·w + α_to·|w-w_prev| + α_μ·μ + α_c·cost
+
+    Args:
+        weights: Current QP weights
+        weights_prev: Previous weights (for turnover penalty)
+        mu: Expected returns (for return bonus)
+        costs_bps: Transaction costs (for cost penalty)
+        alpha_weight: Weight coefficient
+        alpha_turnover: Turnover penalty (should be negative)
+        alpha_return: Return bonus
+        alpha_cost: Cost penalty (should be negative)
+
+    Returns:
+        Score series (higher = better)
+    """
+    score = alpha_weight * weights
+
+    if weights_prev is not None:
+        w_prev_aligned = weights_prev.reindex(weights.index, fill_value=0.0)
+        turnover = (weights - w_prev_aligned).abs()
+        score += alpha_turnover * turnover
+
+    if mu is not None:
+        mu_aligned = mu.reindex(weights.index, fill_value=0.0)
+        score += alpha_return * mu_aligned
+
+    if costs_bps is not None:
+        costs_aligned = costs_bps.reindex(weights.index, fill_value=15.0)
+        costs_norm = (costs_aligned - costs_aligned.min()) / (costs_aligned.max() - costs_aligned.min() + 1e-8)
+        score += alpha_cost * costs_norm
+
+    return score
+
+
+def select_support_topk(
+    weights: pd.Series,
+    k: int,
+    weights_prev: pd.Series | None = None,
+    mu: pd.Series | None = None,
+    costs_bps: pd.Series | None = None,
+    alpha_weight: float = 1.0,
+    alpha_turnover: float = -0.2,
+    alpha_return: float = 0.1,
+    alpha_cost: float = -0.15,
+    tie_breaker: str = "low_turnover",
+    epsilon: float = 1e-4,
+) -> pd.Index:
+    """Select K assets using smart scoring.
+
+    Args:
+        weights: Current weights
+        k: Number of assets to select
+        weights_prev: Previous weights
+        mu: Expected returns
+        costs_bps: Transaction costs
+        alpha_weight: Weight coefficient
+        alpha_turnover: Turnover penalty
+        alpha_return: Return bonus
+        alpha_cost: Cost penalty
+        tie_breaker: "low_turnover", "high_return", or "high_weight"
+        epsilon: Threshold for zero weights
+
+    Returns:
+        Index of selected K assets
+    """
+    significant = weights[weights > epsilon]
+    if len(significant) <= k:
+        return significant.index
+
+    scores = smart_topk_score(
+        significant,
+        weights_prev=weights_prev,
+        mu=mu,
+        costs_bps=costs_bps,
+        alpha_weight=alpha_weight,
+        alpha_turnover=alpha_turnover,
+        alpha_return=alpha_return,
+        alpha_cost=alpha_cost,
+    )
+
+    ranked = scores.sort_values(ascending=False)
+    kth_score = ranked.iloc[k - 1]
+    ties = ranked[ranked == kth_score]
+
+    if len(ties) > 1:
+        if tie_breaker == "low_turnover" and weights_prev is not None:
+            w_prev_aligned = weights_prev.reindex(ties.index, fill_value=0.0)
+            turnover = (weights.reindex(ties.index) - w_prev_aligned).abs()
+            tie_winner = turnover.idxmin()
+        elif tie_breaker == "high_return" and mu is not None:
+            mu_aligned = mu.reindex(ties.index, fill_value=0.0)
+            tie_winner = mu_aligned.idxmax()
+        else:
+            tie_winner = weights.reindex(ties.index).idxmax()
+
+        selected = ranked.iloc[: k - 1].index.tolist()
+        selected.append(tie_winner)
+        return pd.Index(selected)
+
+    return ranked.iloc[:k].index
