@@ -15,6 +15,13 @@ __all__ = [
     "prune_after_optimisation",
     "reoptimize_with_subset",
     "cardinality_pipeline",
+    # New: N_eff-based cardinality
+    "compute_effective_number",
+    "suggest_k_from_neff",
+    "suggest_k_from_costs",
+    "suggest_k_dynamic",
+    "smart_topk_score",
+    "select_support_topk",
 ]
 
 
