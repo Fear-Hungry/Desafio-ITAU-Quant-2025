@@ -32,6 +32,20 @@ class TestCardinalityPipeline:
 
         return weights, mu, cov
 
+    def _make_config(self, weights, **kwargs):
+        """Helper to create MeanVarianceConfig with defaults."""
+        defaults = {
+            "risk_aversion": 4.0,
+            "turnover_penalty": 0.0,
+            "turnover_cap": None,
+            "lower_bounds": pd.Series(0.0, index=weights.index),
+            "upper_bounds": pd.Series(1.0, index=weights.index),
+            "previous_weights": pd.Series(0.0, index=weights.index),
+            "cost_vector": None,
+        }
+        defaults.update(kwargs)
+        return MeanVarianceConfig(**defaults)
+
     def test_fixed_k_reduces_to_k_assets(self, sample_portfolio):
         """Fixed K mode selects exactly K assets."""
         weights, mu, cov = sample_portfolio
