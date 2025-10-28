@@ -183,6 +183,21 @@ def main(argv: Iterable[str] | None = None) -> int:
             payload = result.to_dict(include_timeseries=args.json)
             _print_payload(payload, as_json=args.json)
 
+        # Pipeline orchestration
+        elif args.command == "run-full-pipeline":
+            from itau_quant.pipeline import run_full_pipeline
+
+            result = run_full_pipeline(
+                config_path=args.config,
+                start=args.start,
+                end=args.end,
+                skip_download=args.skip_download,
+                skip_backtest=args.skip_backtest,
+                output_dir=args.output_dir,
+                settings=settings,
+            )
+            _print_payload(result, as_json=args.json)
+
         # Example commands
         elif args.command == "run-example":
             script_map = {
