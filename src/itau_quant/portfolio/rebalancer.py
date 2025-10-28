@@ -8,8 +8,10 @@ from typing import Any, Mapping
 import pandas as pd
 
 from itau_quant.costs.transaction_costs import transaction_cost_vector
+from itau_quant.estimators import cov as covariance_estimators
 from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 from itau_quant.optimization.heuristics.hrp import heuristic_allocation
+from itau_quant.portfolio.cardinality_pipeline import apply_cardinality_constraint
 from itau_quant.portfolio.rounding import RoundingResult, rounding_pipeline
 
 __all__ = [
@@ -75,7 +77,9 @@ def prepare_inputs(
     """Prepare prices and return window for estimation."""
 
     prices_obj = market_data.prices
-    if isinstance(prices_obj, pd.Series) and not isinstance(prices_obj.index, pd.DatetimeIndex):
+    if isinstance(prices_obj, pd.Series) and not isinstance(
+        prices_obj.index, pd.DatetimeIndex
+    ):
         prices_at_date = prices_obj.astype(float)
     else:
         prices_df = pd.DataFrame(prices_obj).astype(float)
@@ -90,8 +94,14 @@ def prepare_inputs(
     if returns_window > 0:
         historical_returns = historical_returns.tail(returns_window)
 
-    asset_index = prices_at_date.index if isinstance(prices_at_date, pd.Series) else pd.Index(prices_at_date.columns)
-    historical_returns = historical_returns.reindex(columns=asset_index).dropna(axis=1, how="all")
+    asset_index = (
+        prices_at_date.index
+        if isinstance(prices_at_date, pd.Series)
+        else pd.Index(prices_at_date.columns)
+    )
+    historical_returns = historical_returns.reindex(columns=asset_index).dropna(
+        axis=1, how="all"
+    )
     return prices_at_date.astype(float), historical_returns
 
 
@@ -122,6 +132,7 @@ def run_estimators(
         cov = returns.cov(ddof=1)
     else:
         raise ValueError(f"Unsupported covariance estimator '{cov_method}'.")
+    cov = covariance_estimators.project_to_psd(cov, epsilon=1e-9)
 
     return mu.astype(float), cov.astype(float)
 
@@ -137,8 +148,12 @@ def optimize_portfolio(
     """Solve the optimisation problem returning weights and solver summary."""
 
     optimizer_config = dict(optimizer_config or {})
-    risk_aversion = float(optimizer_config.get("risk_aversion", optimizer_config.get("lambda", 5.0)))
-    turnover_penalty = float(optimizer_config.get("turnover_penalty", optimizer_config.get("eta", 0.0)))
+    risk_aversion = float(
+        optimizer_config.get("risk_aversion", optimizer_config.get("lambda", 5.0))
+    )
+    turnover_penalty = float(
+        optimizer_config.get("turnover_penalty", optimizer_config.get("eta", 0.0))
+    )
     turnover_cap = optimizer_config.get("turnover_cap", optimizer_config.get("tau"))
     if turnover_cap is not None:
         turnover_cap = float(turnover_cap)
@@ -193,9 +208,10 @@ def compute_costs(
     linear_bps = cost_config.get("linear_bps", 0.0)
     if not linear_bps:
         return 0.0
+    aligned_prev = previous_weights.reindex(target_weights.index).fillna(0.0)
     costs = transaction_cost_vector(
         target_weights,
-        previous_weights,
+        aligned_prev,
         linear_bps=linear_bps,
         notional=capital,
     )
@@ -226,7 +242,9 @@ def build_rebalance_log(
                 "runtime": solver_summary.runtime,
             }
     if extra:
-        payload.update({key: value for key, value in extra.items() if value is not None})
+        payload.update(
+            {key: value for key, value in extra.items() if value is not None}
+        )
     return payload
 
 
@@ -256,7 +274,9 @@ def rebalance(
         risk_cfg.update({k: v for k, v in portfolio_risk.items()})
 
     returns_window = int(config.get("returns_window", 252))
-    prices_at_date, historical_returns = prepare_inputs(date, market_data, returns_window)
+    prices_at_date, historical_returns = prepare_inputs(
+        date, market_data, returns_window
+    )
 
     mu, cov = run_estimators(
         historical_returns,
@@ -290,18 +310,27 @@ def rebalance(
             method=method,
             config=baseline_cfg,
         )
-        target_weights = heuristic_result.weights.reindex(mu.index).fillna(0.0).astype(float)
-        cov_aligned = cov.reindex(index=target_weights.index, columns=target_weights.index).astype(float)
+        target_weights = (
+            heuristic_result.weights.reindex(mu.index).fillna(0.0).astype(float)
+        )
+        cov_aligned = cov.reindex(
+            index=target_weights.index, columns=target_weights.index
+        ).astype(float)
         mu_vector = mu.reindex(target_weights.index).to_numpy(dtype=float)
         weights_array = target_weights.to_numpy(dtype=float)
         optimizer_expected_return = float(mu_vector @ weights_array)
-        optimizer_variance = float(weights_array @ cov_aligned.to_numpy(dtype=float) @ weights_array)
+        optimizer_variance = float(
+            weights_array @ cov_aligned.to_numpy(dtype=float) @ weights_array
+        )
         optimizer_turnover = float(
             np.abs(
-                target_weights - previous_weights.reindex(target_weights.index).fillna(0.0)
+                target_weights
+                - previous_weights.reindex(target_weights.index).fillna(0.0)
             ).sum()
         )
-        optimizer_cost = compute_costs(target_weights, previous_weights, capital=capital, cost_config=cost_cfg)
+        optimizer_cost = compute_costs(
+            target_weights, previous_weights, capital=capital, cost_config=cost_cfg
+        )
         allocation_method = f"heuristic:{heuristic_result.method}"
         heuristic_payload = {"method": heuristic_result.method}
         if heuristic_result.diagnostics:
@@ -320,7 +349,9 @@ def rebalance(
             risk_config=risk_cfg or None,
         )
         target_weights = opt_weights.astype(float)
-        optimizer_cost = compute_costs(target_weights, previous_weights, capital=capital, cost_config=cost_cfg)
+        optimizer_cost = compute_costs(
+            target_weights, previous_weights, capital=capital, cost_config=cost_cfg
+        )
         optimizer_expected_return = mv_result.expected_return
         optimizer_variance = mv_result.variance
         optimizer_turnover = mv_result.turnover
@@ -332,10 +363,16 @@ def rebalance(
             "turnover_penalty": mv_config.turnover_penalty,
         }
 
-    rounding_result = apply_postprocessing(target_weights, prices_at_date, capital, rounding_cfg)
+    rounding_result = apply_postprocessing(
+        target_weights, prices_at_date, capital, rounding_cfg
+    )
 
-    rounded_weights = rounding_result.rounded_weights.reindex(target_weights.index, fill_value=0.0)
-    trades = rounded_weights - previous_weights.reindex(rounded_weights.index).fillna(0.0)
+    rounded_weights = rounding_result.rounded_weights.reindex(
+        target_weights.index, fill_value=0.0
+    )
+    trades = rounded_weights - previous_weights.reindex(rounded_weights.index).fillna(
+        0.0
+    )
     realized_turnover = float(trades.abs().sum())
 
     metrics = RebalanceMetrics(
