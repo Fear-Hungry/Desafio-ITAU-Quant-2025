@@ -23,6 +23,8 @@ from itau_quant.config import Settings
 from itau_quant.pipeline.data import download_and_prepare_data
 from itau_quant.pipeline.estimation import estimate_parameters
 from itau_quant.pipeline.optimization import optimize_portfolio
+from itau_quant.reports.metadata import get_git_commit, hash_file
+from itau_quant.reports.serializer import save_results
 from itau_quant.utils.logging_config import get_logger
 
 __all__ = ["PipelineError", "validate_write_permissions", "run_full_pipeline"]
