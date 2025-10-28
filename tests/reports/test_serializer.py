@@ -69,7 +69,7 @@ class TestGenerateMarkdown:
 
         assert "✅" in md  # completed emoji
         assert "⏭️" in md  # skipped emoji
-        assert "Data: completed" in md
+        assert "**Data**: completed" in md
 
     def test_generate_markdown_includes_backtest_metrics(self):
         """Verify backtest metrics in executive summary."""
