@@ -33,7 +33,7 @@ class TestComputeEffectiveNumber:
         w = pd.Series([0.7, 0.2, 0.1])
         neff = compute_effective_number(w)
         assert 1.0 < neff < 3.0
-        assert neff == pytest.approx(2.04, abs=0.01)
+        assert neff == pytest.approx(1.85, abs=0.01)
 
     def test_empty_weights_returns_zero(self):
         """All zeros → N_eff = 0."""
