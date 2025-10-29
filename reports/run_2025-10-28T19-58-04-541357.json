@@ -1,0 +1,48 @@
+{
+  "duration_seconds": 10.31502689899935,
+  "metadata": {
+    "config_hash": "f7543997acf61d3e10423487b037bbd687d195640448d4e3d557432f4b371d5d",
+    "config_path": "configs/backtest_full.yaml",
+    "end_date": null,
+    "git_commit": "5abaed75fe6873ba9a98f29c17ebfd87cec09d27",
+    "start_date": "2020-01-01",
+    "timestamp": "2025-10-28T19:58:04.541357"
+  },
+  "stages": {
+    "backtest": {
+      "duration_seconds": 0.0,
+      "status": "skipped"
+    },
+    "data": {
+      "duration_seconds": 10.15290747600011,
+      "n_assets": 69,
+      "n_days": 1463,
+      "processed_path": "/home/marcusvinicius/Void/Desafio-ITAU-Quant/data/processed/returns_arara.parquet",
+      "raw_path": "/home/marcusvinicius/Void/Desafio-ITAU-Quant/data/raw/prices_arara.csv",
+      "status": "completed"
+    },
+    "estimation": {
+      "annualized": true,
+      "cov_method": "ledoit_wolf",
+      "cov_output": "/home/marcusvinicius/Void/Desafio-ITAU-Quant/data/processed/cov_estimate.parquet",
+      "duration_seconds": 0.09959739599798922,
+      "mu_method": "huber",
+      "mu_output": "/home/marcusvinicius/Void/Desafio-ITAU-Quant/data/processed/mu_estimate.parquet",
+      "shrinkage": 0.04994943029244551,
+      "status": "completed",
+      "window_used": 252
+    },
+    "optimization": {
+      "duration_seconds": 0.05715911999868695,
+      "expected_return": 0.4445107118247289,
+      "n_assets": 9,
+      "output": "/home/marcusvinicius/Void/Desafio-ITAU-Quant/results/optimized_weights.parquet",
+      "risk_aversion": 4.0,
+      "sharpe": 2.700386295029668,
+      "status": "completed",
+      "turnover": 1.000000000131712,
+      "volatility": 0.16461004584525385
+    }
+  },
+  "status": "completed"
+}

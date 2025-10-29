@@ -13,6 +13,7 @@ from typing import Any
 
 import pandas as pd
 
+from itau_quant.estimators import cov as covariance_estimators
 from itau_quant.costs.cost_model import CostModel, estimate_costs_by_class
 from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 from itau_quant.optimization.heuristics.cardinality import (
@@ -79,7 +80,10 @@ def apply_cardinality_constraint(
     alpha_return = cardinality_config.get("score_return", 0.1)
     alpha_cost = cardinality_config.get("score_cost", -0.15)
     tie_breaker = cardinality_config.get("tie_breaker", "low_turnover")
-    epsilon = cardinality_config.get("epsilon", 1e-4)
+    epsilon = float(cardinality_config.get("epsilon", 1e-4))
+    min_active_weight = float(cardinality_config.get("min_active_weight", epsilon))
+
+    universe = weights.index
 
     # Step 1: Compute N_eff
     neff = compute_effective_number(weights)
@@ -102,7 +106,9 @@ def apply_cardinality_constraint(
     else:  # dynamic_neff_cost
         if costs_bps is None:
             # Fallback to N_eff only
-            from itau_quant.optimization.heuristics.cardinality import suggest_k_from_neff
+            from itau_quant.optimization.heuristics.cardinality import (
+                suggest_k_from_neff,
+            )
 
             k = suggest_k_from_neff(neff, k_min, k_max, neff_multiplier)
             k_info = {"k_suggested": k, "k_from_neff": k, "neff": neff}
@@ -111,10 +117,18 @@ def apply_cardinality_constraint(
             k = k_info["k_suggested"]
 
     # Step 4: Select support
+    significance_threshold = min_active_weight
+    significant_count = (weights > significance_threshold).sum()
+    if significant_count < k:
+        significance_threshold = epsilon
+        significant_count = (weights > significance_threshold).sum()
+
     selected = select_support_topk(
         weights=weights,
         k=k,
-        weights_prev=mv_config.previous_weights if hasattr(mv_config, "previous_weights") else None,
+        weights_prev=mv_config.previous_weights
+        if hasattr(mv_config, "previous_weights")
+        else None,
         mu=mu,
         costs_bps=costs_bps,
         alpha_weight=alpha_weight,
@@ -122,47 +136,96 @@ def apply_cardinality_constraint(
         alpha_return=alpha_return,
         alpha_cost=alpha_cost,
         tie_breaker=tie_breaker,
-        epsilon=epsilon,
+        epsilon=significance_threshold,
     )
 
+    selected = pd.Index(selected)
+    if selected.empty and k > 0:
+        fallback_rank = weights.abs().sort_values(ascending=False)
+        selected = pd.Index(fallback_rank.index[:k])
+
     # If no reduction (selected all significant assets), return original
-    significant_count = (weights > epsilon).sum()
     if len(selected) >= significant_count:
         k_info["selected_assets"] = selected.tolist()
         k_info["reopt_status"] = "not_needed"
-        k_info["note"] = f"No reduction needed: K={k} >= significant_count={significant_count}"
+        k_info["note"] = (
+            f"No reduction needed: K={k} >= significant_count={significant_count}"
+        )
         return weights, k_info
 
     # Step 5: Reoptimize on reduced support
     mu_k = mu.loc[selected]
     cov_k = cov.loc[selected, selected]
+    cov_k = covariance_estimators.project_to_psd(cov_k, epsilon=1e-9)
 
     # Build new config for reoptimization
-    prev_k = mv_config.previous_weights.reindex(selected, fill_value=0.0) if mv_config.previous_weights is not None else pd.Series(0.0, index=selected)
+    prev_full = getattr(mv_config, "previous_weights", None)
+    if prev_full is None:
+        prev_full = pd.Series(0.0, index=universe, dtype=float)
+    else:
+        prev_full = prev_full.reindex(universe, fill_value=0.0).astype(float)
+    prev_k = prev_full.reindex(selected, fill_value=0.0)
 
-    lower_k = mv_config.lower_bounds.reindex(selected, fill_value=0.0) if mv_config.lower_bounds is not None else pd.Series(0.0, index=selected)
-    upper_k = mv_config.upper_bounds.reindex(selected, fill_value=1.0) if mv_config.upper_bounds is not None else pd.Series(1.0, index=selected)
+    lower_full = getattr(mv_config, "lower_bounds", None)
+    if lower_full is None:
+        lower_full = pd.Series(0.0, index=universe, dtype=float)
+    else:
+        lower_full = lower_full.reindex(universe, fill_value=0.0).astype(float)
+    lower_k = lower_full.reindex(selected, fill_value=0.0)
+
+    upper_full = getattr(mv_config, "upper_bounds", None)
+    if upper_full is None:
+        upper_full = pd.Series(1.0, index=universe, dtype=float)
+    else:
+        upper_full = upper_full.reindex(universe, fill_value=1.0).astype(float)
+    upper_k = upper_full.reindex(selected, fill_value=1.0)
 
     config_k = MeanVarianceConfig(
         risk_aversion=mv_config.risk_aversion,
-        turnover_penalty=mv_config.turnover_penalty if hasattr(mv_config, "turnover_penalty") else 0.0,
-        turnover_cap=mv_config.turnover_cap if hasattr(mv_config, "turnover_cap") else None,
+        turnover_penalty=mv_config.turnover_penalty
+        if hasattr(mv_config, "turnover_penalty")
+        else 0.0,
+        turnover_cap=None,
         lower_bounds=lower_k,
         upper_bounds=upper_k,
         previous_weights=prev_k,
         cost_vector=mv_config.cost_vector,
         solver=mv_config.solver,
         solver_kwargs=mv_config.solver_kwargs,
-        risk_config=mv_config.risk_config if hasattr(mv_config, "risk_config") else None,
+        risk_config=mv_config.risk_config
+        if hasattr(mv_config, "risk_config")
+        else None,
     )
 
     try:
         result = solve_mean_variance(mu_k, cov_k, config_k)
         k_info["selected_assets"] = selected.tolist()
-        k_info["reopt_status"] = result.summary.status if hasattr(result.summary, "status") else "completed"
+        k_info["reopt_status"] = (
+            result.summary.status if hasattr(result.summary, "status") else "completed"
+        )
+        if getattr(mv_config, "turnover_cap", None) is not None:
+            k_info["turnover_cap_relaxed"] = True
         k_info["reopt_expected_return"] = float(result.expected_return)
         k_info["reopt_variance"] = float(result.variance)
-        return result.weights, k_info
+        reopt_weights = result.weights.reindex(selected).fillna(0.0).astype(float)
+        full_weights = pd.Series(0.0, index=universe, dtype=float)
+        full_weights.loc[selected] = reopt_weights
+        total = float(full_weights.sum())
+        if total > 0:
+            full_weights /= total
+        k_info["final_support"] = full_weights[
+            full_weights > significance_threshold
+        ].index.tolist()
+        trades_full = full_weights - prev_full
+        k_info["turnover_after_cardinality"] = float(trades_full.abs().sum())
+        if mv_config.cost_vector is not None:
+            costs_vector = (
+                mv_config.cost_vector.reindex(universe).fillna(0.0).astype(float)
+            )
+            k_info["cost_after_cardinality"] = float(
+                (costs_vector.abs() * trades_full.abs()).sum()
+            )
+        return full_weights, k_info
     except Exception as e:
         # Fallback: return unconstrained solution
         k_info["selected_assets"] = selected.tolist()

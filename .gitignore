@@ -154,6 +154,8 @@ reports/**/*.html
 notebooks/.ipynb_checkpoints/**
 notebooks/**.ipynb
 !notebooks/README.md
+logs/**
+runtime/**
 # Credentials & local configs
 secrets/**
 *.key
@@ -173,4 +175,3 @@ secrets/**
 **/.mypy_cache/**
 **/.ipynb_checkpoints/**
 **/.DS_Store
-

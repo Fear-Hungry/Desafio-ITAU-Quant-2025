@@ -3,7 +3,7 @@
 Recursos oferecidos
 -------------------
 `get_arara_metadata()`
-    - Parser minimalista (sem PyYAML) para ler ``universe_arara.yaml``.
+    - Parser minimalista (sem PyYAML) para ler ``universe_metadata.yaml``.
     - Retorna ``Mapping[ticker, atributos]`` com limites de alocação, classes,
       moeda e outros metadados consumidos por otimizações.
 
@@ -76,9 +76,11 @@ def _parse_simple_yaml(text: str) -> Dict[str, Dict[str, Any]]:
 @lru_cache(maxsize=1)
 def get_arara_metadata() -> Mapping[str, Mapping[str, Any]]:
     """Load ARARA universe metadata from the packaged YAML file."""
-    with resources.files(__package__).joinpath("universe_arara.yaml").open(
-        "r", encoding="utf-8"
-    ) as handle:
+    with (
+        resources.files(__package__)
+        .joinpath("universe_metadata.yaml")
+        .open("r", encoding="utf-8") as handle
+    ):
         content = handle.read()
     return _parse_simple_yaml(content)
 

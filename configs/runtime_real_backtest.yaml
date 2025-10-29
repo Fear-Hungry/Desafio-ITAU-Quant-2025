@@ -1,11 +1,11 @@
 base_currency: USD
 data:
-  returns: /home/marcusvinicius/Void/Desafio-ITAU-Quant/runtime/data/processed/returns_pipeline.parquet
+  returns: data/processed/returns_selected.parquet
 walkforward:
-  train_days: 120
-  test_days: 20
+  train_days: 252
+  test_days: 21
   purge_days: 5
-  embargo_days: 2
+  embargo_days: 5
 optimizer:
   lambda: 4.0
   eta: 0.1

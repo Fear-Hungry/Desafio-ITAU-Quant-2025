@@ -1,0 +1,20 @@
+{
+  "config": "/home/marcusvinicius/Void/Desafio-ITAU-Quant/configs/optimizer_example.yaml",
+  "environment": "development",
+  "base_currency": "BRL",
+  "metrics": {
+    "total_return": -0.018829965135600868,
+    "annualized_return": -0.00676229496648606,
+    "annualized_volatility": 0.002568920937233635,
+    "sharpe_ratio": -2.6399682411745937,
+    "max_drawdown": -0.018829965135600868,
+    "cumulative_nav": 0.9811700348643991
+  },
+  "operational": {
+    "num_rebalances": 19,
+    "avg_turnover": 0.0,
+    "total_costs_fraction": 0.019,
+    "avg_cost_per_rebalance": 0.001
+  },
+  "notes": []
+}

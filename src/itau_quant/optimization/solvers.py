@@ -315,6 +315,7 @@ def _estimate_inputs(returns: pd.DataFrame, config: OptimizerConfig) -> tuple[pd
     mu_series = mu_series.astype(float)
     cov_matrix = cov_matrix.astype(float)
     cov_matrix = cov_matrix.reindex(index=mu_series.index, columns=mu_series.index).fillna(0.0)
+    cov_matrix = covariance_estimators.project_to_psd(cov_matrix, epsilon=1e-9)
 
     return mu_series, cov_matrix
 

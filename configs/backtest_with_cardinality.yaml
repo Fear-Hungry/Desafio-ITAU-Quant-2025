@@ -22,32 +22,34 @@ fx:
 optimizer:
   objective: mean_variance
   lambda: 4.0
-  solver: ECOS
-  max_weight: 0.10  # 10% cap per asset
-  min_weight: 0.005  # 0.5% floor
+  solver: osqp
+  solver_kwargs:
+    verbose: true
+  max_weight: 0.10 # 10% cap per asset
+  min_weight: 0.005 # 0.5% floor
 
 # Transaction costs by asset class
 costs:
   scheme: "per_asset_class"
   default_cost_bps: 15.0
   round_trip_bps:
-    us_equities_core: 8       # SPY, QQQ, IWM
-    us_sectors_factors: 10    # XLC-XLU, USMV, MTUM, QUAL, VLUE, SIZE
-    dev_ex_us: 12             # EFA, VGK, VPL, EWJ, EWG, EWU
-    em_equities: 15           # EEM, EWZ, MCHI, INDA, EZA
-    reits_us: 12              # VNQ, O, PSA
-    reits_ex_us: 28           # VNQI
-    treasuries: 6             # SHY, IEI, IEF, TLT
-    tips: 8                   # TIP, VGSH, VGIT
-    ig_credit: 12             # AGG, LQD, VCIT, VCSH, MUB, BNDX
-    high_yield: 18            # HYG
-    em_bonds_usd: 20          # EMB
-    em_bonds_local: 32        # EMLC
-    commodities_gold: 8       # GLD, SLV, PPLT
-    commodities_basket: 28    # DBC, DBA, CORN, USO, UNG
-    usd_fx: 12                # UUP
-    crypto_btc: 45            # FBTC, IBIT, GBTC
-    crypto_eth: 55            # ETHA, ETHE
+    us_equities_core: 8 # SPY, QQQ, IWM
+    us_sectors_factors: 10 # XLC-XLU, USMV, MTUM, QUAL, VLUE, SIZE
+    dev_ex_us: 12 # EFA, VGK, VPL, EWJ, EWG, EWU
+    em_equities: 15 # EEM, EWZ, MCHI, INDA, EZA
+    reits_us: 12 # VNQ, O, PSA
+    reits_ex_us: 28 # VNQI
+    treasuries: 6 # SHY, IEI, IEF, TLT
+    tips: 8 # TIP, VGSH, VGIT
+    ig_credit: 12 # AGG, LQD, VCIT, VCSH, MUB, BNDX
+    high_yield: 18 # HYG
+    em_bonds_usd: 20 # EMB
+    em_bonds_local: 32 # EMLC
+    commodities_gold: 8 # GLD, SLV, PPLT
+    commodities_basket: 28 # DBC, DBA, CORN, USO, UNG
+    usd_fx: 12 # UUP
+    crypto_btc: 45 # FBTC, IBIT, GBTC
+    crypto_eth: 55 # ETHA, ETHE
 
 # Cardinality: Dynamic K based on N_eff + cost
 cardinality:
@@ -55,13 +57,13 @@ cardinality:
   mode: "dynamic_neff_cost"
   k_min: 12
   k_max: 32
-  neff_multiplier: 0.8  # K ≈ 0.8 · N_eff
+  neff_multiplier: 0.8 # K ≈ 0.8 · N_eff
 
   # Smart scoring weights
-  score_weight: 1.0        # Prefer higher QP weights
-  score_turnover: -0.2     # Penalize turnover
-  score_return: 0.1        # Bonus for higher expected return
-  score_cost: -0.15        # Penalize expensive assets
+  score_weight: 1.0 # Prefer higher QP weights
+  score_turnover: -0.2 # Penalize turnover
+  score_return: 0.1 # Bonus for higher expected return
+  score_cost: -0.15 # Penalize expensive assets
 
   tie_breaker: "low_turnover"
   min_active_weight: 0.005

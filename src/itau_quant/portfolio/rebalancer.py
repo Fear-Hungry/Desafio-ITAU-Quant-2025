@@ -2,14 +2,18 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Mapping
 
 import pandas as pd
 
 from itau_quant.costs.transaction_costs import transaction_cost_vector
 from itau_quant.estimators import cov as covariance_estimators
-from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
+from itau_quant.optimization.core.mv_qp import (
+    MeanVarianceConfig,
+    MeanVarianceResult,
+    solve_mean_variance,
+)
 from itau_quant.optimization.heuristics.hrp import heuristic_allocation
 from itau_quant.portfolio.cardinality_pipeline import apply_cardinality_constraint
 from itau_quant.portfolio.rounding import RoundingResult, rounding_pipeline
@@ -116,22 +120,39 @@ def run_estimators(
     mu_config = dict(mu_config or {})
     sigma_config = dict(sigma_config or {})
 
+    min_history = int(sigma_config.get("min_history", 30))
+    min_history = max(min_history, 2)
+    valid_mask = returns.count() >= min_history
+    returns_filtered = returns.loc[:, valid_mask]
+    if returns_filtered.empty:
+        raise ValueError("No assets meet the minimum history requirement for estimation.")
+
+    clean_returns = returns_filtered.dropna(axis=0, how="any")
+    if clean_returns.shape[0] < 2:
+        raise ValueError(
+            "Not enough observations after removing missing data for estimation."
+        )
+
     method = (mu_config.get("method") or "simple").lower()
     if method in {"simple", "mean"}:
-        mu = returns.mean()
+        mu = clean_returns.mean()
     elif method == "geometric":
-        growth = 1.0 + returns
+        growth = 1.0 + clean_returns
         mu = growth.prod() ** (1.0 / len(growth)) - 1.0
     else:
         raise ValueError(f"Unsupported mean estimator '{method}'.")
 
     cov_method = (sigma_config.get("method") or "ledoit_wolf").lower()
     if cov_method == "ledoit_wolf":
-        cov = returns.cov(ddof=1)
+        cov = clean_returns.cov(ddof=1)
     elif cov_method == "sample":
-        cov = returns.cov(ddof=1)
+        cov = clean_returns.cov(ddof=1)
     else:
         raise ValueError(f"Unsupported covariance estimator '{cov_method}'.")
+    cov = cov.astype(float)
+    assets = clean_returns.columns
+    mu = mu.reindex(assets).astype(float)
+    cov = cov.reindex(index=assets, columns=assets)
     cov = covariance_estimators.project_to_psd(cov, epsilon=1e-9)
 
     return mu.astype(float), cov.astype(float)
@@ -144,7 +165,13 @@ def optimize_portfolio(
     optimizer_config: Mapping[str, Any],
     *,
     risk_config: Mapping[str, Any] | None = None,
-) -> tuple[pd.Series, MeanVarianceConfig, Any]:
+) -> tuple[
+    pd.Series,
+    MeanVarianceConfig,
+    MeanVarianceResult,
+    dict[str, Any] | None,
+    dict[str, Any],
+]:
     """Solve the optimisation problem returning weights and solver summary."""
 
     optimizer_config = dict(optimizer_config or {})
@@ -181,9 +208,59 @@ def optimize_portfolio(
         risk_config=risk_section or None,
     )
     result = solve_mean_variance(mu, cov, config)
+    fallback_relaxed_turnover = False
+    if (
+        config.turnover_cap is not None
+        and hasattr(result, "summary")
+        and not result.summary.is_optimal()
+    ):
+        config_relaxed = replace(config, turnover_cap=None)
+        try:
+            alt_result = solve_mean_variance(mu, cov, config_relaxed)
+        except Exception:  # prism_w: keep original failure details
+            alt_result = None
+        else:
+            if hasattr(alt_result, "summary") and alt_result.summary.is_optimal():
+                result = alt_result
+                config = config_relaxed
+                fallback_relaxed_turnover = True
+
+    weights_out = result.weights
+    cardinality_info: dict[str, Any] | None = None
+
+    def _resolve_cardinality(cfg: Mapping[str, Any]) -> dict[str, Any] | None:
+        section = cfg.get("cardinality")
+        if isinstance(section, Mapping):
+            resolved = dict(section)
+        else:
+            resolved = None
+        if resolved is None:
+            legacy_k = cfg.get("cardinality_k")
+            legacy_min = cfg.get("cardinality_kmin")
+            legacy_max = cfg.get("cardinality_kmax")
+            if legacy_k is not None:
+                resolved = {
+                    "enable": True,
+                    "mode": "fixed_k",
+                    "k_fixed": int(legacy_k),
+                }
+            elif legacy_min is not None or legacy_max is not None:
+                k_min = int(legacy_min) if legacy_min is not None else int(legacy_max)
+                k_max = int(legacy_max) if legacy_max is not None else int(legacy_min)
+                if k_min > k_max:
+                    k_min, k_max = k_max, k_min
+                resolved = {
+                    "enable": True,
+                    "mode": "dynamic_neff",
+                    "k_min": k_min,
+                    "k_max": k_max,
+                }
+        if resolved and "enable" not in resolved:
+            resolved["enable"] = True
+        return resolved
 
     # Apply cardinality constraint if enabled
-    cardinality_config = optimizer_config.get("cardinality", {})
+    cardinality_config = _resolve_cardinality(optimizer_config) or {}
     if cardinality_config.get("enable", False):
         cost_config = optimizer_config.get("costs")
         weights_card, card_info = apply_cardinality_constraint(
@@ -194,13 +271,30 @@ def optimize_portfolio(
             cardinality_config=cardinality_config,
             cost_config=cost_config,
         )
-        # Augment result with cardinality info
-        result_dict = result._asdict() if hasattr(result, "_asdict") else {"weights": result.weights}
-        result_dict["weights"] = weights_card
-        result_dict["cardinality"] = card_info
-        return weights_card, config, result_dict
+        weights_out = weights_card
+        cardinality_info = card_info
+        turnover_card = card_info.get("turnover_after_cardinality")
+        if turnover_card is None:
+            turnover_card = float((weights_card - prev).abs().sum())
+        cost_card = card_info.get("cost_after_cardinality", result.cost)
+        expected_return_card = card_info.get(
+            "reopt_expected_return", result.expected_return
+        )
+        variance_card = card_info.get("reopt_variance", result.variance)
+        result = replace(
+            result,
+            weights=weights_card,
+            turnover=turnover_card,
+            cost=cost_card,
+            expected_return=expected_return_card,
+            variance=variance_card,
+        )
 
-    return result.weights, config, result
+    solver_flags = {
+        "turnover_cap_relaxed": True if fallback_relaxed_turnover else None,
+    }
+
+    return weights_out, config, result, cardinality_info, solver_flags
 
 
 def apply_postprocessing(
@@ -284,6 +378,16 @@ def rebalance(
     estimator_cfg = config.get("estimators", {})
     risk_cfg: dict[str, Any] = {}
 
+    if cost_cfg and "costs" not in optimizer_cfg:
+        optimizer_cfg["costs"] = cost_cfg
+
+    top_level_cardinality = config.get("cardinality")
+    if (
+        isinstance(top_level_cardinality, Mapping)
+        and "cardinality" not in optimizer_cfg
+    ):
+        optimizer_cfg["cardinality"] = dict(top_level_cardinality)
+
     nested_risk = optimizer_cfg.pop("risk", None)
     if isinstance(nested_risk, Mapping):
         risk_cfg.update({k: v for k, v in nested_risk.items()})
@@ -360,14 +464,20 @@ def rebalance(
             "heuristic": heuristic_payload,
         }
     else:
-        opt_weights, mv_config, mv_result = optimize_portfolio(
+        (
+            opt_weights,
+            mv_config,
+            mv_result,
+            card_info,
+            solver_flags,
+        ) = optimize_portfolio(
             mu,
             cov,
             previous_weights,
             optimizer_cfg,
             risk_config=risk_cfg or None,
         )
-        target_weights = opt_weights.astype(float)
+        target_weights = opt_weights.reindex(mu.index, fill_value=0.0).astype(float)
         optimizer_cost = compute_costs(
             target_weights, previous_weights, capital=capital, cost_config=cost_cfg
         )
@@ -381,6 +491,10 @@ def rebalance(
             "risk_aversion": mv_config.risk_aversion,
             "turnover_penalty": mv_config.turnover_penalty,
         }
+        if card_info:
+            solver_extra["cardinality"] = card_info
+        if solver_flags.get("turnover_cap_relaxed"):
+            solver_extra["turnover_cap_relaxed"] = True
 
     rounding_result = apply_postprocessing(
         target_weights, prices_at_date, capital, rounding_cfg

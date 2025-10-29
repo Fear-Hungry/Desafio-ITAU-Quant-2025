@@ -105,7 +105,9 @@ def calibrate_lambda_for_target_vol(
         result = solve_mean_variance(mu, cov, config_temp)
 
         if not result.summary.is_optimal():
-            raise RuntimeError(f"Calibration failed at λ={lam_mid:.4f}, status={result.summary.status}")
+            raise RuntimeError(
+                f"Calibration failed at λ={lam_mid:.4f}, status={result.summary.status}"
+            )
 
         vol = np.sqrt(result.variance)
 
@@ -158,7 +160,8 @@ def solve_mean_variance(
     cov_matrix = cov.reindex(index=assets, columns=assets).to_numpy(dtype=float)
 
     w = cp.Variable(n_assets)
-    objective_terms = [mu_vec @ w - config.risk_aversion * cp.quad_form(w, cov_matrix)]
+    cov_psd = cp.psd_wrap(cov_matrix)
+    objective_terms = [mu_vec @ w - config.risk_aversion * cp.quad_form(w, cov_psd)]
 
     trades = w - prev.to_numpy(dtype=float)
 
@@ -235,7 +238,12 @@ def solve_mean_variance(
         problem, solver=solver_to_use, solver_kwargs=solver_kwargs_final
     )
 
-    weights = pd.Series(np.asarray(w.value).ravel(), index=assets, dtype=float)
+    raw_weights = w.value
+    if raw_weights is None:
+        raw_weights = prev.to_numpy(dtype=float)
+    else:
+        raw_weights = np.asarray(raw_weights).ravel()
+    weights = pd.Series(raw_weights, index=assets, dtype=float)
     weights = weights.fillna(0.0)
     weights /= weights.sum() if weights.sum() != 0 else 1.0
 

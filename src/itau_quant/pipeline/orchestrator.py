@@ -186,7 +186,9 @@ def run_full_pipeline(
         logger.info("Stage 3/4: Portfolio optimization")
         stage_start = time.perf_counter()
 
-        optimization_result = optimize_portfolio(settings=settings)
+        optimization_result = optimize_portfolio(
+            config_path=config_path, settings=settings
+        )
         optimization_result["duration_seconds"] = time.perf_counter() - stage_start
         results["stages"]["optimization"] = optimization_result
 
@@ -206,18 +208,21 @@ def run_full_pipeline(
                 dry_run=False,
             )
 
+            # Convert BacktestResult object to dict
+            backtest_dict = backtest_result.to_dict(include_timeseries=False)
+
             # Extract relevant metrics from backtest
             backtest_summary = {
-                "status": backtest_result.get("status", "completed"),
+                "status": backtest_dict.get("status", "completed"),
                 "duration_seconds": time.perf_counter() - stage_start,
             }
 
-            if "metrics" in backtest_result:
-                backtest_summary["metrics"] = backtest_result["metrics"]
+            if "metrics" in backtest_dict:
+                backtest_summary["metrics"] = backtest_dict["metrics"]
 
-            if "notes" in backtest_result:
-                backtest_summary["notes"] = backtest_result["notes"]
-                backtest_summary["n_notes"] = len(backtest_result["notes"])
+            if "notes" in backtest_dict:
+                backtest_summary["notes"] = backtest_dict["notes"]
+                backtest_summary["n_notes"] = len(backtest_dict["notes"])
 
             results["stages"]["backtest"] = backtest_summary
 

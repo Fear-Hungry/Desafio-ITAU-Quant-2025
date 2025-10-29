@@ -16,6 +16,7 @@ import pandas as pd
 from itau_quant.config import Settings
 from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 from itau_quant.utils.logging_config import get_logger
+from itau_quant.utils.yaml_loader import load_yaml_text
 
 __all__ = ["optimize_portfolio"]
 
@@ -56,6 +57,7 @@ def optimize_portfolio(
     ridge_penalty: float = 0.0,
     output_file: str = "optimized_weights.parquet",
     solver: str | None = None,
+    config_path: str | Path | None = None,
     settings: Settings | None = None,
 ) -> dict[str, Any]:
     """Optimize portfolio weights using mean-variance framework.
@@ -101,6 +103,35 @@ def optimize_portfolio(
     """
     settings = settings or Settings.from_env()
 
+    # Load config from YAML if provided to override defaults
+    if config_path is not None:
+        config_file = Path(config_path)
+        if config_file.exists():
+            logger.info("Loading optimizer config from %s", config_file)
+            raw = load_yaml_text(config_file.read_text(encoding="utf-8"))
+            optimizer_section = raw.get("optimizer", {})
+
+            # Override parameters with values from YAML
+            risk_aversion = float(optimizer_section.get("lambda", risk_aversion))
+            max_weight = float(optimizer_section.get("max_weight", max_weight))
+            min_weight = float(optimizer_section.get("min_weight", min_weight))
+            turnover_penalty = float(optimizer_section.get("eta", turnover_penalty))
+            tau_from_yaml = optimizer_section.get("tau")
+            if tau_from_yaml is not None:
+                turnover_cap = float(tau_from_yaml)
+            solver_from_yaml = optimizer_section.get("solver")
+            if solver_from_yaml is not None:
+                solver = str(solver_from_yaml)
+
+            logger.info(
+                "Loaded config: λ=%.1f, max_weight=%.2f, eta=%.2f, tau=%s, solver=%s",
+                risk_aversion,
+                max_weight,
+                turnover_penalty,
+                turnover_cap,
+                solver,
+            )
+
     mu_path = Path(settings.processed_data_dir) / mu_file
     cov_path = Path(settings.processed_data_dir) / cov_file
 
@@ -128,10 +159,16 @@ def optimize_portfolio(
     upper = pd.Series(max_weight, index=assets, dtype=float)
     previous = pd.Series(0.0, index=assets, dtype=float)  # No previous position
 
+    # CRITICAL FIX: Skip turnover_cap on first allocation (when prev=0)
+    # Otherwise problem becomes infeasible: ||w-0||_1 ≤ tau < 1.0 conflicts with sum(w)=1.0
+    effective_turnover_cap = None if (previous == 0).all() else turnover_cap
+    if effective_turnover_cap is None and turnover_cap is not None:
+        logger.info("Skipping turnover_cap on initial allocation (previous_weights=0)")
+
     config = MeanVarianceConfig(
         risk_aversion=float(risk_aversion),
         turnover_penalty=float(turnover_penalty),
-        turnover_cap=turnover_cap,
+        turnover_cap=effective_turnover_cap,
         ridge_penalty=float(ridge_penalty),
         lower_bounds=lower,
         upper_bounds=upper,

@@ -1,0 +1,60 @@
+{
+  "duration_seconds": 6.313497009999992,
+  "metadata": {
+    "config_hash": "b0d4e1709bc2a05070c9ec6a175094909f3e95234fb5dc20797e4061ac1e9855",
+    "config_path": "configs/optimizer_example.yaml",
+    "end_date": null,
+    "git_commit": "4caa15d592b92e59eb947bd6daeaf695f309cee3",
+    "start_date": null,
+    "timestamp": "2025-10-29T11:25:33.128499"
+  },
+  "stages": {
+    "backtest": {
+      "duration_seconds": 5.97325012500005,
+      "metrics": {
+        "annualized_return": 0.03883817633071307,
+        "annualized_volatility": 0.08546121930327624,
+        "cumulative_nav": 1.2475838941777349,
+        "max_drawdown": -0.18594180410099714,
+        "sharpe_ratio": 0.4885882099889829,
+        "total_return": 0.24758389417773485
+      },
+      "n_notes": 1,
+      "notes": [
+        "Turnover above target band on 2021-01-06"
+      ],
+      "status": "completed"
+    },
+    "data": {
+      "duration_seconds": 0.11498102600126003,
+      "n_assets": 69,
+      "n_days": 1463,
+      "processed_path": "/home/marcusvinicius/Void/Desafio-ITAU-Quant/data/processed/returns_arara.parquet",
+      "raw_path": "/home/marcusvinicius/Void/Desafio-ITAU-Quant/data/raw/prices_arara.csv",
+      "status": "completed"
+    },
+    "estimation": {
+      "annualized": true,
+      "cov_method": "ledoit_wolf",
+      "cov_output": "/home/marcusvinicius/Void/Desafio-ITAU-Quant/data/processed/cov_estimate.parquet",
+      "duration_seconds": 0.12439372799963166,
+      "mu_method": "huber",
+      "mu_output": "/home/marcusvinicius/Void/Desafio-ITAU-Quant/data/processed/mu_estimate.parquet",
+      "shrinkage": 0.04994943029244551,
+      "status": "completed",
+      "window_used": 252
+    },
+    "optimization": {
+      "duration_seconds": 0.09489510099956533,
+      "expected_return": 0.0,
+      "n_assets": 0,
+      "output": "/home/marcusvinicius/Void/Desafio-ITAU-Quant/results/optimized_weights.parquet",
+      "risk_aversion": 3.0,
+      "sharpe": 0.0,
+      "status": "completed",
+      "turnover": 0.0,
+      "volatility": 0.0
+    }
+  },
+  "status": "completed"
+}
