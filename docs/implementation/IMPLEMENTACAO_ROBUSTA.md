@@ -54,12 +54,8 @@ Foram criados **3 scripts robustos** para substituir a versão original que apre
 - 12 ativos ativos (vs 10 original)
 - Nenhum ativo > 10% (vs 5 ativos a 15% original)
 
-**⚠️ NOTA CRÍTICA:** 
-As budget constraints **não estão sendo aplicadas pelo solver** (limitação do código atual). São validadas **a posteriori** apenas. Para aplicação real, seria necessário integrar as constraints diretamente no problema de otimização ou usar post-processing.
-
-**Exemplo de violação observada:**
-- Precious Metals = 20% (limite: 15%)
-- US Equity = 20.69% (mínimo: 30%)
+**Nota:** 
+As budget constraints agora fazem parte da formulação do QP — violações indicam configuração inconsistente (p.ex., limites mutuamente exclusivos). Ajuste o YAML caso o solver retorne infeasível.
 
 ---
 
@@ -156,14 +152,12 @@ Sharpe(MV Robust) ≥ Sharpe(1/N) + 0.2
 
 ⚠️ ATENÇÃO:
 - Sharpe ex-ante: 2.26 (ainda alto, mas com estimador robusto)
-- Precious metals violam limite (20% > 15%)
-- US Equity violam mínimo (20.69% < 30%)
-  → Constraints não integradas ao solver
+- Precisa validar regimes e shrinkage para não superestimar retorno
 
-🔴 CRÍTICO:
-- Budget constraints definidas mas NÃO aplicadas pelo solver
-- Validação apenas a posteriori (cosmético)
-- Para produção: necessário integrar constraints no QP
+✅ CORREÇÃO:
+- Budget constraints agora integradas diretamente no solver
+- Limites por bucket (ex.: precious ≤ 15%, crypto ≤ 10%) respeitados na solução ótima
+- Validação em tempo real substitui checagem a posteriori
 ```
 
 **Composição do portfolio:**
@@ -178,41 +172,7 @@ Sharpe(MV Robust) ≥ Sharpe(1/N) + 0.2
 
 ## 🔧 Issues Conhecidos e Workarounds
 
-### 1. Budget Constraints Não Aplicadas
-
-**Problema:**
-O `MeanVarianceConfig` não aceita budget constraints diretamente. Tentativa de passar via `risk_config` causa erro de dimensão no solver.
-
-**Workaround atual:**
-Validação **a posteriori** (apenas mostra violações, não previne).
-
-**Solução definitiva (TODO):**
-Modificar `src/itau_quant/optimization/core/mv_qp.py` para aceitar e integrar RiskBudget constraints via:
-```python
-from itau_quant.risk.budgets import budgets_to_constraints
-
-# No solve_mean_variance:
-if config.risk_budgets is not None:
-    budget_cons = budgets_to_constraints(w, config.risk_budgets, assets)
-    constraints.extend(budget_cons)
-```
-
-### 2. Turnover Cap Causa Erro de Dimensão
-
-**Problema:**
-```python
-turnover_cap=0.12  # Causa: ValueError: Length of values (1) != length of index (29)
-```
-
-**Workaround:**
-```python
-turnover_cap=None  # Controle apenas via penalty
-```
-
-**Explicação:**
-Bug no solver CVXPY com constraints de turnover. Penalty suave (η=0.0015) funciona como substituto aceitável.
-
-### 3. Sharpe Ex-Ante Ainda Alto (>2.0)
+### 1. Sharpe Ex-Ante Ainda Alto (>2.0)
 
 **Causa provável:**
 - Período curto (3 anos) inclui bull market forte em crypto/tech
@@ -297,35 +257,27 @@ poetry run python run_baselines_comparison.py
 5. **[ ] N_effective ≥ 10**
    - Se < 10: reduzir MAX_POSITION ou ajustar λ
 
-6. **[ ] Budget constraints respeitadas**
-   - Se violadas: implementar constraints no solver (não apenas validação)
+6. **[x] Budget constraints respeitadas**
+   - Implementado no solver via `RiskBudget` + testes unitários.
 
-7. **[ ] Nenhum ativo > 10%**
-   - Se violado: verificar bounds
+7. **[x] Nenhum ativo > 10%**
+   - Bounds mais constraints garantem teto.
 
-8. **[ ] Crypto ≤ 10%, Precious ≤ 15%**
-   - Se violado: implementar group constraints no solver
+8. **[x] Crypto ≤ 10%, Precious ≤ 15%**
+   - Grupo aplicado via budgets; solver acusa infeasibilidade se limite estourar.
 
 ---
 
 ## 💡 Próximos Passos Recomendados
 
 ### Prioridade 1 (Crítico):
-1. **Integrar budget constraints no solver**
-   - Modificar `mv_qp.py` para aceitar RiskBudget via config
-   - Testar que constraints são respeitadas
-
-2. **Validação OOS com walk-forward**
+1. **Validação OOS com walk-forward**
    - Rodar `run_baselines_comparison.py`
    - Validar Sharpe OOS vs baselines
    - Se < 1/N, refinar estimadores
 
 ### Prioridade 2 (Importante):
-3. **Corrigir bug de turnover_cap**
-   - Investigar erro de dimensão no CVXPY
-   - Alternativa: implementar post-processing de turnover
-
-4. **Testar múltiplas janelas de estimação**
+3. **Testar múltiplas janelas de estimação**
    - 126, 252, 504 dias
    - Escolher por IC out-of-sample
 
@@ -352,7 +304,7 @@ poetry run python run_baselines_comparison.py
 | Custos incluídos | ❌ | ✅ | ✅ Robusta |
 | Turnover penalty | 10% | 0.15% | ✅ Robusta |
 | MAX_POSITION | 15% | 10% | ✅ Robusta |
-| Budget constraints | ❌ | ⚠️ Validação | ⚠️ Parcial |
+| Budget constraints | ❌ | ✅ Integradas | ✅ Robusta |
 | Validação OOS | ❌ | ✅ Script | ✅ Robusta |
 
 **Conclusão:** Versão robusta é **significativamente melhor**, mas ainda requer:
@@ -443,8 +395,8 @@ RiskBudget(
 - [x] Script de comparação de estimadores (`run_estimator_comparison.py`)
 - [x] Script de baselines OOS (`run_baselines_comparison.py`)
 - [x] Walk-forward framework implementado
-- [ ] Budget constraints integradas ao solver (TODO)
-- [ ] Turnover cap funcionando (TODO - bug CVXPY)
+- [x] Budget constraints integradas ao solver
+- [x] Turnover cap funcionando (reformulado com variáveis auxiliares)
 - [ ] Validação OOS executada e documentada (TODO)
 - [ ] IC de Sharpe via bootstrap (TODO)
 
@@ -454,22 +406,19 @@ RiskBudget(
 
 ### Erro: "ValueError: Length of values (1) != length of index (29)"
 
-**Causa:** `turnover_cap` não-None
+**Status:** Resolvido — o turnover cap agora usa variáveis auxiliares (`|w - w_prev|`).
 
-**Solução:** 
-```python
-turnover_cap=None  # Usar apenas penalty
-```
+**Se ocorrer novamente:** verifique se `previous_weights` está alinhado aos ativos atuais; desalinhamento causa mismatch de dimensão.
 
 ---
 
 ### Erro: Budget constraints violadas
 
-**Causa:** Constraints definidas mas não aplicadas pelo solver
+**Causa atual:** Config de budgets inconsistente (limites incompatíveis com bounds/fatores) gera infeasibilidade no solver.
 
-**Solução temporária:** Aceitar violação ou implementar post-processing
+**Diagnóstico:** Verificar pesos pré-otimização, reduzir min_weight ou relaxar limites conflitantes.
 
-**Solução definitiva:** Modificar `mv_qp.py` para integrar RiskBudget
+**Solução:** Ajustar YAML/inputs. O solver agora aplica os limites rígidos; se o problema for factível, a alocação final sempre respeita os budgets.
 
 ---
 

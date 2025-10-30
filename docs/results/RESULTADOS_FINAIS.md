@@ -195,10 +195,10 @@ poetry run python run_baselines_comparison.py
 **Solução:** Usar estimadores conservadores ou relaxar constraints
 **Status:** ✅ Funcionando com Shrunk50 (0 violações)
 
-### 2. Turnover Cap Bug ⚠️ WORKAROUND
-**Problema:** `turnover_cap=0.12` causa erro de dimensão
-**Workaround:** `turnover_cap=None` + `turnover_penalty=0.0015`
-**Status:** ⚠️ Penalty funciona, cap tem bug no CVXPY
+### 2. Turnover Cap ✅ RESOLVIDO
+**Problema histórico:** `turnover_cap=0.12` causava erro de dimensão
+**Correção:** reformulação do constraint com variáveis auxiliares (`|Δw|`)
+**Status:** ✅ Cap pode ser configurado normalmente (`tau` no YAML)
 
 ### 3. Overfit em μ ✅ IDENTIFICADO
 **Problema:** Sharpe ex-ante 2.26 → OOS 0.81 (degradação 64%)

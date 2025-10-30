@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import pandas as pd
 
@@ -17,6 +17,7 @@ from itau_quant.optimization.core.mv_qp import (
     solve_mean_variance,
 )
 from itau_quant.optimization.core.solver_utils import SolverSummary
+from itau_quant.risk.budgets import RiskBudget, load_budgets, validate_budgets
 from itau_quant.utils.data_loading import read_dataframe, read_vector
 from itau_quant.utils.yaml_loader import load_yaml_text
 
@@ -46,6 +47,7 @@ class OptimizerConfig:
     solver: str | None
     solver_kwargs: Mapping[str, Any]
     risk_config: Mapping[str, Any] | None = None
+    budgets: Sequence[RiskBudget] | None = None
 
 
 @dataclass(slots=True)
@@ -154,6 +156,9 @@ def run_optimizer(
 
     cost_vector = _build_cost_vector(optimizer_config.linear_costs_bps, mu_series.index)
 
+    if optimizer_config.budgets:
+        validate_budgets(optimizer_config.budgets, mu_series.index)
+
     mv_config = MeanVarianceConfig(
         risk_aversion=optimizer_config.risk_aversion,
         turnover_penalty=optimizer_config.turnover_penalty,
@@ -165,6 +170,7 @@ def run_optimizer(
         solver=optimizer_config.solver,
         solver_kwargs=optimizer_config.solver_kwargs,
         risk_config=optimizer_config.risk_config,
+        budgets=optimizer_config.budgets,
     )
 
     mv_result = solve_mean_variance(mu_series, cov_matrix, mv_config)
@@ -209,8 +215,30 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
     sigma_config = raw.get("estimators", {}).get("sigma", {})
     risk_section = optimizer_section.get("risk") or optimizer_section.get("risk_constraints")
     risk_config = None
+    budgets: Sequence[RiskBudget] | None = None
     if isinstance(risk_section, Mapping):
         risk_config = {k: v for k, v in risk_section.items()}
+        raw_budgets = risk_config.pop("budgets", None)
+        if raw_budgets:
+            if isinstance(raw_budgets, RiskBudget):
+                budgets = [raw_budgets]
+            else:
+                if not isinstance(raw_budgets, (list, tuple, set)):
+                    raw_iter = [raw_budgets]
+                else:
+                    raw_iter = list(raw_budgets)
+                direct: list[RiskBudget] = []
+                loadable: list[Mapping[str, Any]] = []
+                for item in raw_iter:
+                    if isinstance(item, RiskBudget):
+                        direct.append(item)
+                    elif isinstance(item, Mapping):
+                        loadable.append(item)  # type: ignore[arg-type]
+                    else:
+                        raise TypeError("Budgets must be mappings or RiskBudget objects.")
+                budgets = list(direct)
+                if loadable:
+                    budgets.extend(load_budgets(loadable))
 
     data_section = raw.get("data", {})
     returns_path_raw = data_section.get("returns") or data_section.get("returns_path")
@@ -248,6 +276,7 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
         solver=solver,
         solver_kwargs=solver_kwargs,
         risk_config=risk_config,
+        budgets=budgets,
     )
 
 

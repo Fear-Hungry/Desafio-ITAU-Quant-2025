@@ -243,7 +243,7 @@ def mv_robust_shrunk(train_returns):
     config = MeanVarianceConfig(
         risk_aversion=4.0,
         turnover_penalty=0.0015,
-        turnover_cap=None,  # Bug conhecido - usar apenas penalty
+        turnover_cap=None,  # Ajuste (ex.: 0.10) para limitar a soma de |Δw|
         lower_bounds=pd.Series(0.0, index=train_returns.columns),
         upper_bounds=pd.Series(MAX_POSITION, index=train_returns.columns),
         previous_weights=pd.Series(0.0, index=train_returns.columns),

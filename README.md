@@ -383,7 +383,7 @@ rebalancing:
   turnover_target: [0.05, 0.20]
 risk_limits:
   vol_annual_max: 0.12
-  cvar_alpha: 0.05
+  cvar_alpha: 0.95  # confiança de 95% → cauda de 5%
   cvar_max: 0.08
   max_drawdown: 0.15
 fx:
@@ -419,6 +419,8 @@ walkforward:
   purge_days: 2
   embargo_days: 2
   n_splits: 60
+
+> **Nota sobre CVaR:** `cvar_alpha` é o nível de confiança do Expected Shortfall. Use `0.95` para medir a cauda de 5%; valores menores tornam o CVaR artificialmente otimista.
 ```
 
 ## 🧱 Arquitetura Funcional

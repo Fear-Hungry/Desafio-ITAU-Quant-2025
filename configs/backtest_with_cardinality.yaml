@@ -10,7 +10,7 @@ rebalancing:
 
 risk_limits:
   vol_annual_max: 0.20
-  cvar_alpha: 0.05
+  cvar_alpha: 0.95
   cvar_max: 0.12
   max_drawdown: 0.20
 

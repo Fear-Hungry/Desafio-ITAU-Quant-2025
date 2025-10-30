@@ -27,7 +27,7 @@ class StrategyParams:
     tau_turnover_cap: float = 0.20
     cardinality_min: int = 20
     cardinality_max: int = 35
-    cvar_alpha: float = 0.05
+    cvar_alpha: float = 0.95
 
     def to_dict(self) -> dict[str, Any]:
         return {

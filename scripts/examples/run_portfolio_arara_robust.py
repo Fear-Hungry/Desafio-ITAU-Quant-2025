@@ -357,7 +357,7 @@ cost_vector = pd.Series(TRANSACTION_COST_BPS / 10000, index=valid_tickers)
 config = MeanVarianceConfig(
     risk_aversion=RISK_AVERSION,
     turnover_penalty=TURNOVER_PENALTY,
-    turnover_cap=None,  # Bug conhecido - usar apenas penalty
+    turnover_cap=None,  # Defina, se desejado, um cap ex: 0.10 para limitar Δw
     lower_bounds=pd.Series(MIN_POSITION, index=valid_tickers),
     upper_bounds=pd.Series(MAX_POSITION, index=valid_tickers),
     previous_weights=pd.Series(0.0, index=valid_tickers),

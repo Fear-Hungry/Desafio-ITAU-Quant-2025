@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import pandas as pd
 
@@ -17,6 +17,7 @@ from itau_quant.optimization.core.mv_qp import (
 from itau_quant.optimization.heuristics.hrp import heuristic_allocation
 from itau_quant.portfolio.cardinality_pipeline import apply_cardinality_constraint
 from itau_quant.portfolio.rounding import RoundingResult, rounding_pipeline
+from itau_quant.risk.budgets import RiskBudget, load_budgets, validate_budgets
 
 __all__ = [
     "MarketData",
@@ -195,6 +196,30 @@ def optimize_portfolio(
 
     risk_section = dict(risk_config or {})
 
+    budgets: Sequence[RiskBudget] | None = None
+    raw_budgets = risk_section.pop("budgets", None)
+    if raw_budgets:
+        if isinstance(raw_budgets, RiskBudget):
+            budgets = [raw_budgets]
+        else:
+            if not isinstance(raw_budgets, (list, tuple, set)):
+                raw_iter = [raw_budgets]
+            else:
+                raw_iter = list(raw_budgets)
+            direct: list[RiskBudget] = []
+            loadable: list[Mapping[str, Any]] = []
+            for item in raw_iter:
+                if isinstance(item, RiskBudget):
+                    direct.append(item)
+                elif isinstance(item, Mapping):
+                    loadable.append(item)  # type: ignore[arg-type]
+                else:
+                    raise TypeError("Budgets must be mappings or RiskBudget objects.")
+            budgets = list(direct)
+            if loadable:
+                budgets.extend(load_budgets(loadable))
+        validate_budgets(budgets, mu.index)
+
     config = MeanVarianceConfig(
         risk_aversion=risk_aversion,
         turnover_penalty=turnover_penalty,
@@ -206,6 +231,7 @@ def optimize_portfolio(
         solver=optimizer_config.get("solver"),
         solver_kwargs=optimizer_config.get("solver_kwargs"),
         risk_config=risk_section or None,
+        budgets=budgets,
     )
     result = solve_mean_variance(mu, cov, config)
     fallback_relaxed_turnover = False
@@ -491,6 +517,16 @@ def rebalance(
             "risk_aversion": mv_config.risk_aversion,
             "turnover_penalty": mv_config.turnover_penalty,
         }
+        if mv_config.budgets:
+            solver_extra["budgets"] = [
+                {
+                    "name": budget.name,
+                    "min_weight": budget.min_weight,
+                    "max_weight": budget.max_weight,
+                    "n_assets": len(budget.tickers),
+                }
+                for budget in mv_config.budgets
+            ]
         if card_info:
             solver_extra["cardinality"] = card_info
         if solver_flags.get("turnover_cap_relaxed"):

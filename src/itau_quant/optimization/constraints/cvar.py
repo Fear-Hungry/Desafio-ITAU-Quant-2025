@@ -16,7 +16,7 @@ def build_cvar_constraint(
     weights_var: cp.Variable,
     returns: pd.DataFrame | np.ndarray,
     *,
-    alpha: float = 0.05,
+    alpha: float = 0.95,
     cvar_limit: float = 0.10,
 ) -> list:
     """Build CVaR constraint for portfolio optimization.
@@ -37,7 +37,7 @@ def build_cvar_constraint(
         Historical returns (rows = time, cols = assets)
         Used to compute scenario-based CVaR
     alpha : float
-        Confidence level (default 0.05 for 95% CVaR)
+        Confidence level (default 0.95 for 5% tail CVaR)
     cvar_limit : float
         Maximum allowed CVaR (as positive number, e.g., 0.10 for -10% tail loss)
 

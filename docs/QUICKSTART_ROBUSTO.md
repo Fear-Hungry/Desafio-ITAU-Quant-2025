@@ -112,25 +112,19 @@ Sharpe(MV Robust) ≥ Sharpe(1/N) + 0.2
 
 ---
 
-## ⚠️ Issues Conhecidos
+## ⚠️ Pontos de Atenção
 
-### 1. Budget Constraints Não Aplicadas
-**Sintoma:** Precious Metals > 15%, US Equity < 30%
+### 1. Budget Constraints Ativas
+**Sintoma esperado:** solver retorna `infeasible` quando limites são incompatíveis.
 
-**Motivo:** Constraints definidas mas não integradas ao solver
-
-**Impacto:** Baixo (diversificação ainda melhorou vs original)
-
-**Fix:** Modificar `mv_qp.py` (TODO)
+**Como lidar:** ajuste `min_weight`/`max_weight` ou relaxe budgets conflitantes. Não há mais validação tardia – o modelo bloqueia violações na raiz.
 
 ---
 
-### 2. Turnover Cap Causa Erro
-**Sintoma:** `ValueError: Length mismatch`
+### 2. Turnover Cap Reativado
+**Uso:** definir `tau` (ou `turnover_cap`) no YAML aplica `∑|w - w_prev| ≤ tau`.
 
-**Workaround:** `turnover_cap=None` (usar apenas penalty)
-
-**Impacto:** Médio (penalty suave funciona bem)
+**Se falhar:** garanta `previous_weights` com todos os ativos (preencher ausentes com 0). Erros de dimensão indicam desalinhamento, não bug do solver.
 
 ---
 

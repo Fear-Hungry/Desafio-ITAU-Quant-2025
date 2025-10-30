@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 import cvxpy as cp
 import numpy as np
@@ -11,6 +11,12 @@ import pandas as pd
 
 from .solver_utils import SolverSummary, solve_problem
 from itau_quant.risk.constraints import build_constraints
+from itau_quant.risk.budgets import (
+    RiskBudget,
+    budgets_to_constraints,
+    load_budgets,
+    validate_budgets,
+)
 
 __all__ = [
     "MeanVarianceConfig",
@@ -29,7 +35,7 @@ class MeanVarianceConfig:
     upper_bounds: pd.Series
     previous_weights: pd.Series
     cost_vector: pd.Series | None
-    budgets: list | None = None  # List of RiskBudget objects
+    budgets: Sequence[RiskBudget] | None = None
     solver: str | None = None
     solver_kwargs: Mapping[str, Any] | None = None
     risk_config: Mapping[str, Any] | None = None
@@ -182,17 +188,63 @@ def solve_mean_variance(
     constraints.append(w >= lower.to_numpy(dtype=float))
     constraints.append(w <= upper.to_numpy(dtype=float))
 
-    # Add budget constraints
+    # Budget constraints from MeanVarianceConfig and/or risk_config
+    budgets: list[RiskBudget] = []
     if config.budgets:
-        from itau_quant.risk.budgets import budgets_to_constraints
+        budgets.extend(config.budgets)
 
-        budget_cons = budgets_to_constraints(w, config.budgets, assets)
+    risk_config_for_builder: dict[str, Any] | None = None
+    if config.risk_config:
+        risk_config_for_builder = dict(config.risk_config)
+        raw_budgets = risk_config_for_builder.pop("budgets", None)
+        if raw_budgets:
+            if isinstance(raw_budgets, Mapping):
+                raw_items = [raw_budgets]
+            else:
+                raw_items = list(raw_budgets)
+            direct: list[RiskBudget] = []
+            loadable: list[Mapping[str, object]] = []
+            for item in raw_items:
+                if isinstance(item, RiskBudget):
+                    direct.append(item)
+                elif isinstance(item, Mapping):
+                    loadable.append(item)
+                else:
+                    raise TypeError(
+                        "Budget entries must be RiskBudget instances or mappings."
+                    )
+            budgets.extend(direct)
+            if loadable:
+                budgets.extend(load_budgets(loadable))
+
+    if budgets:
+        unique: dict[tuple[Any, ...], RiskBudget] = {}
+        for budget in budgets:
+            key = (
+                budget.name,
+                tuple(sorted(budget.tickers)),
+                budget.min_weight,
+                budget.max_weight,
+                budget.target,
+                budget.tolerance,
+            )
+            unique[key] = budget
+        budgets = list(unique.values())
+        validate_budgets(budgets, assets)
+        budget_cons = budgets_to_constraints(w, budgets, assets)
         constraints.extend(budget_cons)
 
     if config.turnover_cap is not None and config.turnover_cap > 0:
-        constraints.append(cp.norm1(trades) <= float(config.turnover_cap))
+        turnover_abs = cp.Variable(n_assets, nonneg=True)
+        constraints.extend(
+            [
+                turnover_abs >= trades,
+                turnover_abs >= -trades,
+                cp.sum(turnover_abs) <= float(config.turnover_cap),
+            ]
+        )
 
-    if config.risk_config:
+    if risk_config_for_builder:
         context: dict[str, Any] = {
             "weights_var": w,
             "asset_index": assets,
@@ -202,7 +254,7 @@ def solve_mean_variance(
         if config.factor_loadings is not None:
             factor_df = config.factor_loadings.reindex(index=assets).astype(float)
             context["factor_loadings"] = factor_df
-        constraints.extend(build_constraints(config.risk_config, context))
+        constraints.extend(build_constraints(risk_config_for_builder, context))
 
     problem = cp.Problem(objective, constraints)
 
@@ -248,12 +300,12 @@ def solve_mean_variance(
     weights /= weights.sum() if weights.sum() != 0 else 1.0
 
     # Validate budget constraints if provided
-    if config.budgets and summary.is_optimal():
+    if budgets and summary.is_optimal():
         import warnings
 
         tol = 1e-4
 
-        for budget in config.budgets:
+        for budget in budgets:
             actual = sum(
                 weights.get(t, 0.0) for t in budget.tickers if t in weights.index
             )

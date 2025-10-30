@@ -150,7 +150,7 @@ sigma = sigma * 252
 config = MeanVarianceConfig(
     risk_aversion=3.0,
     turnover_penalty=0.0,
-    turnover_cap=None,
+    turnover_cap=0.10,  # Cap de 10% sobre Δw em relação ao portfólio anterior
     lower_bounds=pd.Series(0.0, index=tickers),
     upper_bounds=pd.Series(0.40, index=tickers),
     previous_weights=pd.Series(0.0, index=tickers),

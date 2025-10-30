@@ -195,6 +195,7 @@ def apply_cardinality_constraint(
         risk_config=mv_config.risk_config
         if hasattr(mv_config, "risk_config")
         else None,
+        budgets=mv_config.budgets if hasattr(mv_config, "budgets") else None,
     )
 
     try:

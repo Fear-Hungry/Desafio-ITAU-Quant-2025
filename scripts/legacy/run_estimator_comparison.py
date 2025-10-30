@@ -205,7 +205,7 @@ for name, mu in ESTIMATORS.items():
     config = MeanVarianceConfig(
         risk_aversion=RISK_AVERSION,
         turnover_penalty=TURNOVER_PENALTY,
-        turnover_cap=None,  # Bug conhecido - usar apenas penalty
+        turnover_cap=None,  # Ajuste (ex.: 0.10) para limitar a soma de |Δw|
         lower_bounds=pd.Series(0.0, index=valid_tickers),
         upper_bounds=pd.Series(MAX_POSITION, index=valid_tickers),
         previous_weights=pd.Series(0.0, index=valid_tickers),

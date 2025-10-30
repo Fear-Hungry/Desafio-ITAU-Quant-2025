@@ -8,6 +8,7 @@ from itau_quant.optimization.core.mv_qp import (
     MeanVarianceConfig,
     solve_mean_variance,
 )
+from itau_quant.risk.budgets import RiskBudget
 
 
 def _default_config(**overrides) -> MeanVarianceConfig:
@@ -25,6 +26,8 @@ def _default_config(**overrides) -> MeanVarianceConfig:
         cost_vector=overrides.pop("cost_vector", None),
         solver=overrides.pop("solver", None),
         solver_kwargs=overrides.pop("solver_kwargs", {}),
+        risk_config=overrides.pop("risk_config", None),
+        budgets=overrides.pop("budgets", None),
     )
 
 
@@ -79,3 +82,30 @@ def test_mv_qp_cost_penalty_discourages_large_trade() -> None:
     penalised_move = abs(penalised_result.weights["B"] - prev["B"])
     assert penalised_move <= base_move + 1e-6
     assert penalised_result.cost > 0
+
+
+def test_mv_qp_respects_budget_constraints() -> None:
+    mu = pd.Series([0.12, 0.11, 0.02], index=["A", "B", "C"], dtype=float)
+    cov = pd.DataFrame(np.eye(3) * 0.05, index=mu.index, columns=mu.index)
+    budget = RiskBudget(name="growth_pair", tickers=["A", "B"], max_weight=0.40)
+    config = _default_config(risk_aversion=1.0, budgets=[budget])
+
+    result = solve_mean_variance(mu, cov, config)
+
+    group_weight = float(result.weights.loc[["A", "B"]].sum())
+    assert group_weight <= 0.40 + 1e-4
+
+
+def test_mv_qp_parses_budget_from_risk_config() -> None:
+    mu = pd.Series([0.10, 0.09, 0.03], index=["A", "B", "C"], dtype=float)
+    cov = pd.DataFrame(np.eye(3) * 0.04, index=mu.index, columns=mu.index)
+    risk_cfg = {
+        "budgets": [
+            {"name": "cap", "tickers": ["A", "B"], "max_weight": 0.35},
+        ]
+    }
+    config = _default_config(risk_aversion=1.0, risk_config=risk_cfg)
+
+    result = solve_mean_variance(mu, cov, config)
+
+    assert float(result.weights.loc[["A", "B"]].sum()) <= 0.35 + 1e-4

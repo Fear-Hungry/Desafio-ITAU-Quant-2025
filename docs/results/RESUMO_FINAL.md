@@ -184,22 +184,17 @@ mu_shrunk = mu_shrunk_daily * 252  # Anualizar
 ```
 
 ### 2. ✅ Turnover Cap Bug
-**Erro:**
+**Erro histórico:**
 ```python
-turnover_cap=0.12  # Causa: ValueError: Length mismatch
+turnover_cap=0.12  # ValueError: Length mismatch
 ```
 
-**Correção (todos os scripts):**
-```python
-turnover_cap=None  # Usar apenas penalty (workaround)
-```
+**Correção:** reformulação do constraint em `mv_qp.py` com variáveis auxiliares `|w - w_prev|`. Agora `turnover_cap` pode ser configurado normalmente.
 
-### 3. ✅ Budget Constraints Não Aplicadas
-**Problema:** Constraints definidas mas não integradas ao solver
+### 3. ✅ Budget Constraints Integradas
+**Status:** Solver aplica `RiskBudget` diretamente; violações indicam infeasibilidade de configuração.
 
-**Status:** Validação a posteriori (cosmético)
-
-**Impacto:** Baixo - diversificação melhorou de qualquer forma
+**Ação:** ajustar YAML/manual se limites conflitarem com bounds ou universo.
 
 ---
 
@@ -317,10 +312,10 @@ poetry run python run_baselines_comparison.py
 4. **N_effective** subiu de 7.4 → 10.5 (+42%)
 5. **Custos 30 bps** + penalty integrados no solver
 
-### O que Não Funcionou ❌
-1. **Budget constraints** não aplicadas pelo solver (limitação código)
-2. **Turnover_cap** causa bug de dimensão (workaround: usar penalty)
-3. **Sharpe Huber ainda alto** (2.26) → Shrunk necessário
+### O que Ainda Falta Validar ❌
+1. **Sharpe Huber ainda alto** (2.26) → Shrunk necessário
+2. **Validação OOS completa** pendente
+3. **Stress tests** e bootstrap de Sharpe não executados
 
 ### Trade-offs Identificados
 | Aspecto | Huber | Shrunk_50 |
