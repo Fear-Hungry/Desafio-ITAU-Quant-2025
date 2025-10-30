@@ -92,7 +92,7 @@ group_constraints:
     assets_regex: "(VNQ|VNQI|O|PSA)"
 
 estimators:
-  mu: { method: huber, window_days: 252, delta: 1.5 }
+  mu: { method: shrunk_50, window_days: 252, strength: 0.5 }
   sigma: { method: ledoit_wolf, window_days: 252, nonlinear: true }
 
 reporting:

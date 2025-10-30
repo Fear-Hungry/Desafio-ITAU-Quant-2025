@@ -68,6 +68,7 @@ class TestEstimationModule:
             "mu_method",
             "cov_method",
             "huber_delta",
+            "shrink_strength",
             "annualize",
             "mu_output",
             "cov_output",

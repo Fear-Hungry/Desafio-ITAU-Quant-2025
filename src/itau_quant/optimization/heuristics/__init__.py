@@ -15,6 +15,7 @@ from .cardinality import (
     reoptimize_with_subset,
     cardinality_pipeline,
 )
+from .metaheuristic import metaheuristic_outer, MetaheuristicResult
 
 __all__ = [
     "equal_weight",
@@ -28,4 +29,6 @@ __all__ = [
     "prune_after_optimisation",
     "reoptimize_with_subset",
     "cardinality_pipeline",
+    "metaheuristic_outer",
+    "MetaheuristicResult",
 ]

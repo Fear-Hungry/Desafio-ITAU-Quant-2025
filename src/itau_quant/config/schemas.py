@@ -133,7 +133,7 @@ class EstimatorConfig(BaseModel):
     window_days : int
         Estimation window in trading days
     mu_method : Literal
-        Mean return estimator (simple, huber, trimmed)
+        Mean return estimator (simple, huber, trimmed, shrunk_50)
     sigma_method : Literal
         Covariance estimator (sample, ledoit_wolf, nonlinear, tyler)
     huber_delta : float
@@ -141,13 +141,19 @@ class EstimatorConfig(BaseModel):
     """
 
     window_days: int = Field(default=252, gt=0, description="Estimation window (days)")
-    mu_method: Literal["simple", "huber", "trimmed"] = Field(
+    mu_method: Literal["simple", "huber", "trimmed", "shrunk_50"] = Field(
         default="simple", description="Mean return estimator"
     )
     sigma_method: Literal["sample", "ledoit_wolf", "nonlinear", "tyler"] = Field(
         default="ledoit_wolf", description="Covariance estimator"
     )
     huber_delta: float = Field(default=1.5, gt=0, description="Huber delta parameter")
+    shrink_strength: float = Field(
+        default=0.5,
+        ge=0,
+        le=1,
+        description="Shrinkage intensity towards prior when using shrunk_50",
+    )
 
 
 class PortfolioConfig(BaseModel):

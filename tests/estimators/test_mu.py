@@ -65,6 +65,14 @@ def test_bayesian_shrinkage_mean_moves_towards_prior():
     assert np.all(np.sign(shrunk - sample) == np.sign(prior - sample))
 
 
+def test_shrunk_mean_approaches_zero_prior():
+    returns = _toy_returns()
+    shrunk = mu_estimators.shrunk_mean(returns, strength=0.5)
+    sample = returns.mean()
+    expected = sample * 0.5  # zero prior
+    pd.testing.assert_series_equal(shrunk, expected.astype(float))
+
+
 def test_confidence_intervals_contains_sample_mean():
     rng = np.random.default_rng(42)
     returns = pd.DataFrame(rng.normal(0.01, 0.02, size=(100, 2)), columns=["A", "B"])

@@ -14,7 +14,7 @@ import pandas as pd
 
 from itau_quant.config import Settings
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage, sample_cov
-from itau_quant.estimators.mu import huber_mean, mean_return
+from itau_quant.estimators.mu import huber_mean, mean_return, shrunk_mean
 from itau_quant.utils.logging_config import get_logger
 
 __all__ = ["estimate_parameters"]
@@ -26,9 +26,10 @@ def estimate_parameters(
     *,
     returns_file: str = "returns_arara.parquet",
     window: int = 252,
-    mu_method: str = "huber",
+    mu_method: str = "shrunk_50",
     cov_method: str = "ledoit_wolf",
     huber_delta: float = 1.5,
+    shrink_strength: float = 0.5,
     annualize: bool = True,
     mu_output: str = "mu_estimate.parquet",
     cov_output: str = "cov_estimate.parquet",
@@ -43,9 +44,10 @@ def estimate_parameters(
     Args:
         returns_file: Input parquet file with historical returns
         window: Number of most recent observations to use (rolling window)
-        mu_method: Method for expected return ("huber" or "simple")
+        mu_method: Method for expected return ("shrunk_50", "huber", or "simple")
         cov_method: Method for covariance ("ledoit_wolf" or "sample")
         huber_delta: Robustness parameter for Huber estimator (typically 1.5)
+        shrink_strength: Shrinkage intensity towards the prior (default 0.5)
         annualize: If True, annualize estimates (252 trading days)
         mu_output: Output filename for expected returns
         cov_output: Output filename for covariance matrix
@@ -84,13 +86,19 @@ def estimate_parameters(
     window_used = min(window, len(returns))
     sample = returns.tail(window_used)
 
-    logger.info("Estimating μ via %s (window=%d)", mu_method, window_used)
-
     # Estimate expected returns (μ)
-    if mu_method == "huber":
+    mu_key = (mu_method or "").lower()
+    if not 0.0 <= shrink_strength <= 1.0:
+        raise ValueError("shrink_strength must lie in [0, 1].")
+
+    logger.info("Estimating μ via %s (window=%d)", mu_key, window_used)
+
+    if mu_key == "huber":
         mu_daily, _ = huber_mean(sample, c=huber_delta)
-    elif mu_method in {"simple", "mean"}:
+    elif mu_key in {"simple", "mean"}:
         mu_daily = mean_return(sample, method="simple")
+    elif mu_key in {"shrunk", "shrunk_50", "shrinkage"}:
+        mu_daily = shrunk_mean(sample, strength=shrink_strength, prior=0.0)
     else:
         raise ValueError(f"Unsupported mu_method: {mu_method}")
 

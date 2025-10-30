@@ -67,6 +67,14 @@ def apply_cardinality_constraint(
         >>> len(w_card[w_card > 0])
         2
     """
+    if not cardinality_config or not bool(cardinality_config.get("enable", True)):
+        info = {
+            "reopt_status": "disabled",
+            "selected_assets": [],
+            "note": "Cardinality constraint disabled via configuration",
+        }
+        return weights.copy(), info
+
     # Extract config
     mode = cardinality_config.get("mode", "dynamic_neff_cost")
     k_fixed = cardinality_config.get("k_fixed", 22)

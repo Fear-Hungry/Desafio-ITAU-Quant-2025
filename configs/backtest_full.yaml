@@ -21,7 +21,7 @@ optimizer:
   solver: ECOS
   max_weight: 0.15
 estimators:
-  mu: { method: huber, window_days: 252, delta: 1.5 }
+  mu: { method: shrunk_50, window_days: 252, strength: 0.5 }
   sigma: { method: ledoit_wolf, window_days: 252, nonlinear: true }
   costs: { linear_bps: 10, slippage_model: adv20_piecewise }
 reporting:

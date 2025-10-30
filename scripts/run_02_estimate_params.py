@@ -32,8 +32,8 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--mu-method",
-        choices=("simple", "huber"),
-        default="huber",
+        choices=("simple", "huber", "shrunk_50"),
+        default="shrunk_50",
         help="Expected return estimator to apply.",
     )
     parser.add_argument(
@@ -52,6 +52,12 @@ def parse_args() -> argparse.Namespace:
         "--annualize",
         action="store_true",
         help="Annualize μ/Σ assuming 252 trading days.",
+    )
+    parser.add_argument(
+        "--shrink-strength",
+        type=float,
+        default=0.5,
+        help="Shrinkage intensity towards the prior when using shrunk_50.",
     )
     parser.add_argument(
         "--mu-output",
@@ -81,6 +87,7 @@ def main() -> None:
             annualize=args.annualize,
             mu_output=args.mu_output,
             cov_output=args.cov_output,
+            shrink_strength=args.shrink_strength,
             settings=settings,
         )
     except Exception as exc:

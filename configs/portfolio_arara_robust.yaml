@@ -1,5 +1,5 @@
 # Robust Portfolio Configuration
-# Conservative settings with Huber estimator and strict position limits
+# Conservative settings with Shrunk_50 estimator and strict position limits
 
 risk_aversion: 4.0
 max_position: 0.10  # 10% per asset (more conservative)
@@ -10,9 +10,9 @@ estimation_window: 252
 # Estimator configuration - use robust methods
 estimators:
   window_days: 252
-  mu_method: huber
+  mu_method: shrunk_50
   sigma_method: ledoit_wolf
-  huber_delta: 1.5
+  shrink_strength: 0.5
 
 # Data loading
 data:

@@ -161,10 +161,6 @@ def test_cardinality_weights_sum_to_one(simple_data, default_config):
     assert w_card.index.equals(weights.index)
 
 
-# Skipping disabled test - when enable=False, still runs reopt which changes weights
-# TODO: Add early return in cardinality_pipeline when enable=False
-
-
 def test_cardinality_with_min_weight(simple_data):
     """Test respects min weight."""
     weights, mu, cov = simple_data
@@ -186,6 +182,21 @@ def test_cardinality_with_min_weight(simple_data):
     active = w_card[w_card > 1e-6]
     assert (active >= min_weight - 1e-3).all()
     assert w_card.index.equals(weights.index)
+
+
+def test_cardinality_disabled_returns_original(simple_data, default_config):
+    """Ensure pipeline is bypassed when cardinality is disabled."""
+    weights, mu, cov = simple_data
+    card_config = {"enable": False}
+
+    w_card, info = apply_cardinality_constraint(
+        weights, mu, cov, default_config, card_config
+    )
+
+    pd.testing.assert_series_equal(w_card, weights)
+    assert info["reopt_status"] == "disabled"
+    assert info["selected_assets"] == []
+    assert "note" in info
 
 
 def test_rebalance_applies_cardinality_top_level():

@@ -19,7 +19,7 @@ reais e validação walk-forward para a carteira ARARA.**
 
 - Optimiza um universo de 40+ ETFs globais com rebalanceamento mensal e limites por classe.
 - Incorpora custos, turnover e cardinalidade diretamente na função objetivo do portfólio.
-- Utiliza estimadores robustos (Huber, Ledoit-Wolf) e prevê extensão para Black-Litterman.
+- Utiliza estimadores robustos (Shrunk_50 + Ledoit-Wolf) e prevê extensão para Black-Litterman.
 - Backtesting desenhado com *purging/embargo*, métricas pós-custos e comparação com baselines.
 - Roadmap direcionado ao relatório de 10 páginas exigido pelo edital, com rastreabilidade completa.
 
@@ -57,7 +57,7 @@ optimizer:
   tau: 0.20                 # Turnover cap
   
 estimators:
-  mu: { method: huber, window_days: 252, delta: 1.5 }
+  mu: { method: shrunk_50, window_days: 252, strength: 0.5 }
   sigma: { method: ledoit_wolf, window_days: 252, nonlinear: true }
 
 cardinality:
@@ -80,7 +80,7 @@ portfolio:
 **Data Setup:**
 - Universo: ARARA (27+ ativos)
 - Período: 2020-01-01 a present
-- Estimação: Huber mean + Ledoit-Wolf covariance (nonlinear)
+- Estimação: Shrunk_50 mean + Ledoit-Wolf covariance (nonlinear)
 - Walk-forward: 252 train days, 21 test days, 2-day purge/embargo, 60 splits
 
 ---
@@ -97,7 +97,7 @@ poetry run itau-quant run-full-pipeline \
 
 Produz:
 - `data/processed/returns_arara.parquet` (retornos limpos)
-- `data/processed/mu_estimate.parquet` (Huber mean)
+- `data/processed/mu_estimate.parquet` (Shrunk_50 mean)
 - `data/processed/cov_estimate.parquet` (Ledoit-Wolf Σ)
 - `results/optimized_weights.parquet` (pesos ótimos)
 - JSON output com todos os estágios
@@ -190,7 +190,7 @@ head -5 results/backtest_metrics_*.csv | tail -n +2 | awk -F',' '{print $1, $2, 
 | Componente | Status | Notas |
 |-----------|--------|-------|
 | **Data Pipeline** | ✅ Operacional | Carrega ARARA com 27+ ativos |
-| **Parameter Est.** | ✅ Operacional | Huber + Ledoit-Wolf rodam OK |
+| **Parameter Est.** | ✅ Operacional | Shrunk_50 + Ledoit-Wolf rodam OK |
 | **Optimization** | ✅ Operacional | CLARABEL solver converge |
 | **Backtest (dry)** | ✅ Operacional | Rápido, para prototipagem |
 | **Backtest (real)** | ✅ Operacional | Walk-forward com purge/embargo |
@@ -203,7 +203,7 @@ head -5 results/backtest_metrics_*.csv | tail -n +2 | awk -F',' '{print $1, $2, 
 ### ✅ Resultado de Execução Verificada
 
 **Timestamp:** 2025-10-29 12:01:08 UTC  
-**Config:** `configs/optimizer_example.yaml` (lambda=15.0, Huber + Ledoit-Wolf)  
+**Config:** `configs/optimizer_example.yaml` (lambda=15.0, Shrunk_50 + Ledoit-Wolf)  
 **Duração:** 6.0 segundos
 
 > **Configuração conservadora (λ=15.0)** escolhida para atender os limites de risco do desafio:
@@ -250,7 +250,7 @@ head -5 results/backtest_metrics_*.csv | tail -n +2 | awk -F',' '{print $1, $2, 
 reports/run_2025-10-29T12-01-08-268355.json     # Metadados completos da execução
 reports/run_2025-10-29T12-01-08-268355.md       # Relatório markdown
 results/optimized_weights.parquet               # Pesos ótimos (17 ativos)
-data/processed/mu_estimate.parquet              # Expected returns (Huber)
+data/processed/mu_estimate.parquet              # Expected returns (Shrunk_50)
 data/processed/cov_estimate.parquet             # Covariance (Ledoit-Wolf)
 ```
 
@@ -408,7 +408,7 @@ optimizer:
     score_cost: -0.15
     tie_breaker: low_turnover
 estimators:
-  mu: {method: huber, window_days: 252, delta: 1.5}
+  mu: {method: shrunk_50, window_days: 252, strength: 0.5}
   sigma: {method: ledoit_wolf, window_days: 252, nonlinear: true}
   costs: {linear_bps: 10, slippage_model: adv20_piecewise}
 reporting:
@@ -448,8 +448,9 @@ walkforward:
 - Próximos passos: calendário de pregões, limpeza de liquidez (`adv_20`, `amihud`).
 
 ### `itau_quant.optimization`
-- `estimators.py` (WIP): médias Huber, shrinkage Ledoit-Wolf, posterior BL.
+- `estimators.py` (WIP): médias Shrunk_50, shrinkage Ledoit-Wolf, posterior BL.
 - `solvers.py` (WIP): solucionadores QP e mean-CVaR com restrições de grupo e turnover.
+- `heuristics/metaheuristic.py`: camada GA para ajustar cardinalidade e hiperparâmetros.
 
 ### `itau_quant.backtesting`
 - `engine.py` (WIP): rebalance mensal, purging/embargo, gatilhos de risco.
@@ -464,7 +465,7 @@ walkforward:
 ITAU-Quant/
 ├── src/itau_quant/              # Código-fonte principal (pacote Python)
 │   ├── data/                    # Data loading e processing
-│   ├── estimators/              # Estimadores de μ, Σ (Huber, Ledoit-Wolf, BL)
+│   ├── estimators/              # Estimadores de μ, Σ (Shrunk_50, Ledoit-Wolf, BL)
 │   ├── optimization/            # Otimizadores (MV-QP, CVaR, Risk Parity, ERC)
 │   ├── backtesting/             # Engine de backtest e métricas
 │   ├── utils/                   # Utilitários (logging, production monitor)
@@ -640,13 +641,14 @@ s.a.
 
 Alternativa robusta: mean-CVaR com α ∈ [1%, 5%] (LP/SOCP) sob retorno-alvo ou CVaR limitado.
 
-**Estimadores.** `μ`: média robusta (Huber) em janela móvel com opção Black-Litterman
-quando houver views. `Σ`: Ledoit-Wolf (versão shrinkage não linear quando `N` alto).
-Custos: 10 bps lineares por round-trip + slippage crescente com `ADV20` e tamanho da ordem.
+**Estimadores.** `μ`: média Shrunk_50 em janela móvel (Huber permanece disponível como
+opção) com suporte a Black-Litterman quando houver views. `Σ`: Ledoit-Wolf (versão
+shrinkage não linear quando `N` alto). Custos: 10 bps lineares por round-trip +
+slippage crescente com `ADV20` e tamanho da ordem.
 
 | Componente | Default | Notas |
 |------------|---------|-------|
-| μ (retorno) | Huber mean, janela 252d, δ = 1.5 | Resistente a outliers extremos |
+| μ (retorno) | Shrunk_50 mean, janela 252d, strength = 0.5 | Conservador, reduz erro de estimação |
 | Σ (cov.) | Ledoit-Wolf não linear, janela 252d | Estável quando `N` é alto |
 | λ | Calibrado para vol ex-ante ≈ 10–12% | Ajustado em YAML de configuração |
 | η (penalidade L1) | 0.50 | Mantém turnover no intervalo 5–20% |

@@ -13,6 +13,8 @@ and persistence.
 
 from __future__ import annotations
 
+import os
+import stat
 import time
 from datetime import datetime
 from pathlib import Path
@@ -59,12 +61,38 @@ def validate_write_permissions(output_dir: Path) -> None:
     except (OSError, PermissionError) as e:
         raise PipelineError(f"Cannot create directory {output_dir}: {e}") from e
 
+    if not _can_write_directory(output_dir):
+        raise PipelineError(f"No write permission to {output_dir}: insufficient privileges")
+
     test_file = output_dir / ".write_test"
     try:
         test_file.touch()
         test_file.unlink()
     except (OSError, PermissionError) as e:
         raise PipelineError(f"No write permission to {output_dir}: {e}") from e
+
+
+def _can_write_directory(path: Path) -> bool:
+    """Return True if the current process should be able to create files in path."""
+    try:
+        st = path.stat()
+    except FileNotFoundError:
+        return True
+
+    mode = st.st_mode
+    uid = os.geteuid()
+    gids = {os.getegid(), *os.getgroups()}
+
+    if uid == 0:
+        return bool(mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH))
+
+    if uid == st.st_uid:
+        return bool(mode & stat.S_IWUSR) and bool(mode & stat.S_IXUSR)
+
+    if st.st_gid in gids:
+        return bool(mode & stat.S_IWGRP) and bool(mode & stat.S_IXGRP)
+
+    return bool(mode & stat.S_IWOTH) and bool(mode & stat.S_IXOTH)
 
 
 def run_full_pipeline(
@@ -209,7 +237,14 @@ def run_full_pipeline(
             )
 
             # Convert BacktestResult object to dict
-            backtest_dict = backtest_result.to_dict(include_timeseries=False)
+            if hasattr(backtest_result, "to_dict"):
+                backtest_dict = backtest_result.to_dict(include_timeseries=False)  # type: ignore[call-arg]
+            elif isinstance(backtest_result, dict):
+                backtest_dict = dict(backtest_result)
+            else:
+                raise PipelineError(
+                    f"Unexpected backtest result type: {type(backtest_result)!r}"
+                )
 
             # Extract relevant metrics from backtest
             backtest_summary = {

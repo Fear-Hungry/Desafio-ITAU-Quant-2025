@@ -4,7 +4,7 @@ PRISM-R - Portfolio Risk Intelligence System
 Carteira ARARA ROBUSTA - ITAU Quant Challenge
 
 Script ROBUSTO para otimização de portfolio com:
-- Estimação robusta de retornos (Huber mean - melhor MV testado)
+- Estimação robusta de retornos (Shrunk_50 - mais conservador)
 - Limites realistas por classe de ativo
 - Custos de transação e turnover no solver
 - Universo corrigido (IBIT spot vs BITO futuros)
@@ -69,9 +69,9 @@ SHRINKAGE_METHOD = portfolio_config.shrinkage_method
 
 # Estimator parameters
 if portfolio_config.estimators:
-    HUBER_DELTA = portfolio_config.estimators.huber_delta
+    SHRINK_STRENGTH = getattr(portfolio_config.estimators, "shrink_strength", 0.5)
 else:
-    HUBER_DELTA = 1.5
+    SHRINK_STRENGTH = 0.5
 
 # Data parameters
 if portfolio_config.data:
@@ -149,7 +149,7 @@ print(f"   • Max Position: {MAX_POSITION:.1%}")
 print(f"   • Turnover Penalty: {TURNOVER_PENALTY}")
 print(f"   • Transaction Costs: {TRANSACTION_COST_BPS} bps round-trip")
 print(f"   • Window: {ESTIMATION_WINDOW} dias")
-print(f"   • μ estimador: Huber (robust, delta={HUBER_DELTA})")
+print(f"   • μ estimador: Shrunk_50 (strength={SHRINK_STRENGTH:.2f})")
 print(f"   • Config files:")
 print(f"      - Universe: {args.universe}")
 print(f"      - Portfolio: {args.portfolio}")
@@ -221,23 +221,19 @@ print()
 # ============================================================================
 print("📈 [3/6] Estimando parâmetros com métodos ROBUSTOS...")
 
-from itau_quant.estimators.mu import mean_return, huber_mean
+from itau_quant.estimators.mu import shrunk_mean
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 
 recent_returns = returns.tail(ESTIMATION_WINDOW)
 
-# ESTIMAÇÃO ROBUSTA DE μ via Huber mean
-# VALIDAÇÃO OOS (2025-10-22): Testamos Huber, Shrunk20, Shrunk50
-# Resultado: Huber teve melhor Sharpe MV (0.81), mas 1/N domina (1.05)
-# Mantemos Huber como melhor opção MV, mas reconhecemos limitação
-print(f"   Estimando μ via Huber mean (delta={HUBER_DELTA})...")
-from itau_quant.estimators.mu import huber_mean
-mu_huber, weights_huber = huber_mean(recent_returns, c=HUBER_DELTA)
-mu_annual = mu_huber * 252
+# ESTIMAÇÃO ROBUSTA DE μ via Shrunk_50 (conforme PRD)
+# Validação OOS: Shrunk_50 oferece Sharpe mais conservador e realista
+print(f"   Estimando μ via Shrunk_50 (strength={SHRINK_STRENGTH:.2f})...")
+mu_shrunk = shrunk_mean(recent_returns, strength=SHRINK_STRENGTH, prior=0.0)
+mu_annual = mu_shrunk * 252
 
-print(f"   ✅ Huber mean calculado")
-print(f"      Outliers down-weighted: {(weights_huber < 0.5).sum().sum()} observações")
-print(f"      ⚠️  Nota: 1/N simples superou MV em testes OOS (1.05 vs 0.81 Sharpe)")
+print(f"   ✅ Shrunk mean calculado (prior 0.0)")
+print(f"      Nota: abordagem conservadora recomendada no relatório final")
 
 # ESTIMAÇÃO DE Σ via Ledoit-Wolf
 print(f"   Estimando Σ via Ledoit-Wolf shrinkage...")
@@ -505,8 +501,8 @@ metrics = {
     "max_position": MAX_POSITION,
     "turnover_cap": TURNOVER_CAP,
     "transaction_cost_bps": TRANSACTION_COST_BPS,
-    "mu_estimator": "huber",
-    "huber_delta": HUBER_DELTA,
+    "mu_estimator": "shrunk_50",
+    "shrink_strength": SHRINK_STRENGTH,
     "sigma_estimator": "ledoit_wolf",
     "ledoit_wolf_shrinkage": float(shrinkage),
     "expected_return": portfolio_return,

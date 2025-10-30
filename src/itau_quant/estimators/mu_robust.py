@@ -198,7 +198,7 @@ def shrink_mu_pipeline(
 
     # Estimate μ robustly
     if estimator is None:
-        mu_raw = huber_mean(returns, delta=1.5) * 252
+        mu_raw = huber_mean(returns, c=1.5)[0] * 252
     else:
         mu_raw = estimator(returns)
 

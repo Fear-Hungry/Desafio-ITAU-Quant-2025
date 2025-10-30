@@ -16,6 +16,7 @@ __all__ = [
     "huber_mean",
     "student_t_mean",
     "bayesian_shrinkage_mean",
+    "shrunk_mean",
     "confidence_intervals",
     "blend_with_black_litterman",
     "annualize",
@@ -199,6 +200,29 @@ def bayesian_shrinkage_mean(
 
     shrunk = (1.0 - strength) * sample + strength * prior_series
     return shrunk.astype(float)
+
+
+def shrunk_mean(
+    returns: ReturnsLike,
+    *,
+    strength: float = 0.5,
+    prior: Optional[Union[pd.Series, Sequence[float], float]] = None,
+) -> pd.Series:
+    """Convenience wrapper shrinking the mean towards a prior (default zero).
+
+    Parameters
+    ----------
+    returns
+        Historical returns used to compute the sample mean.
+    strength
+        Shrinkage intensity in ``[0, 1]``. A value of ``0.5`` corresponds to
+        the Shrunk_50 heuristic referenced in the documentation.
+    prior
+        Optional prior towards which the mean is shrunk. When omitted, uses
+        a zero-return prior (risk-neutral baseline).
+    """
+
+    return bayesian_shrinkage_mean(returns, prior=prior, strength=strength)
 
 
 def confidence_intervals(

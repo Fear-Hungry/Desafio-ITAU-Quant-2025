@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
+import numpy as np
 import pandas as pd
 from itau_quant.backtesting.bookkeeping import PortfolioLedger, build_ledger
 from itau_quant.backtesting.metrics import PortfolioMetrics, compute_performance_metrics
@@ -33,6 +34,7 @@ class BacktestConfig:
     returns_path: Path
     prices_path: Path | None
     risk_free_path: Path | None = None
+    evaluation_horizons: tuple[int, ...] = (21, 63, 126)
 
 
 @dataclass(slots=True)
@@ -45,6 +47,8 @@ class BacktestResult:
     ledger: PortfolioLedger | None = None
     weights: pd.DataFrame | None = None
     trades: pd.DataFrame | None = None
+    split_metrics: pd.DataFrame | None = None
+    horizon_metrics: pd.DataFrame | None = None
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self, include_timeseries: bool = False) -> dict[str, Any]:
@@ -68,6 +72,10 @@ class BacktestResult:
             payload["weights"] = weights_df.to_dict(orient="records")
         if include_timeseries and self.trades is not None:
             payload["trades"] = self.trades.to_dict(orient="records")
+        if include_timeseries and self.split_metrics is not None:
+            payload["walkforward"] = self.split_metrics.to_dict(orient="records")
+        if include_timeseries and self.horizon_metrics is not None:
+            payload["horizon_metrics"] = self.horizon_metrics.to_dict(orient="records")
         return payload
 
 
@@ -117,7 +125,27 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
         "purge_days": 0,
         "embargo_days": 0,
     }
-    wf_config = {**wf_defaults, **{k: int(v) for k, v in walkforward.items()}}
+    wf_config = dict(wf_defaults)
+    for key, value in walkforward.items():
+        if key == "evaluation_horizons":
+            continue
+        if key in wf_defaults:
+            try:
+                wf_config[key] = int(value)
+            except (TypeError, ValueError) as exc:
+                raise ValueError(f"Invalid walkforward parameter '{key}': {value!r}") from exc
+        else:
+            wf_config[key] = value
+    horizons = walkforward.get("evaluation_horizons") or raw.get("evaluation_horizons")
+    if horizons is None:
+        evaluation_horizons = (21, 63, 126)
+    else:
+        if isinstance(horizons, (list, tuple, set)):
+            evaluation_horizons = tuple(int(x) for x in horizons if int(x) > 0)
+        else:
+            evaluation_horizons = (int(horizons),)
+        if not evaluation_horizons:
+            evaluation_horizons = (21, 63, 126)
 
     data_section = raw.get("data", {})
     if not isinstance(data_section, Mapping):
@@ -199,6 +227,7 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
         returns_path=returns_path,
         prices_path=prices_path,
         risk_free_path=risk_free_path,
+        evaluation_horizons=evaluation_horizons,
     )
 
 
@@ -269,6 +298,7 @@ def _run_simulation(
 
     weight_records: list[pd.Series] = []
     trade_records: list[dict[str, Any]] = []
+    split_records: list[dict[str, Any]] = []
     notes: list[str] = []
 
     previous_weights = pd.Series(0.0, index=returns.columns, dtype=float)
@@ -343,6 +373,27 @@ def _run_simulation(
 
         previous_weights = executed_weights
 
+        test_metrics = compute_performance_metrics(
+            net.loc[test_slice],
+            risk_free=None if rf is None else rf.reindex(test_slice),
+        )
+        split_records.append(
+            {
+                "train_start": train_slice[0].strftime("%Y-%m-%d"),
+                "train_end": train_slice[-1].strftime("%Y-%m-%d"),
+                "test_start": test_slice[0].strftime("%Y-%m-%d"),
+                "test_end": test_slice[-1].strftime("%Y-%m-%d"),
+                "total_return": test_metrics.total_return,
+                "annualized_return": test_metrics.annualized_return,
+                "annualized_volatility": test_metrics.annualized_volatility,
+                "sharpe_ratio": test_metrics.sharpe_ratio,
+                "max_drawdown": test_metrics.max_drawdown,
+                "cumulative_nav": test_metrics.cumulative_nav,
+                "turnover": turnover_value,
+                "cost_fraction": cost_fraction,
+            }
+        )
+
     ledger = build_ledger(
         dates=returns.index,
         gross_returns=gross,
@@ -359,7 +410,35 @@ def _run_simulation(
         trades_df.sort_values("date", inplace=True)
         trades_df["date"] = trades_df["date"].dt.strftime("%Y-%m-%d")
     metrics = compute_performance_metrics(ledger.frame["net_return"], risk_free=rf)
-    return ledger, weights_df, trades_df, metrics, notes
+
+    split_df = pd.DataFrame(split_records)
+
+    def _summarise_horizons(series: pd.Series, horizons: Iterable[int]) -> pd.DataFrame:
+        records: list[dict[str, float | int]] = []
+        for horizon in horizons:
+            if horizon <= 0 or len(series) < horizon:
+                continue
+            rolling = (1.0 + series).rolling(window=horizon).apply(lambda arr: float(np.prod(arr) - 1.0), raw=True)
+            rolling = rolling.dropna()
+            if rolling.empty:
+                continue
+            std = float(rolling.std(ddof=1))
+            sharpe_equiv = float(rolling.mean() / std * np.sqrt(252.0 / horizon)) if std > 0 else 0.0
+            records.append(
+                {
+                    "horizon_days": int(horizon),
+                    "avg_return": float(rolling.mean()),
+                    "median_return": float(rolling.median()),
+                    "best_return": float(rolling.max()),
+                    "worst_return": float(rolling.min()),
+                    "sharpe_equiv": sharpe_equiv,
+                }
+            )
+        return pd.DataFrame(records)
+
+    horizon_df = _summarise_horizons(ledger.frame["net_return"], config.evaluation_horizons)
+
+    return ledger, weights_df, trades_df, metrics, notes, split_df, horizon_df
 
 
 def run_backtest(
@@ -386,12 +465,22 @@ def run_backtest(
         return result
 
     returns, prices, rf = _load_market_data(config)
-    ledger, weights_df, trades_df, metrics, notes = _run_simulation(returns, prices, rf, config)
+    (
+        ledger,
+        weights_df,
+        trades_df,
+        metrics,
+        notes,
+        split_df,
+        horizon_df,
+    ) = _run_simulation(returns, prices, rf, config)
 
     result.metrics = metrics
     result.ledger = ledger
     result.weights = weights_df
     result.trades = trades_df
+    result.split_metrics = split_df
+    result.horizon_metrics = horizon_df
     result.notes = notes
     result.dry_run = False
     return result

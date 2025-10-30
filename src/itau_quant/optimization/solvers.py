@@ -213,32 +213,42 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
 
     mu_config = raw.get("estimators", {}).get("mu", {})
     sigma_config = raw.get("estimators", {}).get("sigma", {})
+    def _collect_budgets(raw_budgets: Any) -> list[RiskBudget]:
+        collected: list[RiskBudget] = []
+        if not raw_budgets:
+            return collected
+        if isinstance(raw_budgets, RiskBudget):
+            return [raw_budgets]
+        if not isinstance(raw_budgets, (list, tuple, set, Mapping)):
+            raise TypeError("Budgets must be mappings, iterables, or RiskBudget objects.")
+        iterable = raw_budgets if isinstance(raw_budgets, (list, tuple, set)) else [raw_budgets]
+        direct: list[RiskBudget] = []
+        loadable: list[Mapping[str, Any]] = []
+        for item in iterable:
+            if isinstance(item, RiskBudget):
+                direct.append(item)
+            elif isinstance(item, Mapping):
+                loadable.append(item)
+            else:
+                raise TypeError("Budgets must be mappings or RiskBudget objects.")
+        collected.extend(direct)
+        if loadable:
+            collected.extend(load_budgets(loadable))
+        return collected
+
     risk_section = optimizer_section.get("risk") or optimizer_section.get("risk_constraints")
     risk_config = None
-    budgets: Sequence[RiskBudget] | None = None
+    budgets_accum: list[RiskBudget] = []
     if isinstance(risk_section, Mapping):
         risk_config = {k: v for k, v in risk_section.items()}
-        raw_budgets = risk_config.pop("budgets", None)
-        if raw_budgets:
-            if isinstance(raw_budgets, RiskBudget):
-                budgets = [raw_budgets]
-            else:
-                if not isinstance(raw_budgets, (list, tuple, set)):
-                    raw_iter = [raw_budgets]
-                else:
-                    raw_iter = list(raw_budgets)
-                direct: list[RiskBudget] = []
-                loadable: list[Mapping[str, Any]] = []
-                for item in raw_iter:
-                    if isinstance(item, RiskBudget):
-                        direct.append(item)
-                    elif isinstance(item, Mapping):
-                        loadable.append(item)  # type: ignore[arg-type]
-                    else:
-                        raise TypeError("Budgets must be mappings or RiskBudget objects.")
-                budgets = list(direct)
-                if loadable:
-                    budgets.extend(load_budgets(loadable))
+        budgets_accum.extend(_collect_budgets(risk_config.pop("budgets", None)))
+
+    portfolio_section = raw.get("portfolio")
+    if isinstance(portfolio_section, Mapping):
+        portfolio_risk = portfolio_section.get("risk")
+        if isinstance(portfolio_risk, Mapping):
+            budgets_accum.extend(_collect_budgets(portfolio_risk.get("budgets")))
+    budgets: Sequence[RiskBudget] | None = budgets_accum or None
 
     data_section = raw.get("data", {})
     returns_path_raw = data_section.get("returns") or data_section.get("returns_path")
@@ -321,6 +331,21 @@ def _estimate_inputs(returns: pd.DataFrame, config: OptimizerConfig) -> tuple[pd
     elif mu_method == "huber":
         delta = float(mu_config.get("delta", 1.5))
         mu_series, _ = mean_estimators.huber_mean(data_for_mu, c=delta)
+    elif mu_method in {"shrunk", "shrunk_50", "shrinkage"}:
+        strength = float(mu_config.get("strength", mu_config.get("shrink_strength", 0.5)))
+        if not 0.0 <= strength <= 1.0:
+            raise ValueError("Shrinkage strength must lie in [0, 1].")
+        prior_value = mu_config.get("prior")
+        prior: Any
+        if prior_value is None:
+            prior = 0.0
+        elif isinstance(prior_value, pd.Series):
+            prior = prior_value
+        elif isinstance(prior_value, Mapping):
+            prior = pd.Series({str(k): float(v) for k, v in prior_value.items()}, dtype=float)
+        else:
+            prior = prior_value
+        mu_series = mean_estimators.shrunk_mean(data_for_mu, strength=strength, prior=prior)
     elif mu_method == "student_t":
         nu = float(mu_config.get("nu", 5.0))
         mu_series = mean_estimators.student_t_mean(data_for_mu, nu=nu)
