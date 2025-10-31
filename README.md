@@ -278,6 +278,29 @@ Fonte: `results/baselines/baseline_metrics_oos.csv` (execução 2025-10-31)
 - Testes de estresse (`results/baselines/baseline_stress_tests.csv`) confirmam que apenas as carteiras com beta mais baixo (min-var, 60/40) preservam capital em 2023, enquanto todas sofrem em 2022.
 - Histórico de turnover por rebalanceamento disponível em `results/baselines/baseline_turnover_oos.csv`.
 
+### 2a. Regimes e testes direcionados
+- Script `scripts/research/run_regime_stress.py` executa walk-forward com aversão ao risco dinâmica (`regime_detection`) nos períodos críticos de Covid-19 e inflação/2022.
+- **Covid-19 (fev–dez/2020):** regime classificado como `crash`; o multiplicador elevou λ → portfólio defensivo, Sharpe do regime-aware MV = -1.96 (vol 6.1%).
+- **Inflação 2022:** regime `stressed`; λ ajustado ↑ reduziu risco mas entregou Sharpe -1.17 versus 1.34 do Risk Parity, sugerindo complementar a estratégia com views/tail hedges.
+- Artefatos: `results/regime_stress/covid_crash_metrics.csv`, `results/regime_stress/inflation_2022_metrics.csv`.
+
+Exemplo de configuração (`optimizer.regime_detection`):
+```yaml
+optimizer:
+  lambda: 4.0
+  regime_detection:
+    window_days: 63
+    vol_thresholds:
+      calm: 0.12
+      stressed: 0.22
+    drawdown_crash: -0.18
+    multipliers:
+      calm: 0.9
+      neutral: 1.0
+      stressed: 1.4
+      crash: 1.8
+```
+
 ### 2. Guardrails e significância
 - **Tracking-error ERC vs 60/40:** 6.03% anual.  
 - **Hit-rate mensal ERC:** 60.7% dos meses positivos contra o benchmark.  
@@ -330,9 +353,10 @@ PYTHONPATH=src poetry run python scripts/research/run_ga_mv_walkforward.py
 PYTHONPATH=src poetry run python scripts/research/run_tracking_error_hit_rate.py
 PYTHONPATH=src poetry run python scripts/research/run_bootstrap_ci.py
 PYTHONPATH=src poetry run python scripts/research/run_cost_sensitivity.py
+PYTHONPATH=src poetry run python scripts/research/run_regime_stress.py
 ```
 
-Correspondentes artefatos estão em `results/` (subpastas `baselines/`, `cvar_experiment/`, `ga_metaheuristic/`, `tracking_metrics/`, `bootstrap_ci/`, `cost_sensitivity/`).
+Correspondentes artefatos estão em `results/` (subpastas `baselines/`, `cvar_experiment/`, `ga_metaheuristic/`, `tracking_metrics/`, `bootstrap_ci/`, `cost_sensitivity/`, `regime_stress/`).
 
 ### 7. Visualizações
 Script: `scripts/research/generate_visual_report.py`  

@@ -250,17 +250,11 @@ poetry run python run_baselines_comparison.py
    - Se Sharpe OOS < 1/N → Refinar estimadores
 
 ### Para Produção Futura
-5. **Integrar budget constraints no solver**
-   - Modificar `src/itau_quant/optimization/core/mv_qp.py`
-   - Adicionar suporte a RiskBudget via config
+5. ~~**Integrar budget constraints no solver**~~ ✅ Implementado (configurações via `RiskBudget` suportadas pelo solver MV).
 
-6. **Corrigir bug de turnover_cap**
-   - Investigar causa raiz no CVXPY
-   - Ou implementar post-processing alternativo
+6. ~~**Corrigir bug de turnover_cap**~~ ✅ Cap suave com slack + pós-processamento na etapa de rebalance.
 
-7. **Adicionar regime detection**
-   - Ajustar λ dinamicamente (bull/bear)
-   - Aumentar shrinkage em alta volatilidade
+7. ~~**Adicionar regime detection**~~ ✅ λ dinâmico habilitado (`regime_detection`) + script `run_regime_stress.py` com cenários Covid/2022.
 
 ---
 
@@ -314,8 +308,7 @@ poetry run python run_baselines_comparison.py
 
 ### O que Ainda Falta Validar ❌
 1. **Sharpe Huber ainda alto** (2.26) → Shrunk necessário
-2. **Validação OOS completa** pendente
-3. **Stress tests** e bootstrap de Sharpe não executados
+2. **Ajustar multiplicadores de regime** para evitar perda de performance em stress (regime-aware MV ficou defensivo demais)
 
 ### Trade-offs Identificados
 | Aspecto | Huber | Shrunk_50 |

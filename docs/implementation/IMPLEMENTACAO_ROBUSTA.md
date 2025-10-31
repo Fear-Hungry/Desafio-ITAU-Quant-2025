@@ -153,6 +153,7 @@ Sharpe(MV Robust) ≥ Sharpe(1/N) + 0.2
 ⚠️ ATENÇÃO:
 - Sharpe ex-ante: 2.26 (ainda alto, mas com estimador robusto)
 - Precisa validar regimes e shrinkage para não superestimar retorno
+- **Atualização (2025-10-31):** `risk.regime.detect_regime` implementado e integrado na etapa de rebalance. Configuração `optimizer.regime_detection` permite mapear volatilidade/drawdown para multiplicadores de λ; resultados de stress em `results/regime_stress/` auxiliam na calibração.
 
 ✅ CORREÇÃO:
 - Budget constraints agora integradas diretamente no solver

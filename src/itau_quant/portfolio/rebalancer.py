@@ -5,10 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field, replace
 from typing import Any, Mapping, Sequence
 
+import numpy as np
 import pandas as pd
 
 from itau_quant.costs.transaction_costs import transaction_cost_vector
-from itau_quant.backtesting.risk_monitor import apply_turnover_cap
+from itau_quant.risk.regime import detect_regime, regime_multiplier
 from itau_quant.estimators import cov as covariance_estimators
 from itau_quant.optimization.core.mv_qp import (
     MeanVarianceConfig,
@@ -491,6 +492,23 @@ def rebalance(
             "heuristic": heuristic_payload,
         }
     else:
+        base_lambda = float(
+            optimizer_cfg.get("risk_aversion", optimizer_cfg.get("lambda", 5.0))
+        )
+        adjusted_lambda = base_lambda
+        regime_snapshot = None
+        regime_multiplier_value: float | None = None
+
+        regime_cfg = optimizer_cfg.get("regime_detection")
+        if regime_cfg:
+            regime_snapshot = detect_regime(historical_returns, config=regime_cfg)
+            regime_multiplier_value = regime_multiplier(regime_snapshot, regime_cfg)
+            adjusted_lambda = base_lambda * regime_multiplier_value
+            optimizer_cfg = dict(optimizer_cfg)  # avoid mutating caller's config
+            optimizer_cfg["risk_aversion"] = adjusted_lambda
+            optimizer_cfg["lambda"] = adjusted_lambda
+            optimizer_cfg.pop("regime_detection", None)
+
         (
             opt_weights,
             mv_config,
@@ -506,6 +524,7 @@ def rebalance(
         )
         target_weights = opt_weights.reindex(mu.index, fill_value=0.0).astype(float)
         if mv_config.turnover_cap is not None and mv_config.turnover_cap > 0:
+            from itau_quant.backtesting.risk_monitor import apply_turnover_cap
             adjusted, adjusted_turnover = apply_turnover_cap(
                 previous_weights,
                 target_weights,
@@ -528,6 +547,11 @@ def rebalance(
             "risk_aversion": mv_config.risk_aversion,
             "turnover_penalty": mv_config.turnover_penalty,
         }
+        if regime_snapshot is not None:
+            solver_extra["regime_state"] = regime_snapshot.to_dict()
+            solver_extra["regime_multiplier"] = regime_multiplier_value
+            solver_extra["lambda_base"] = base_lambda
+            solver_extra["lambda_adjusted"] = adjusted_lambda
         if mv_config.budgets:
             solver_extra["budgets"] = [
                 {

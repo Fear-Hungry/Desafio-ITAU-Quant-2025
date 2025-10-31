@@ -53,3 +53,54 @@ def test_rebalance_pipeline_returns_weights():
     assert result.metrics.optimizer_turnover >= 0.0
     assert result.trades.abs().sum() >= 0.0
     assert "solver" in result.log
+
+
+def test_rebalance_applies_regime_detection():
+    dates = pd.bdate_range("2022-01-03", periods=90)
+    rng = np.random.default_rng(42)
+    returns = pd.DataFrame(
+        rng.normal(loc=0.0002, scale=0.02, size=(len(dates), 3)),
+        index=dates,
+        columns=["AAA", "BBB", "CCC"],
+    )
+    prices = pd.DataFrame(
+        {
+            "AAA": np.full(len(dates), 100.0),
+            "BBB": np.full(len(dates), 55.0),
+            "CCC": np.full(len(dates), 45.0),
+        },
+        index=dates,
+    )
+    market = MarketData(prices=prices, returns=returns)
+    previous = pd.Series({"AAA": 0.0, "BBB": 0.0, "CCC": 0.0})
+
+    config = {
+        "optimizer": {
+            "risk_aversion": 3.0,
+            "turnover_penalty": 0.0,
+            "turnover_cap": 0.20,
+            "min_weight": 0.0,
+            "max_weight": 0.7,
+            "regime_detection": {
+                "window_days": 45,
+                "vol_thresholds": {"calm": 0.10, "stressed": 0.18},
+                "drawdown_crash": -0.20,
+                "multipliers": {"stressed": 1.6, "default": 1.0},
+            },
+        },
+        "rounding": {"lot_sizes": 1},
+        "costs": {"linear_bps": 0.0},
+        "returns_window": 60,
+    }
+
+    result = rebalance(
+        date=dates[-1],
+        market_data=market,
+        previous_weights=previous,
+        capital=1_000_000.0,
+        config=config,
+    )
+
+    assert "regime_state" in result.log
+    assert result.log["regime_state"]["label"] in {"stressed", "crash"}
+    assert result.log.get("lambda_adjusted", 0.0) >= config["optimizer"]["risk_aversion"]

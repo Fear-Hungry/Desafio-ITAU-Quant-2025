@@ -92,6 +92,8 @@ Crypto (≤12%): 0.00% ✅ OK
 - Sistema aceita turnover alto no primeiro rebalance
 - Monitora turnover médio rolling nos próximos rebalances
 
+- **Extensão:** detector de regimes (`optimizer.regime_detection`) ajusta λ dinamicamente; snapshots ficam no log do rebalance.
+
 - **Status:** ⚠️ **FUNCIONAL (após warmup)** — primeira passagem ainda elevada, demais rebalanceamentos monitorados via log.
 
 ---
