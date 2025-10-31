@@ -30,7 +30,7 @@
 ### Configuração do Portfolio
 ```yaml
 Estratégia: Risk Parity (ERC)
-Universo: 29 ativos globais
+Universo: 69 ativos globais
 Rebalance: Mensal (primeiro dia útil)
 Janela Estimação: 252 dias (1 ano)
 ```

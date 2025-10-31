@@ -12,7 +12,7 @@
 - Três bullet points sobre diferenciais (custos explícitos, cardinalidade dinâmica, fallback ERC/1/N).
 
 ## 2. Universo & Dados (1 pág)
-- Universo base: 29 ETFs globais (lista em `TICKERS` do script de baselines); atualização diária via yfinance.
+- Universo base: 69 ETFs globais (lista produzida por `get_arara_universe()`); atualização diária via yfinance.
 - Pipeline principal gera `data/processed/returns_full.parquet` como cache, mas rodadas finais usaram download direto com `BASELINES_FORCE_DOWNLOAD=1`.
 - Tratamento: forward-fill, corte de histórico para garantir ≥252 dias + 45 dias de buffer.
 - Limitações: cripto ETFs recentes ainda têm janela curta; monitorar impacto em métricas de regime.

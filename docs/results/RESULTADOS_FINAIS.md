@@ -22,7 +22,7 @@ Tornamos o sistema PRISM-R completamente funcional com:
 - **Método:** Walk-forward com 252 dias train, 21 dias test
 - **Purge/Embargo:** 5 dias cada (evita label leakage)
 - **Custos:** 30 bps round-trip em TODAS as estratégias
-- **Universo:** 29 ativos (corrigido: IBIT spot vs BITO futuros)
+- **Universo:** 69 ativos (corrigido: IBIT/ETHA spot vs BITO futuros)
 
 ### Métricas Out-of-Sample (1029 dias)
 
@@ -48,8 +48,8 @@ Tornamos o sistema PRISM-R completamente funcional com:
 **Por que isso aconteceu?**
 
 1. **Curse of Dimensionality**
-   - 29 ativos com apenas 252 dias de treino
-   - Matriz de covariância 29x29 mal condicionada
+   - 69 ativos com apenas 252 dias de treino
+   - Matriz de covariância 69x69 mal condicionada
    - Estimativa de μ com alta incerteza
 
 2. **Estimation Error**

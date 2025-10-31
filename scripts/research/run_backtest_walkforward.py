@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from itau_quant.data import get_arara_universe
 
 print("=" * 80)
 print("  PRISM-R - Backtest Walk-Forward")
@@ -23,20 +24,8 @@ print()
 # CONFIGURAÇÃO
 # ============================================================================
 
-# Universo simplificado para backtest mais rápido
-TICKERS = [
-    # Core portfolio
-    "SPY",  # US Large Cap
-    "QQQ",  # US Tech
-    "EFA",  # Developed Intl
-    "VWO",  # Emerging Markets
-    "TLT",  # Long-term Treasuries
-    "IEF",  # Intermediate Treasuries
-    "LQD",  # Investment Grade Corp
-    "GLD",  # Gold
-    "DBC",  # Commodities
-    "VNQ",  # Real Estate
-]
+# Universo completo
+TICKERS = get_arara_universe()
 
 # Período de backtest
 END_DATE = datetime.today()

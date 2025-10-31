@@ -17,6 +17,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from itau_quant.data import get_arara_universe
 
 print("=" * 80)
 print("  PRISM-R - Comparação de Estimadores de μ")
@@ -28,37 +29,7 @@ print()
 # CONFIGURAÇÃO
 # ============================================================================
 
-TICKERS = [
-    "SPY",
-    "QQQ",
-    "IWM",
-    "VTV",
-    "VUG",
-    "EFA",
-    "VGK",
-    "EWJ",
-    "EWU",
-    "EWG",
-    "EEM",
-    "VWO",
-    "EWZ",
-    "FXI",
-    "INDA",
-    "TLT",
-    "IEF",
-    "SHY",
-    "LQD",
-    "HYG",
-    "EMB",
-    "GLD",
-    "SLV",
-    "DBC",
-    "USO",
-    "VNQ",
-    "VNQI",
-    "IBIT",
-    "ETHA",
-]
+TICKERS = get_arara_universe()
 
 END_DATE = datetime.today()
 START_DATE = END_DATE - timedelta(days=365 * 3)

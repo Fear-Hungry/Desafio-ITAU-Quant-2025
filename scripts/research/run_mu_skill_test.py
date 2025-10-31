@@ -16,6 +16,8 @@ import numpy as np
 import pandas as pd
 import yfinance as yf
 
+from itau_quant.data import get_arara_universe
+
 print("=" * 80)
 print("  PRISM-R - Teste de Skill do Estimador μ")
 print("  Pergunta: μ̂ prevê r_{t+1}?")
@@ -26,14 +28,7 @@ print()
 # CONFIGURAÇÃO
 # ============================================================================
 
-TICKERS = [
-    "SPY", "QQQ", "IWM", "VTV", "VUG",
-    "EFA", "VGK", "EWJ", "EWU", "EWG",
-    "EEM", "VWO", "EWZ", "FXI", "INDA",
-    "TLT", "IEF", "SHY", "LQD", "EMB",
-    "GLD", "SLV", "DBC", "USO",
-    "IBIT", "ETHA", "BITO",
-]
+TICKERS = get_arara_universe() + ["BITO"]
 
 START_DATE = datetime.now() - timedelta(days=5 * 365)
 END_DATE = datetime.now()

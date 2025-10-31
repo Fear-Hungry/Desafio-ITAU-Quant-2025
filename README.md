@@ -78,7 +78,7 @@ portfolio:
 ```
 
 **Data Setup:**
-- Universo: ARARA (27+ ativos)
+- Universo: ARARA (69 ativos)
 - Período: 2020-01-01 a present
 - Estimação: Shrunk_50 mean + Ledoit-Wolf covariance (nonlinear)
 - Walk-forward: 252 train days, 21 test days, 2-day purge/embargo, 60 splits
@@ -189,7 +189,7 @@ head -5 results/backtest_metrics_*.csv | tail -n +2 | awk -F',' '{print $1, $2, 
 
 | Componente | Status | Notas |
 |-----------|--------|-------|
-| **Data Pipeline** | ✅ Operacional | Carrega ARARA com 27+ ativos |
+| **Data Pipeline** | ✅ Operacional | Carrega ARARA com 69 ativos |
 | **Parameter Est.** | ✅ Operacional | Shrunk_50 + Ledoit-Wolf rodam OK |
 | **Optimization** | ✅ Operacional | CLARABEL solver converge |
 | **Backtest (dry)** | ✅ Operacional | Rápido, para prototipagem |

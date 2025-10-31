@@ -16,6 +16,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from itau_quant.data import get_arara_universe
 from itau_quant.utils.production_monitor import should_fallback_to_1N, calculate_portfolio_metrics
 from itau_quant.utils.production_logger import ProductionLogger
 
@@ -29,22 +30,7 @@ print()
 # CONFIGURAÇÃO
 # ============================================================================
 
-TICKERS = [
-    # US Equity
-    "SPY", "QQQ", "IWM", "VTV", "VUG",
-    # Intl Developed
-    "EFA", "VGK", "EWJ", "EWU",
-    # EM
-    "EEM", "VWO", "INDA", "FXI",
-    # Fixed Income
-    "IEF", "TLT", "SHY", "LQD", "HYG", "EMB",
-    # Commodities
-    "GLD", "SLV", "DBC", "USO",
-    # Crypto
-    "IBIT", "ETHA",
-    # REIT
-    "VNQ",
-]
+TICKERS = get_arara_universe()
 
 ESTIMATION_WINDOW = 252  # 1 ano
 MAX_POSITION = 0.10

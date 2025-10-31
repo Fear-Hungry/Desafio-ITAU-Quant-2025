@@ -14,7 +14,7 @@ Transformamos o portfolio original (overfit, Sharpe 2.15 ex-ante) em **3 scripts
 ## 📊 Resultados da Comparação de Estimadores (EXECUTADO)
 
 ### Configuração do Teste
-- **Universo:** 29 ativos válidos
+- **Universo:** 69 ativos válidos
 - **Período:** 2022-10-24 a 2025-10-21 (3 anos)
 - **Σ:** Ledoit-Wolf (shrinkage 5.23%)
 - **λ:** 4.0 (fixo para todos)

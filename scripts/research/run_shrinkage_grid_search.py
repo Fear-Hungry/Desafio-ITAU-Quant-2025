@@ -10,6 +10,7 @@ import numpy as np
 from pathlib import Path
 
 # Carregar dados
+from itau_quant.data import get_arara_universe
 from itau_quant.data.sources.yf import download_prices
 from itau_quant.data.processing.returns import calculate_returns
 from itau_quant.estimators.mu import bayesian_shrinkage_mean
@@ -25,15 +26,7 @@ print("=" * 80)
 print()
 
 # Configuração
-TICKERS = [
-    "SPY", "QQQ", "IWM", "VTV", "VUG",  # US Equity
-    "EFA", "VGK", "EWJ", "EWU",         # Intl Developed
-    "EEM", "VWO", "INDA", "FXI",        # EM
-    "IEF", "TLT", "SHY", "LQD", "HYG", "EMB",  # Fixed Income
-    "GLD", "SLV", "DBC", "USO",         # Commodities
-    "IBIT", "ETHA",                      # Crypto spot
-    "VNQ",                               # REIT
-]
+TICKERS = get_arara_universe()
 
 START_DATE = "2020-10-01"
 END_DATE = "2025-10-31"
