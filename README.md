@@ -329,6 +329,23 @@ optimizer:
 - Janela intermediária (252d) maximiza Sharpe do MV Shrunk (1.13) e supera equal-weight; janela longa (504d) dilui sinais e derruba Sharpe (<0.4).
 - Artefatos completos: `results/window_sensitivity/metrics_window_{126,252,504}.csv`.
 
+### 2c. Comparação de estimadores de covariância (λ fixo = 4)
+| Estratégia          | Ret. anual | Vol | Sharpe |
+|---------------------|-----------:|----:|-------:|
+| Equal-Weight        | 37.2% | 10.99% | 2.93 |
+| Risk Parity         | 35.9% | 10.62% | 2.95 |
+| MV Sample           | 36.1% | 10.42% | 3.03 |
+| MV Ledoit-Wolf      | 37.0% | 10.52% | 3.05 |
+| MV Nonlinear        | 36.0% | 10.62% | 2.95 |
+| MV Tyler (robusto)  | 4.7%  |  2.35% | 1.92 |
+| MV MCD (robusto)    | 44.5% | 11.40% | 3.30 |
+| MV PCA (3 fatores)  | 41.2% | 10.42% | 3.39 |
+
+- Painel (jan/2024–out/2025) com 68 ativos após forward-fill e corte de histórico ≥400 dias.
+- Mínima variância determinante (MCD) e aproximação com 3 fatores principais produziram Sharpe superiores (~3.3), porém com maior retorno esperado — requer validação fora da amostra mais longa.
+- Tyler M-estimator tornou o portfólio excessivamente defensivo (Sharpe 1.92).
+- Artefatos: `results/cov_sensitivity/metrics.csv` e `results/cov_sensitivity/returns.parquet`.
+
 ### 2. Guardrails e significância
 - **Tracking-error ERC vs 60/40:** 6.03% anual.  
 - **Hit-rate mensal ERC:** 60.7% dos meses positivos contra o benchmark.  
@@ -383,9 +400,10 @@ PYTHONPATH=src poetry run python scripts/research/run_bootstrap_ci.py
 PYTHONPATH=src poetry run python scripts/research/run_cost_sensitivity.py
 PYTHONPATH=src poetry run python scripts/research/run_regime_stress.py
 PYTHONPATH=src poetry run python scripts/research/run_window_sensitivity.py
+PYTHONPATH=src poetry run python scripts/research/run_covariance_sensitivity.py
 ```
 
-Correspondentes artefatos estão em `results/` (subpastas `baselines/`, `cvar_experiment/`, `ga_metaheuristic/`, `tracking_metrics/`, `bootstrap_ci/`, `cost_sensitivity/`, `regime_stress/`, `window_sensitivity/`).
+Correspondentes artefatos estão em `results/` (subpastas `baselines/`, `cvar_experiment/`, `ga_metaheuristic/`, `tracking_metrics/`, `bootstrap_ci/`, `cost_sensitivity/`, `regime_stress/`, `window_sensitivity/`, `cov_sensitivity/`).
 
 ### 7. Visualizações
 Script: `scripts/research/generate_visual_report.py`  
