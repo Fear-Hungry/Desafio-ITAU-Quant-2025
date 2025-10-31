@@ -317,6 +317,18 @@ optimizer:
       crash: 1.8
 ```
 
+### 2b. Sensibilidade à janela de estimação (μ, Σ)
+| Janela de treino | EW Sharpe | RP Sharpe | MV Shrunk Sharpe | 60/40 Sharpe |
+|------------------|----------:|----------:|-----------------:|-------------:|
+| 126 dias         | 0.94 | 0.94 | 0.36 | 0.82 |
+| 252 dias         | 1.16 | 1.15 | 1.13 | 0.88 |
+| 504 dias         | 0.36 | 0.37 | -0.09 | 0.59 |
+
+- Dados filtrados para 66 ativos com histórico ≥ 546 dias; `test_window=21`, custos 30 bps.
+- Janela curta (126d) mantém Sharpe ~0.94 para EW/RP mas piora MV Shrunk (0.36) devido a estimativas mais ruidosas.
+- Janela intermediária (252d) maximiza Sharpe do MV Shrunk (1.13) e supera equal-weight; janela longa (504d) dilui sinais e derruba Sharpe (<0.4).
+- Artefatos completos: `results/window_sensitivity/metrics_window_{126,252,504}.csv`.
+
 ### 2. Guardrails e significância
 - **Tracking-error ERC vs 60/40:** 6.03% anual.  
 - **Hit-rate mensal ERC:** 60.7% dos meses positivos contra o benchmark.  
@@ -370,9 +382,10 @@ PYTHONPATH=src poetry run python scripts/research/run_tracking_error_hit_rate.py
 PYTHONPATH=src poetry run python scripts/research/run_bootstrap_ci.py
 PYTHONPATH=src poetry run python scripts/research/run_cost_sensitivity.py
 PYTHONPATH=src poetry run python scripts/research/run_regime_stress.py
+PYTHONPATH=src poetry run python scripts/research/run_window_sensitivity.py
 ```
 
-Correspondentes artefatos estão em `results/` (subpastas `baselines/`, `cvar_experiment/`, `ga_metaheuristic/`, `tracking_metrics/`, `bootstrap_ci/`, `cost_sensitivity/`, `regime_stress/`).
+Correspondentes artefatos estão em `results/` (subpastas `baselines/`, `cvar_experiment/`, `ga_metaheuristic/`, `tracking_metrics/`, `bootstrap_ci/`, `cost_sensitivity/`, `regime_stress/`, `window_sensitivity/`).
 
 ### 7. Visualizações
 Script: `scripts/research/generate_visual_report.py`  
