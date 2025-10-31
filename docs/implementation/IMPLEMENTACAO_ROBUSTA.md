@@ -398,7 +398,7 @@ RiskBudget(
 - [x] Budget constraints integradas ao solver
 - [x] Turnover cap funcionando (reformulado com variáveis auxiliares)
 - [x] Validação OOS executada e documentada (`results/baselines/baseline_metrics_oos.csv`, README.md §1)
-- [x] IC de Sharpe via bootstrap (`results/bootstrap_ci/bootstrap_sharpe_102701.json`)
+- [x] IC de Sharpe via bootstrap (`results/bootstrap_ci/bootstrap_sharpe_20251031_151041.json`)
 
 ---
 

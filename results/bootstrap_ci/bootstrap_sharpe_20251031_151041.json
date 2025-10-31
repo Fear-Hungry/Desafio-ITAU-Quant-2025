@@ -1,0 +1,45 @@
+{
+  "source": "baseline_returns_oos.parquet",
+  "results": {
+    "1/N": {
+      "sharpe_point": 0.6084406680162935,
+      "sharpe_ci_low": -0.20344925114530063,
+      "sharpe_ci_high": 1.4827376792569802,
+      "confidence": 0.95,
+      "iterations": 2000,
+      "block_size": 21
+    },
+    "Risk Parity": {
+      "sharpe_point": 0.5245164011705119,
+      "sharpe_ci_low": -0.2890500702702235,
+      "sharpe_ci_high": 1.4046106010704775,
+      "confidence": 0.95,
+      "iterations": 2000,
+      "block_size": 21
+    },
+    "MV Robust (shrunk)": {
+      "sharpe_point": 0.4635804549141328,
+      "sharpe_ci_low": -0.23860993101060682,
+      "sharpe_ci_high": 1.2217306887586643,
+      "confidence": 0.95,
+      "iterations": 2000,
+      "block_size": 21
+    },
+    "Min-Var (LW)": {
+      "sharpe_point": 0.28826818086155687,
+      "sharpe_ci_low": -0.5826046463605093,
+      "sharpe_ci_high": 1.2904717620087296,
+      "confidence": 0.95,
+      "iterations": 2000,
+      "block_size": 21
+    },
+    "60/40": {
+      "sharpe_point": 0.4541034063425465,
+      "sharpe_ci_low": -0.45921770962215697,
+      "sharpe_ci_high": 1.4065138095345568,
+      "confidence": 0.95,
+      "iterations": 2000,
+      "block_size": 21
+    }
+  }
+}

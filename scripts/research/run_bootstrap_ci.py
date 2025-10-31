@@ -17,7 +17,15 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-STRATEGIES = ["1/N", "Risk Parity", "MV Robust (Shrunk20)", "Min-Var (LW)"]
+# Mapping from friendly names (used in reports) to columns in the OOS
+# returns dataframe.
+STRATEGIES = {
+    "1/N": "equal_weight",
+    "Risk Parity": "risk_parity",
+    "MV Robust (shrunk)": "shrunk_mv",
+    "Min-Var (LW)": "min_variance_lw",
+    "60/40": "sixty_forty",
+}
 BOOTSTRAP_ITERATIONS = 2000
 BLOCK_SIZE = 21
 CONFIDENCE = 0.95
@@ -26,10 +34,16 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def latest_oos_returns() -> Path:
-    files = sorted(Path("results").glob("oos_returns_all_strategies_*.csv"))
-    if not files:
-        raise FileNotFoundError("No OOS return files found in results/")
-    return files[-1]
+    baseline_path = Path("results/baselines/baseline_returns_oos.parquet")
+    if baseline_path.exists():
+        return baseline_path
+
+    legacy = sorted(Path("results").glob("oos_returns_all_strategies_*.csv"))
+    if legacy:
+        return legacy[-1]
+    raise FileNotFoundError(
+        "Nenhum arquivo de retornos OOS encontrado. Rode `run_baselines_comparison.py` primeiro."
+    )
 
 
 def block_bootstrap_sharpe(series: pd.Series) -> tuple[float, float, float]:
@@ -42,15 +56,16 @@ def block_bootstrap_sharpe(series: pd.Series) -> tuple[float, float, float]:
     std = data.std(ddof=1)
     sharpe = mean / std * np.sqrt(252.0) if std > 0 else 0.0
 
+    extended = np.concatenate([data, data[: BLOCK_SIZE - 1]]) if n > 0 else data
     rng = np.random.default_rng(1234)
     samples = np.empty(BOOTSTRAP_ITERATIONS, dtype=float)
     for i in range(BOOTSTRAP_ITERATIONS):
-        idx = []
-        while len(idx) < n:
+        drawn: list[float] = []
+        while len(drawn) < n:
             start = rng.integers(0, n)
-            block = data[start : start + BLOCK_SIZE]
-            idx.extend(block.tolist())
-        resample = np.array(idx[:n], dtype=float)
+            block = extended[start : start + BLOCK_SIZE]
+            drawn.extend(block.tolist())
+        resample = np.array(drawn[:n], dtype=float)
         mu = resample.mean()
         sd = resample.std(ddof=1)
         samples[i] = mu / sd * np.sqrt(252.0) if sd > 0 else 0.0
@@ -63,14 +78,17 @@ def block_bootstrap_sharpe(series: pd.Series) -> tuple[float, float, float]:
 
 def main() -> None:
     oos_file = latest_oos_returns()
-    returns = pd.read_csv(oos_file, index_col=0, parse_dates=True)
+    if oos_file.suffix == ".parquet":
+        returns = pd.read_parquet(oos_file)
+    else:
+        returns = pd.read_csv(oos_file, index_col=0, parse_dates=True)
 
     results: dict[str, dict[str, float]] = {}
-    for name in STRATEGIES:
-        if name not in returns:
+    for label, column in STRATEGIES.items():
+        if column not in returns:
             continue
-        sharpe, low, high = block_bootstrap_sharpe(returns[name])
-        results[name] = {
+        sharpe, low, high = block_bootstrap_sharpe(returns[column])
+        results[label] = {
             "sharpe_point": sharpe,
             "sharpe_ci_low": low,
             "sharpe_ci_high": high,
@@ -79,7 +97,7 @@ def main() -> None:
             "block_size": BLOCK_SIZE,
         }
 
-    timestamp = oos_file.stem.split("_")[-1]
+    timestamp = pd.Timestamp.utcnow().strftime("%Y%m%d_%H%M%S")
     output_path = OUTPUT_DIR / f"bootstrap_sharpe_{timestamp}.json"
     with output_path.open("w", encoding="utf-8") as fh:
         json.dump({"source": oos_file.name, "results": results}, fh, indent=2)
