@@ -261,16 +261,21 @@ data/processed/cov_estimate.parquet             # Covariance (Ledoit-Wolf)
 ## 🧪 Relatório Consolidado de Experimentos (atualizado em 2025-10-31)
 
 ### 1. Baselines OOS (walk-forward 252/21d, purge/embargo 5/5, custos 30 bps)
-Fonte: `results/oos_metrics_comparison_20251029_102701.csv`
+Fonte: `results/baselines/baseline_metrics_oos.csv` (execução 2025-10-31)
 
-| Estratégia              | Retorno Anual | Vol Anual | Sharpe | CVaR 95% | Max DD | Turnover médio |
-|-------------------------|---------------|-----------|--------|----------|--------|----------------|
-| 1/N                     | 6.77%         | 11.94%    | 0.61   | -1.70%   | -18.73%| 2.0%           |
-| Risk Parity             | 5.33%         | 11.06%    | 0.52   | -1.58%   | -18.20%| 3.6%           |
-| MV Robust (Shrunk20)    | 4.42%         | 10.53%    | 0.46   | -1.51%   | -12.83%| 37.9%          |
-| 60/40                   | 4.05%         | 9.80%     | 0.45   | -1.43%   | -20.77%| 2.0%           |
-| Min-Var (LW)            | 1.61%         | 6.20%     | 0.29   | -0.86%   | -12.76%| 7.7%           |
-| HRP                     | 0.81%         | 8.67%     | 0.14   | -1.23%   | -21.01%| 50.7%          |
+| Estratégia           | Retorno Anual | Vol Anual | Sharpe | CVaR 95% | Max DD  | Turnover médio |
+|----------------------|---------------|-----------|--------|----------|---------|----------------|
+| 1/N                  | 6.77%         | 11.94%    | 0.61   | -1.70%   | -18.73% | 2.0%           |
+| Risk Parity (ERC)    | 5.33%         | 11.06%    | 0.52   | -1.58%   | -18.20% | 3.6%           |
+| MV Robust (shrunk)   | 4.42%         | 10.53%    | 0.46   | -1.51%   | -12.83% | 37.9%          |
+| 60/40                | 4.05%         | 9.80%     | 0.45   | -1.43%   | -20.77% | 2.0%           |
+| Min-Var (LW)         | 1.61%         | 6.20%     | 0.29   | -0.86%   | -12.76% | 7.7%           |
+| HRP                  | 0.81%         | 8.67%     | 0.14   | -1.23%   | -21.01% | 50.7%          |
+
+**Insights rápidos**
+- Equal-weight mantém o melhor Sharpe OOS, seguido de perto pelo ERC; ambos superam o 60/40 com custos de 30 bps.
+- A versão robusta (MV shrunk) oferece menor drawdown (-12.8%) à custa de turnover elevado (38%), indicando necessidade de controle adicional de fricção.
+- Testes de estresse (`results/baselines/baseline_stress_tests.csv`) confirmam que apenas as carteiras com beta mais baixo (min-var, 60/40) preservam capital em 2023, enquanto todas sofrem em 2022.
 
 ### 2. Guardrails e significância
 - **Tracking-error ERC vs 60/40:** 6.03% anual.  

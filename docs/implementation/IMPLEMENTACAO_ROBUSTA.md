@@ -397,8 +397,8 @@ RiskBudget(
 - [x] Walk-forward framework implementado
 - [x] Budget constraints integradas ao solver
 - [x] Turnover cap funcionando (reformulado com variáveis auxiliares)
-- [ ] Validação OOS executada e documentada (TODO)
-- [ ] IC de Sharpe via bootstrap (TODO)
+- [x] Validação OOS executada e documentada (`results/baselines/baseline_metrics_oos.csv`, README.md §1)
+- [x] IC de Sharpe via bootstrap (`results/bootstrap_ci/bootstrap_sharpe_102701.json`)
 
 ---
 
