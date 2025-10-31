@@ -23,6 +23,7 @@ class CvarConfig:
     lower_bounds: pd.Series | None = None
     upper_bounds: pd.Series | None = None
     turnover_penalty: float = 0.0
+    turnover_cap: float | None = None
     previous_weights: pd.Series | None = None
     target_return: float | None = None
     max_cvar: float | None = None
@@ -68,10 +69,15 @@ def solve_cvar_lp(
     cvar_expr = cvar_objective(var, aux, config.alpha)
     expected_expr = expected_returns.to_numpy(dtype=float) @ weights_var
 
+    if config.previous_weights is not None:
+        prev_series = config.previous_weights.reindex(assets).fillna(0.0).astype(float)
+    else:
+        prev_series = pd.Series(0.0, index=assets, dtype=float)
+    prev_vector = prev_series.to_numpy(dtype=float)
+
     objective_terms: list[cp.Expression] = [expected_expr - config.risk_aversion * cvar_expr]
-    if config.turnover_penalty > 0 and config.previous_weights is not None:
-        prev = config.previous_weights.reindex(assets).fillna(0.0).to_numpy(dtype=float)
-        objective_terms.append(-config.turnover_penalty * cp.norm1(weights_var - prev))
+    if config.turnover_penalty > 0:
+        objective_terms.append(-config.turnover_penalty * cp.norm1(weights_var - prev_vector))
 
     constraints.append(cp.sum(weights_var) == 1.0)
     if config.long_only:
@@ -85,17 +91,14 @@ def solve_cvar_lp(
         constraints.append(expected_expr >= float(config.target_return))
     if config.max_cvar is not None:
         constraints.append(cvar_expr <= float(config.max_cvar))
+    if config.turnover_cap is not None:
+        constraints.append(cp.norm1(weights_var - prev_vector) <= float(config.turnover_cap))
 
     problem = cp.Problem(cp.Maximize(cp.sum(objective_terms)), constraints)
     summary = solve_problem(problem, solver=config.solver, solver_kwargs=config.solver_kwargs)
 
     solution = pd.Series(np.asarray(weights_var.value).ravel(), index=assets, dtype=float).fillna(0.0)
-    prev_weights = config.previous_weights.reindex(assets).fillna(0.0) if config.previous_weights is not None else None
-    turnover = (
-        float(np.abs(solution - prev_weights).sum())
-        if prev_weights is not None
-        else float(np.abs(solution).sum())
-    )
+    turnover = float(np.abs(solution - prev_series).sum())
 
     return CvarResult(
         weights=solution,

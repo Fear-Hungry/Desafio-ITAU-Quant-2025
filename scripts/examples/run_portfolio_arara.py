@@ -308,7 +308,7 @@ asset_classes = {
     "Fixed Income": ["TLT", "IEF", "SHY", "LQD", "HYG", "EMB"],
     "Commodities": ["GLD", "SLV", "DBC", "USO"],
     "Real Estate": ["VNQ", "VNQI"],
-    "Crypto": ["BITO"],
+    "Crypto": ["IBIT", "ETHA"],
 }
 
 print(f"   🎯 Exposição por classe de ativo:")

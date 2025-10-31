@@ -1,10 +1,10 @@
 # ARARA Universe Configuration
-# Multi-asset global portfolio with 27 ETFs
+# Multi-asset global portfolio with 29 ETFs
 
 name: ARARA
 description: |
   Global multi-asset portfolio covering US/Intl/EM equities, fixed income,
-  commodities, real estate, and crypto exposure.
+  commodities, real estate, and spot crypto ETF exposure.
 
 tickers:
   # US Equity (5)
@@ -46,5 +46,6 @@ tickers:
   - VNQ  # US REIT
   - VNQI # International REIT
 
-  # Crypto (1)
-  - BITO # Bitcoin Futures ETF
+  # Crypto Spot ETFs (2)
+  - IBIT # Bitcoin Spot ETF (BlackRock)
+  - ETHA # Ethereum Spot ETF (iShares)

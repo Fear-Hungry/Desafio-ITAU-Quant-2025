@@ -6,7 +6,6 @@ groups:
     assets:
       - IBIT
       - ETHA
-      - BITO
     max: 0.10  # ≤10% total
     per_asset_max: 0.08  # ≤8% per asset
 

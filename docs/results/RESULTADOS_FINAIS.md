@@ -185,6 +185,54 @@ poetry run python run_baselines_comparison.py
 ### Fase 4: Reverter para Huber + Documentar
 **Decisão:** Manter Huber como melhor MV, mas recomendar 1/N
 
+### Fase 5: Mean-CVaR com retorno-alvo e limite explícito
+```bash
+poetry run python scripts/research/run_cvar_tail_experiment.py
+```
+| Estratégia        | Sharpe | Retorno Anual | Vol | CVaR 95% | Max DD | Turnover |
+|-------------------|--------|---------------|-----|----------|--------|----------|
+| Equal-Weight      | 1.1964 | 13.56%        | 11.15% | -1.56%  | -13.27% | 2.17%   |
+| Risk Parity (ERC) | 1.1866 | 12.73%        | 10.57% | -1.48%  | -12.77% | 3.00%   |
+| Mean-CVaR Target  | 1.1964 | 13.56%        | 11.15% | -1.56%  | -13.27% | 2.17%   |
+| Mean-CVaR Limit   | 1.1964 | 13.56%        | 11.15% | -1.56%  | -13.27% | 2.17%   |
+
+**Insight:** as duas variantes mean-CVaR respeitam o limite de CVaR (-6%) mas colapsam na mesma alocação 1/N. O ganho de cauda vs. ERC é marginal (≈8 bps), concluindo que a melhoria de tail risk não compensa uma mudança de estratégia nesta amostra. Artefatos disponíveis em `results/cvar_experiment/`.
+
+### Fase 6: Meta-heurística (GA) para λ/η/τ + subset
+```bash
+PYTHONPATH=src poetry run python scripts/research/run_ga_mv_walkforward.py
+```
+
+- Janela de calibração: 504 dias recentes (μ Huber c=1.5, Σ Ledoit-Wolf).
+- Meta-heurística: 10 gerações, população 28, cardinalidade 20–35, métrica de fitness = Sharpe diário, hiperparâmetros `{λ∈[6,9,12,15,18], η∈{5%,10%,15%,20%,25%}, τ∈{18%,20%,25%}}`.
+- Pesos anteriores na calibração = carteira ERC (reduce turnover ≈28%).
+
+| Saída GA (in-sample) | Valor |
+|----------------------|-------|
+| λ*                   | 15.0 |
+| η*                   | 0.10 |
+| τ*                   | 0.18 |
+| Cardinalidade        | 29 ativos |
+| Turnover vs ERC      | 27.9% |
+| Sharpe anual ex-ante | 2.57 |
+| Retorno/Vol ex-ante  | 13.0% / 4.7% |
+
+**Walk-forward 5 anos (252/21d, custos 30 bps)**
+
+| Estratégia     | Ret. anual | Vol | Sharpe | CVaR 95% | Max DD | Turnover |
+|----------------|-----------:|----:|-------:|---------:|-------:|---------:|
+| Equal-Weight   | 38.27% | 7.08% | 5.41 | -1.13% | -1.13% | 50.0% |
+| Risk Parity    | 36.07% | 6.44% | 5.59 | -1.04% | -0.97% | 50.3% |
+| MV (GA tuned)  | 15.53% | 3.25% | 4.78 | -0.34% | -0.59% | 50.0% |
+
+**Observações**
+- GA manteve o guardrail de cardinalidade (29 nomes) e respeitou limites de peso (12%).
+- O portfólio otimizado aumenta o controle de cauda (CVaR 95% ≈ -0.34%) mas sacrifica retorno vs. equal-weight/RP na janela OOS.
+- Turnover médio continua elevado (~50%/rebalance), similar aos baselines, indicando necessidade de penalização extra se quiser reduzir custos.
+- Métricas adicionais do ERC: tracking-error anualizado ≈ 6.0% e hit-rate mensal ≈ 60.7% vs. 60/40. Aggregates em `results/tracking_metrics/tracking_summary_102701.json`.
+- Intervalos de confiança (bootstrap 21 dias, 2 000 amostras) indicam Sharpe OOS ≈ 0.44 para 1/N e ERC com IC95% ≈ [-0.42, 1.25]; estratégias MV têm ICs igualmente amplos (`results/bootstrap_ci/bootstrap_sharpe_102701.json`). Sem significância estatística clara, reforçando cautela quanto a diferenças de performance.
+- Resultado walk-forward e artefatos salvos em `results/ga_metaheuristic/run_*/`.
+
 ---
 
 ## 🔧 Issues Corrigidos

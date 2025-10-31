@@ -94,6 +94,7 @@ Restrições operacionais:
 - `μ`: média robusta (Huber) com janela adaptativa e opção Black-Litterman para views.
 - `Σ`: Ledoit-Wolf shrinkage não linear.
 - Extensão futura: mean-CVaR com retorno-alvo ou CVaR limitado.
+  - ✅ 2025-10-28: avaliado via `scripts/research/run_cvar_tail_experiment.py` (ver `results/cvar_experiment/`).
 
 ### Processo de execução
 
@@ -314,4 +315,3 @@ Restrições operacionais:
 ### Em síntese
 
 Portfólio institucional global que entrega **CDI + 4% com risco controlado** usando ETFs líquidos, otimização robusta com custos embutidos e governança transparente. Custos e execução são tratados dentro do modelo — não como ajuste posterior — garantindo promessas realistas e execução consistente.
-

@@ -1,0 +1,11 @@
+{
+  "source": "oos_returns_all_strategies_20251029_102701.csv",
+  "portfolio": "Risk Parity",
+  "benchmark": "60/40",
+  "metrics": {
+    "tracking_error_annual": 0.06031256353440459,
+    "tracking_error_daily": 0.003799334382019461,
+    "hit_rate_monthly": 0.6065573770491803,
+    "active_return_annual": 0.020351863279254524
+  }
+}

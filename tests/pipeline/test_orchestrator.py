@@ -67,6 +67,7 @@ class TestRunFullPipeline:
             "status": "completed",
             "n_assets": 10,
             "n_days": 100,
+            "returns_file": "returns_cache.parquet",
         }
         mock_estimate.return_value = {
             "status": "completed",
@@ -100,7 +101,8 @@ class TestRunFullPipeline:
 
         # Check call order
         assert mock_data.called
-        assert mock_estimate.called
+        mock_estimate.assert_called_once()
+        assert mock_estimate.call_args.kwargs.get("returns_file") == "returns_cache.parquet"
         assert mock_optimize.called
         assert mock_backtest.called
 
@@ -115,7 +117,7 @@ class TestRunFullPipeline:
         tmp_path,
     ):
         """Verify backtest can be skipped."""
-        mock_data.return_value = {"status": "completed", "n_assets": 10, "n_days": 100}
+        mock_data.return_value = {"status": "completed", "n_assets": 10, "n_days": 100, "returns_file": "returns_cache.parquet"}
         mock_estimate.return_value = {"status": "completed", "shrinkage": 0.2, "window_used": 100}
         mock_optimize.return_value = {"status": "completed", "n_assets": 5, "sharpe": 1.5}
 
@@ -137,7 +139,7 @@ class TestRunFullPipeline:
         tmp_path,
     ):
         """Verify graceful handling of optimization failure."""
-        mock_data.return_value = {"status": "completed", "n_assets": 10, "n_days": 100}
+        mock_data.return_value = {"status": "completed", "n_assets": 10, "n_days": 100, "returns_file": "returns_cache.parquet"}
         mock_estimate.return_value = {"status": "completed", "shrinkage": 0.2, "window_used": 100}
 
         # Make optimization fail
@@ -162,7 +164,7 @@ class TestRunFullPipeline:
         tmp_path,
     ):
         """Verify result dictionary has expected structure."""
-        mock_data.return_value = {"status": "completed", "n_assets": 10, "n_days": 100}
+        mock_data.return_value = {"status": "completed", "n_assets": 10, "n_days": 100, "returns_file": "returns_cache.parquet"}
         mock_estimate.return_value = {"status": "completed", "shrinkage": 0.2, "window_used": 100}
         mock_optimize.return_value = {"status": "completed", "n_assets": 5, "sharpe": 1.5}
 
@@ -196,7 +198,7 @@ class TestRunFullPipeline:
         tmp_path,
     ):
         """Verify parameters are passed to data stage correctly."""
-        mock_data.return_value = {"status": "completed", "n_assets": 10, "n_days": 100}
+        mock_data.return_value = {"status": "completed", "n_assets": 10, "n_days": 100, "returns_file": "returns_cache.parquet"}
 
         with patch("itau_quant.pipeline.orchestrator.estimate_parameters"):
             with patch("itau_quant.pipeline.orchestrator.optimize_portfolio"):

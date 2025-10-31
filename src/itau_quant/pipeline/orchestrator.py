@@ -200,7 +200,13 @@ def run_full_pipeline(
         logger.info("Stage 2/4: Parameter estimation (μ, Σ)")
         stage_start = time.perf_counter()
 
-        estimation_result = estimate_parameters(settings=settings)
+        estimation_kwargs: dict[str, Any] = {"settings": settings}
+        returns_file = data_result.get("returns_file")
+        if returns_file:
+            logger.info("Stage 2 will use returns artefact %s", returns_file)
+            estimation_kwargs["returns_file"] = returns_file
+
+        estimation_result = estimate_parameters(**estimation_kwargs)
         estimation_result["duration_seconds"] = time.perf_counter() - stage_start
         results["stages"]["estimation"] = estimation_result
 

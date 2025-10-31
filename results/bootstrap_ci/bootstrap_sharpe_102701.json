@@ -1,0 +1,52 @@
+{
+  "source": "oos_returns_all_strategies_20251029_102701.csv",
+  "results": {
+    "1/N": {
+      "sharpe_point": 0.4410794600886663,
+      "sharpe_ci_low": -0.41911166624884993,
+      "sharpe_ci_high": 1.2511106491259372,
+      "confidence": 0.95,
+      "iterations": 2000,
+      "block_size": 21,
+      "sig_vs_zero": false,
+      "ci_width": 1.670222315374787
+    },
+    "Risk Parity": {
+      "sharpe_point": 0.4406566391129657,
+      "sharpe_ci_low": -0.41962511972713046,
+      "sharpe_ci_high": 1.2507610007065044,
+      "confidence": 0.95,
+      "iterations": 2000,
+      "block_size": 21,
+      "sig_vs_zero": false,
+      "ci_width": 1.6703861204336348
+    },
+    "MV Robust (Shrunk20)": {
+      "sharpe_point": 0.2878370108074038,
+      "sharpe_ci_low": -0.5198458973891997,
+      "sharpe_ci_high": 1.0535932808691761,
+      "confidence": 0.95,
+      "iterations": 2000,
+      "block_size": 21,
+      "sig_vs_zero": false,
+      "ci_width": 1.5734391782583759
+    },
+    "Min-Var (LW)": {
+      "sharpe_point": 0.11659374716690406,
+      "sharpe_ci_low": -0.7371491785307156,
+      "sharpe_ci_high": 0.9974251404920184,
+      "confidence": 0.95,
+      "iterations": 2000,
+      "block_size": 21,
+      "sig_vs_zero": false,
+      "ci_width": 1.7345743190227338
+    }
+  },
+  "meta": {
+    "block_size": 21,
+    "iterations": 2000,
+    "confidence": 0.95,
+    "portfolio": "Risk Parity",
+    "benchmark": "60/40"
+  }
+}

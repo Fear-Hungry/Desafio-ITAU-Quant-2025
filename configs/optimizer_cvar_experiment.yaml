@@ -1,0 +1,50 @@
+base_currency: USD
+data:
+  returns: data/processed/returns_arara.parquet
+risk_limits:
+  cvar_alpha: 0.95
+  cvar_max: 0.06
+optimizer:
+  objective: mean_cvar
+  lambda: 3.0
+  eta: 0.05
+  tau: 0.20
+  min_weight: 0.0
+  max_weight: 0.12
+  target_return: 0.0004
+  solver: CLARABEL
+estimators:
+  mu:
+    method: huber
+    window_days: 252
+    delta: 1.5
+  sigma:
+    method: ledoit_wolf
+    window_days: 252
+state:
+  previous_weights:
+    SPY: 0.05
+    QQQ: 0.05
+    IWM: 0.04
+    EFA: 0.04
+    VGK: 0.04
+    EWJ: 0.03
+    EWU: 0.03
+    EEM: 0.03
+    VWO: 0.03
+    EWZ: 0.02
+    FXI: 0.02
+    INDA: 0.02
+    TLT: 0.04
+    IEF: 0.06
+    SHY: 0.06
+    LQD: 0.04
+    HYG: 0.04
+    EMB: 0.04
+    GLD: 0.04
+    SLV: 0.04
+    DBC: 0.04
+    USO: 0.02
+    VNQ: 0.03
+    IBIT: 0.01
+    ETHA: 0.01

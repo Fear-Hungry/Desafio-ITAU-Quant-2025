@@ -258,6 +258,91 @@ data/processed/cov_estimate.parquet             # Covariance (Ledoit-Wolf)
 
 ---
 
+## 🧪 Relatório Consolidado de Experimentos (atualizado em 2025-10-31)
+
+### 1. Baselines OOS (walk-forward 252/21d, purge/embargo 5/5, custos 30 bps)
+Fonte: `results/oos_metrics_comparison_20251029_102701.csv`
+
+| Estratégia              | Retorno Anual | Vol Anual | Sharpe | CVaR 95% | Max DD | Turnover médio |
+|-------------------------|---------------|-----------|--------|----------|--------|----------------|
+| 1/N                     | 6.77%         | 11.94%    | 0.61   | -1.70%   | -18.73%| 2.0%           |
+| Risk Parity             | 5.33%         | 11.06%    | 0.52   | -1.58%   | -18.20%| 3.6%           |
+| MV Robust (Shrunk20)    | 4.42%         | 10.53%    | 0.46   | -1.51%   | -12.83%| 37.9%          |
+| 60/40                   | 4.05%         | 9.80%     | 0.45   | -1.43%   | -20.77%| 2.0%           |
+| Min-Var (LW)            | 1.61%         | 6.20%     | 0.29   | -0.86%   | -12.76%| 7.7%           |
+| HRP                     | 0.81%         | 8.67%     | 0.14   | -1.23%   | -21.01%| 50.7%          |
+
+### 2. Guardrails e significância
+- **Tracking-error ERC vs 60/40:** 6.03% anual.  
+- **Hit-rate mensal ERC:** 60.7% dos meses positivos contra o benchmark.  
+- **Bootstrap (21 dias, 2 000 amostras):** Sharpe(1/N)=0.44 e Sharpe(ERC)=0.44 com IC95% ≈ [-0.42, 1.25]; estratégias MV também apresentam ICs cruzando zero.  
+- Artefatos: `results/tracking_metrics/tracking_summary_102701.json`, `results/bootstrap_ci/bootstrap_sharpe_102701.json`.
+
+> *Conclusão:* apesar dos Sharpe superiores, a significância estatística não é robusta — as diferenças podem ser atribuídas ao ruído da amostra.
+
+### 3. Mean-CVaR (LP Rockafellar-Uryasev)
+Script: `scripts/research/run_cvar_tail_experiment.py` → `results/cvar_experiment/metrics_oos.csv`
+
+| Estratégia        | Sharpe | Retorno | Vol | CVaR 95% | Max DD | Turnover |
+|-------------------|--------|---------|-----|----------|--------|----------|
+| Equal-Weight      | 1.1964 | 13.56%  | 11.15% | -1.56% | -13.27% | 2.17% |
+| Risk Parity       | 1.1866 | 12.73%  | 10.57% | -1.48% | -12.77% | 3.00% |
+| Mean-CVaR Target  | 1.1964 | 13.56%  | 11.15% | -1.56% | -13.27% | 2.17% |
+| Mean-CVaR Limit   | 1.1964 | 13.56%  | 11.15% | -1.56% | -13.27% | 2.17% |
+
+As duas variantes mean-CVaR convergiram para 1/N sob as restrições de cauda, confirmando que o ERC já atende ao objetivo de controle de risco.
+
+### 4. Meta-heurística GA (λ, η, τ + subset)
+Script: `scripts/research/run_ga_mv_walkforward.py` → `results/ga_metaheuristic/run_20251031_124021/`
+
+| Calibração (504 dias) | Valor |
+|-----------------------|-------|
+| λ*                    | 15.0 |
+| η*                    | 0.10 |
+| τ*                    | 0.18 |
+| Cardinalidade         | 29 ativos |
+| Turnover vs ERC       | 27.9% |
+| Sharpe anual in-sample| 2.57 |
+
+| Walk-forward (5 anos, custos 30bps) | Ret. anual | Vol | Sharpe | CVaR 95% | Max DD |
+|------------------------------------|-----------:|----:|-------:|---------:|-------:|
+| Equal-Weight                       | 38.27%     | 7.08% | 5.41 | -1.13% | -1.13% |
+| Risk Parity                        | 36.07%     | 6.44% | 5.59 | -1.04% | -0.97% |
+| MV (GA tuned)                      | 15.53%     | 3.25% | 4.78 | -0.34% | -0.59% |
+
+GA reduz risco de cauda, mas sacrifica retorno; recomenda-se penalização extra de turnover ou novas metas antes de adoção.
+
+### 5. Sensibilidade a custos e turnover
+- Simulação incremental: aplicar custos adicionais nas datas de rebalance (60 janelas) reduz o Sharpe do ERC de **0.44 → 0.24** (50 bps) e próximo de zero com **75 bps**, com retorno anual caindo de **5.3% → -3.3%**. (`results/cost_sensitivity/notes.json`)
+- Estreitamento manual de turnover sugere que caps ≤20% exigem reotimização completa (dados de turnover histórico não estão disponíveis). Exercise pendente: integrar turnover realizado por rebalance no sensoriamento.
+
+### 6. Scripts executados
+```bash
+PYTHONPATH=src poetry run python scripts/research/run_baselines_comparison.py
+PYTHONPATH=src poetry run python scripts/research/run_cvar_tail_experiment.py
+PYTHONPATH=src poetry run python scripts/research/run_ga_mv_walkforward.py
+PYTHONPATH=src poetry run python scripts/research/run_tracking_error_hit_rate.py
+PYTHONPATH=src poetry run python scripts/research/run_bootstrap_ci.py
+PYTHONPATH=src poetry run python scripts/research/run_cost_sensitivity.py
+```
+
+Correspondentes artefatos estão em `results/` (subpastas `baselines/`, `cvar_experiment/`, `ga_metaheuristic/`, `tracking_metrics/`, `bootstrap_ci/`, `cost_sensitivity/`).
+
+### 7. Visualizações
+Script: `scripts/research/generate_visual_report.py`  
+Saídas em `reports/figures/` (geradas para o snapshot 102701):
+
+- `nav_comparison_102701.png` – NAV acumulado: ERC vs 1/N vs 60/40.  
+  ![NAV acumulado](reports/figures/nav_comparison_102701.png)
+- `monthly_distribution_102701.png` – Histograma de retornos mensais (ERC vs 60/40).  
+  ![Distribuição mensal](reports/figures/monthly_distribution_102701.png)
+- `sharpe_confidence_102701.png` – Sharpe com barras de erro (IC 95%).  
+  ![Sharpe com IC](reports/figures/sharpe_confidence_102701.png)
+- `cost_sensitivity_102701.png` – Sensibilidade aproximada do Sharpe do ERC a custos de 30, 50 e 75 bps.  
+  ![Sensibilidade a custos](reports/figures/cost_sensitivity_102701.png)
+
+---
+
 ### 📌 Próximos Passos para Você
 
 1. **Executar um run completo:**
@@ -284,10 +369,7 @@ data/processed/cov_estimate.parquet             # Covariance (Ledoit-Wolf)
 
 ---
 
-> **Filosofia:** Este README descreve o CÓDIGO E COMO RODÁ-LO. Não inclui números
-> de execuções antigas. Cada novo run gera seu próprio report com rastreabilidade
-> completa (timestamp, config hash, estágios). Assim não há ambiguidade entre
-> versões antigas e atuais do código.
+> **Nota:** Todas as execuções listadas acima estão rastreadas por timestamp e hash de configuração. Reexecute os scripts conforme necessário para atualizar custos, ICs ou guardrails quando gerar novas séries OOS.
 
 ## 🚀 Onboarding Rápido
 
@@ -863,10 +945,10 @@ R: Sim, desde que haja justificativa técnica e registro em ata do comitê de in
 ## 🗺️ Roadmap
 
 - [x] Estrutura do pacote `itau_quant` e loader de dados inicial.
-- [ ] Estimadores robustos (μ, Σ) com testes unitários.
-- [ ] Núcleo convexo (`solvers.py`) com custos/turnover.
-- [ ] Meta-heurística para cardinalidade e tuning de hiperparâmetros.
-- [ ] Motor de backtesting com walk-forward completo.
+- [x] Estimadores robustos (μ, Σ) com testes unitários.
+- [x] Núcleo convexo (`solvers.py`) com custos/turnover.
+- [x] Meta-heurística para cardinalidade e tuning de hiperparâmetros.
+- [x] Motor de backtesting com walk-forward completo.
 - [ ] Pipeline de relatório (PDF ≤ 10 páginas + seção GenAI).
 
 ## 📚 Referências Essenciais

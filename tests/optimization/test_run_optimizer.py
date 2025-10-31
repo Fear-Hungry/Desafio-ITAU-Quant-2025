@@ -115,6 +115,40 @@ portfolio:
     return config
 
 
+def _write_cvar_config(tmp_path: Path, returns_path: Path) -> Path:
+    config = tmp_path / "configs" / "optimizer_cvar.yaml"
+    config.write_text(
+        f"""
+base_currency: USD
+data:
+  returns: {returns_path}
+risk_limits:
+  cvar_alpha: 0.9
+  cvar_max: 0.06
+optimizer:
+  objective: mean_cvar
+  lambda: 2.5
+  min_weight: 0.0
+  max_weight: 0.7
+  target_return: 0.0005
+estimators:
+  mu:
+    method: simple
+    window_days: 60
+  sigma:
+    method: ledoit_wolf
+    window_days: 60
+state:
+  previous_weights:
+    AAA: 0.34
+    BBB: 0.33
+    CCC: 0.33
+""".strip(),
+        encoding="utf-8",
+    )
+    return config
+
+
 def teardown_function() -> None:
     reset_settings_cache()
 
@@ -161,3 +195,19 @@ def test_run_optimizer_respects_portfolio_budgets(tmp_path: Path) -> None:
     assert result.weights is not None
     high_return_group = result.weights.reindex(["AAA", "BBB"]).fillna(0.0).sum()
     assert high_return_group <= 0.3 + 1e-6
+
+
+def test_run_optimizer_executes_mean_cvar(tmp_path: Path) -> None:
+    settings = _make_settings(tmp_path)
+    returns_path = _write_returns(tmp_path)
+    config_path = _write_cvar_config(tmp_path, returns_path)
+
+    result = run_optimizer(config_path, dry_run=False, settings=settings)
+
+    assert result.summary is not None and result.summary.is_optimal()
+    assert result.weights is not None
+    assert abs(result.weights.sum() - 1.0) < 1e-6
+    assert result.metrics is not None
+    assert result.metrics.get("cvar") is not None
+    assert result.metrics["cvar"] <= 0.06 + 1e-6
+    assert result.metrics["expected_return"] >= 0.0005 - 1e-8

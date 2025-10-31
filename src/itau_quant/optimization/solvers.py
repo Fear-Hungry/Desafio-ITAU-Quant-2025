@@ -11,6 +11,7 @@ import pandas as pd
 from itau_quant.config import Settings, get_settings
 from itau_quant.estimators import cov as covariance_estimators
 from itau_quant.estimators import mu as mean_estimators
+from itau_quant.optimization.core.cvar_lp import CvarConfig, solve_cvar_lp
 from itau_quant.optimization.core.mv_qp import (
     MeanVarianceConfig,
     MeanVarianceResult,
@@ -34,6 +35,7 @@ __all__ = [
 class OptimizerConfig:
     config_path: Path
     base_currency: str
+    objective: str
     risk_aversion: float
     turnover_penalty: float
     turnover_cap: float | None
@@ -46,6 +48,10 @@ class OptimizerConfig:
     previous_weights: pd.Series | None
     solver: str | None
     solver_kwargs: Mapping[str, Any]
+    long_only: bool = True
+    cvar_alpha: float | None = None
+    target_return: float | None = None
+    max_cvar: float | None = None
     risk_config: Mapping[str, Any] | None = None
     budgets: Sequence[RiskBudget] | None = None
 
@@ -156,6 +162,43 @@ def run_optimizer(
 
     cost_vector = _build_cost_vector(optimizer_config.linear_costs_bps, mu_series.index)
 
+    if optimizer_config.objective.startswith("mean_cvar"):
+        cvar_alpha = optimizer_config.cvar_alpha or 0.95
+        cvar_config = CvarConfig(
+            alpha=cvar_alpha,
+            risk_aversion=optimizer_config.risk_aversion,
+            long_only=optimizer_config.long_only,
+            lower_bounds=lower,
+            upper_bounds=upper,
+            turnover_penalty=optimizer_config.turnover_penalty,
+            turnover_cap=optimizer_config.turnover_cap,
+            previous_weights=previous_weights,
+            target_return=optimizer_config.target_return,
+            max_cvar=optimizer_config.max_cvar,
+            solver=optimizer_config.solver,
+            solver_kwargs=optimizer_config.solver_kwargs,
+        )
+        aligned_returns = returns.reindex(columns=mu_series.index)
+        cvar_result = solve_cvar_lp(aligned_returns, mu_series, cvar_config)
+
+        result.weights = cvar_result.weights
+        result.metrics = {
+            "expected_return": cvar_result.expected_return,
+            "cvar": cvar_result.cvar,
+            "var": cvar_result.var,
+        }
+        result.turnover = cvar_result.turnover
+        result.cost = None
+        result.summary = cvar_result.summary
+        result.dry_run = False
+
+        if optimizer_config.max_cvar is not None and cvar_result.cvar > optimizer_config.max_cvar + 1e-9:
+            result.notes.append("CVaR limit reported above configured threshold")
+        if optimizer_config.budgets:
+            result.notes.append("Group budgets are not yet supported in mean-CVaR solver; skipped.")
+
+        return result
+
     if optimizer_config.budgets:
         validate_budgets(optimizer_config.budgets, mu_series.index)
 
@@ -199,12 +242,20 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
 
     base_currency = raw.get("base_currency", settings.base_currency)
     optimizer_section = raw.get("optimizer", {})
+    risk_limits = raw.get("risk_limits", {})
+
+    objective = str(optimizer_section.get("objective", "mean_variance")).lower()
+    long_only = bool(optimizer_section.get("long_only", True))
 
     risk_aversion = float(optimizer_section.get("lambda", 5.0))
     turnover_penalty = float(optimizer_section.get("eta", 0.0))
     turnover_cap = optimizer_section.get("tau")
     if turnover_cap is not None:
         turnover_cap = float(turnover_cap)
+
+    target_return = optimizer_section.get("target_return")
+    if target_return is not None:
+        target_return = float(target_return)
 
     min_weight = float(optimizer_section.get("min_weight", 0.0))
     max_weight = float(optimizer_section.get("max_weight", 1.0))
@@ -270,9 +321,25 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
     solver = optimizer_section.get("solver")
     solver_kwargs = optimizer_section.get("solver_kwargs", {})
 
+    cvar_alpha = None
+    max_cvar = None
+    if isinstance(risk_limits, Mapping):
+        if "cvar_alpha" in risk_limits:
+            cvar_alpha = float(risk_limits["cvar_alpha"])
+        if "cvar_max" in risk_limits:
+            max_cvar = float(risk_limits["cvar_max"])
+        if target_return is None and "target_return" in risk_limits:
+            target_return = float(risk_limits["target_return"])
+
+    if "cvar_alpha" in optimizer_section:
+        cvar_alpha = float(optimizer_section["cvar_alpha"])
+    if "cvar_max" in optimizer_section:
+        max_cvar = float(optimizer_section["cvar_max"])
+
     return OptimizerConfig(
         config_path=path,
         base_currency=base_currency,
+        objective=objective,
         risk_aversion=risk_aversion,
         turnover_penalty=turnover_penalty,
         turnover_cap=turnover_cap,
@@ -285,6 +352,10 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
         previous_weights=previous_weights,
         solver=solver,
         solver_kwargs=solver_kwargs,
+        long_only=long_only,
+        cvar_alpha=cvar_alpha,
+        target_return=target_return,
+        max_cvar=max_cvar,
         risk_config=risk_config,
         budgets=budgets,
     )

@@ -20,6 +20,21 @@ def _mock_multi_ticker_prices() -> pd.DataFrame:
     }, index=idx)
 
 
+def _liquidity_stats(df: pd.DataFrame) -> pd.DataFrame:
+    idx = df.index
+    return pd.DataFrame(
+        {
+            "is_liquid": [True] * len(df.columns),
+            "coverage": [1.0] * len(df.columns),
+            "non_na": [len(idx)] * len(df.columns),
+            "max_gap": [0] * len(df.columns),
+            "first_valid": [idx[0]] * len(df.columns),
+            "last_valid": [idx[-1]] * len(df.columns),
+        },
+        index=df.columns,
+    )
+
+
 def test_dataloader_applies_corporate_actions(monkeypatch):
     prices = _mock_prices()
     returns = prices.pct_change().fillna(0.0)
@@ -27,7 +42,7 @@ def test_dataloader_applies_corporate_actions(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)))
+    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, _liquidity_stats(df)))
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
     monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
@@ -60,7 +75,7 @@ def test_dataloader_applies_dividend_event(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)))
+    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, _liquidity_stats(df)))
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
     monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
@@ -95,7 +110,7 @@ def test_dataloader_applies_spinoff_event(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)))
+    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, _liquidity_stats(df)))
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
     monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
@@ -130,7 +145,7 @@ def test_dataloader_applies_multiple_sequential_events(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)))
+    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, _liquidity_stats(df)))
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
     monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
@@ -172,7 +187,7 @@ def test_dataloader_applies_events_on_same_date(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)))
+    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, _liquidity_stats(df)))
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
     monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
@@ -212,7 +227,7 @@ def test_dataloader_applies_events_to_different_tickers(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)))
+    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, _liquidity_stats(df)))
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
     monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
@@ -257,7 +272,7 @@ def test_dataloader_with_no_actions_provided(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)))
+    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, _liquidity_stats(df)))
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
     monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
@@ -280,7 +295,7 @@ def test_dataloader_with_empty_actions_list(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)))
+    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, _liquidity_stats(df)))
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
     monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)

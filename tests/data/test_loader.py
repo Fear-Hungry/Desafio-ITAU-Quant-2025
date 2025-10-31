@@ -350,7 +350,18 @@ def test_dataloader_load_without_corporate_actions(
 
     mock_yf.return_value = prices
     mock_normalize.return_value = prices
-    mock_filter.return_value = (prices, pd.DataFrame({"is_liquid": [True]}, index=["AAPL"]))
+    liquidity = pd.DataFrame(
+        {
+            "is_liquid": [True],
+            "coverage": [1.0],
+            "non_na": [len(index)],
+            "max_gap": [0],
+            "first_valid": [index[0]],
+            "last_valid": [index[-1]],
+        },
+        index=["AAPL"],
+    )
+    mock_filter.return_value = (prices, liquidity)
     mock_returns.return_value = returns
     mock_fred.return_value = rf
     mock_excess.return_value = excess
@@ -366,6 +377,11 @@ def test_dataloader_load_without_corporate_actions(
     assert bundle.rf_daily.equals(rf)
     assert bundle.bms.equals(bms)
     assert len(bundle.inception_mask) == 1
+    artefacts = loader.artifacts
+    assert artefacts["request_id"] == "test_hash"
+    assert artefacts["returns_path"].name.endswith("returns_test_hash.parquet")
+    assert artefacts["prices_path"].name.endswith("prices_test_hash.parquet")
+    assert artefacts["rf_path"].name.endswith("rf_daily_test_hash.parquet")
 
 
 @patch("itau_quant.data.loader.yf_download")
@@ -415,7 +431,20 @@ def test_dataloader_load_with_corporate_actions(
     mock_load_actions.return_value = actions_df
     mock_factors.return_value = factors_df
     mock_adjust.return_value = adjusted_prices
-    mock_filter.return_value = (adjusted_prices, pd.DataFrame({"is_liquid": [True]}, index=["AAPL"]))
+    mock_filter.return_value = (
+        adjusted_prices,
+        pd.DataFrame(
+            {
+                "is_liquid": [True],
+                "coverage": [1.0],
+                "non_na": [len(index)],
+                "max_gap": [0],
+                "first_valid": [index[0]],
+                "last_valid": [index[-1]],
+            },
+            index=["AAPL"],
+        ),
+    )
     mock_returns.return_value = returns
     mock_fred.return_value = rf
     mock_excess.return_value = excess
@@ -442,9 +471,17 @@ def test_dataloader_load_filters_illiquid_assets(mock_filter, mock_normalize, mo
     }, index=index)
 
     filtered_prices = pd.DataFrame({"AAPL": [100, 110, 105, 115, 120]}, index=index)
-    stats = pd.DataFrame({
-        "is_liquid": [True, False]
-    }, index=["AAPL", "ILLIQUID"])
+    stats = pd.DataFrame(
+        {
+            "is_liquid": [True, False],
+            "coverage": [1.0, 0.2],
+            "non_na": [len(index), 1],
+            "max_gap": [0, len(index)],
+            "first_valid": [index[0], index[2]],
+            "last_valid": [index[-1], index[2]],
+        },
+        index=["AAPL", "ILLIQUID"],
+    )
 
     mock_yf.return_value = prices
     mock_normalize.return_value = prices
@@ -472,7 +509,17 @@ def test_dataloader_load_raises_when_no_liquid_assets(mock_filter, mock_normaliz
     prices = pd.DataFrame({"ILLIQUID": [None, None, 50, None, None]}, index=index)
 
     empty_prices = pd.DataFrame(index=index)
-    stats = pd.DataFrame({"is_liquid": [False]}, index=["ILLIQUID"])
+    stats = pd.DataFrame(
+        {
+            "is_liquid": [False],
+            "coverage": [0.2],
+            "non_na": [1],
+            "max_gap": [len(index)],
+            "first_valid": [index[2]],
+            "last_valid": [index[2]],
+        },
+        index=["ILLIQUID"],
+    )
 
     mock_yf.return_value = prices
     mock_normalize.return_value = prices
@@ -514,7 +561,20 @@ def test_dataloader_load_saves_parquet_files(
 
     mock_yf.return_value = prices
     mock_normalize.return_value = prices
-    mock_filter.return_value = (prices, pd.DataFrame({"is_liquid": [True]}, index=["AAPL"]))
+    mock_filter.return_value = (
+        prices,
+        pd.DataFrame(
+            {
+                "is_liquid": [True],
+                "coverage": [1.0],
+                "non_na": [len(index)],
+                "max_gap": [0],
+                "first_valid": [index[0]],
+                "last_valid": [index[-1]],
+            },
+            index=["AAPL"],
+        ),
+    )
     mock_returns.return_value = returns
     mock_fred.return_value = rf
     mock_excess.return_value = excess
@@ -524,7 +584,144 @@ def test_dataloader_load_saves_parquet_files(
     loader = DataLoader(tickers=["AAPL"])
     loader.load()
 
-    assert mock_save.call_count == 2
-    save_calls = [call[0][0] for call in mock_save.call_args_list]
-    assert any("returns_abc123.parquet" in str(path) for path in save_calls)
-    assert any("excess_returns_abc123.parquet" in str(path) for path in save_calls)
+    assert mock_save.call_count == 4
+    save_calls = [str(call[0][0]) for call in mock_save.call_args_list]
+    assert any("prices_abc123.parquet" in path for path in save_calls)
+    assert any("returns_abc123.parquet" in path for path in save_calls)
+    assert any("excess_returns_abc123.parquet" in path for path in save_calls)
+    assert any("rf_daily_abc123.parquet" in path for path in save_calls)
+
+
+@patch("itau_quant.data.loader.crypto_download")
+@patch("itau_quant.data.loader.yf_download")
+@patch("itau_quant.data.loader.normalize_index")
+@patch("itau_quant.data.loader.filter_liquid_assets")
+@patch("itau_quant.data.loader.validate_panel")
+@patch("itau_quant.data.loader._calculate_returns")
+@patch("itau_quant.data.loader.fred_download_dtb3")
+@patch("itau_quant.data.loader.compute_excess_returns")
+@patch("itau_quant.data.loader.rebalance_schedule")
+@patch("itau_quant.data.loader.request_hash")
+@patch("itau_quant.data.loader.save_parquet")
+def test_dataloader_uses_crypto_connector(
+    mock_save,
+    mock_hash,
+    mock_rebalance,
+    mock_excess,
+    mock_fred,
+    mock_returns,
+    mock_validate,
+    mock_filter,
+    mock_normalize,
+    mock_yf,
+    mock_crypto,
+    monkeypatch,
+):
+    index = pd.date_range("2024-01-01", periods=3, freq="D")
+
+    multi_cols = pd.MultiIndex.from_product([["close"], ["IBIT"]], names=["field", "symbol"])
+    crypto_panel = pd.DataFrame([[100.0], [101.0], [103.0]], index=index, columns=multi_cols)
+    normalized_crypto = pd.DataFrame({"IBIT": [100.0, 101.0, 103.0]}, index=index)
+    returns = pd.DataFrame({"IBIT": [0.0, 0.0099, 0.0197]}, index=index)
+    rf = pd.Series([0.0001] * len(index), index=index)
+    excess = returns - rf.values.reshape(-1, 1)
+
+    from itau_quant.data import loader as dl
+
+    monkeypatch.setattr(dl, "get_arara_metadata", lambda: {"IBIT": {"asset_class": "Crypto"}})
+
+    mock_crypto.return_value = crypto_panel
+    mock_yf.side_effect = AssertionError("yf_download should not be called for crypto tickers")
+    mock_normalize.side_effect = lambda df: df
+    mock_filter.return_value = (
+        normalized_crypto,
+        pd.DataFrame(
+            {
+                "is_liquid": [True],
+                "coverage": [1.0],
+                "non_na": [len(index)],
+                "max_gap": [0],
+                "first_valid": [index[0]],
+                "last_valid": [index[-1]],
+            },
+            index=["IBIT"],
+        ),
+    )
+    mock_returns.return_value = returns
+    mock_fred.return_value = rf
+    mock_excess.return_value = excess
+    mock_rebalance.return_value = index
+    mock_hash.return_value = "crypto123"
+
+    loader = DataLoader(tickers=["IBIT"], start="2024-01-01", end="2024-01-10")
+    bundle = loader.load()
+
+    pd.testing.assert_frame_equal(bundle.prices, normalized_crypto)
+    mock_crypto.assert_called_once_with(
+        ["IBIT"], start="2024-01-01", end="2024-01-10", cache=True, force_refresh=False
+    )
+    assert mock_save.call_count == 4
+    artefacts = loader.artifacts
+    assert artefacts["metadata"]["liquidity"]["liquid"] == 1
+
+def test_dataloader_load_reuses_cache(tmp_path, monkeypatch):
+    from itau_quant.data import loader as dl
+
+    index = pd.date_range("2020-01-01", periods=3, freq="D")
+    prices = pd.DataFrame({"AAA": [100.0, 101.0, 102.0]}, index=index)
+    returns = pd.DataFrame({"AAA": [0.0, 0.01, 0.009]}, index=index)
+    rf = pd.Series([0.001] * 3, index=index, name="rf_daily")
+    excess = returns - 0.001
+
+    raw_dir = tmp_path / "raw"
+    processed_dir = tmp_path / "processed"
+
+    monkeypatch.setattr(dl, "RAW_DATA_DIR", raw_dir)
+    monkeypatch.setattr(dl, "PROCESSED_DATA_DIR", processed_dir)
+    monkeypatch.setattr(dl, "normalize_index", lambda df: df)
+    def fake_filter(df):
+        index_local = df.index
+        stats = pd.DataFrame(
+            {
+                "is_liquid": [True] * len(df.columns),
+                "coverage": [1.0] * len(df.columns),
+                "non_na": [len(index_local)] * len(df.columns),
+                "max_gap": [0] * len(df.columns),
+                "first_valid": [index_local[0]] * len(df.columns),
+                "last_valid": [index_local[-1]] * len(df.columns),
+            },
+            index=df.columns,
+        )
+        return df, stats
+
+    monkeypatch.setattr(dl, "filter_liquid_assets", fake_filter)
+    monkeypatch.setattr(dl, "validate_panel", lambda df: None)
+    monkeypatch.setattr(dl, "_calculate_returns", lambda df, method="log": returns.copy())
+    monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: rf.copy())
+    monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf_series: excess.copy())
+    monkeypatch.setattr(dl, "rebalance_schedule", lambda idx, mode: idx)
+    monkeypatch.setattr(dl, "request_hash", lambda tickers, start, end: "cachehash")
+
+    download_calls = {"count": 0}
+
+    def fake_yf(tickers, start, end):
+        download_calls["count"] += 1
+        return prices.copy()
+
+    monkeypatch.setattr(dl, "yf_download", fake_yf)
+
+    loader = DataLoader(tickers=["AAA"], start="2020-01-01", end="2020-01-03")
+    loader.load()
+    assert download_calls["count"] == 1
+    assert (processed_dir / "returns_cachehash.parquet").exists()
+
+    def fail_yf(*_args, **_kwargs):
+        raise AssertionError("cache miss triggered unexpected download")
+
+    monkeypatch.setattr(dl, "yf_download", fail_yf)
+
+    loader_cached = DataLoader(tickers=["AAA"], start="2020-01-01", end="2020-01-03")
+    cached_bundle = loader_cached.load()
+
+    assert cached_bundle.prices.equals(prices)
+    assert loader_cached.artifacts["from_cache"] is True

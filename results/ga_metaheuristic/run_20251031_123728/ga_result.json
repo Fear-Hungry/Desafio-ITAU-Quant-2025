@@ -1,0 +1,48 @@
+{
+  "timestamp": "20251031_123728",
+  "params": {
+    "lambda": 12.0,
+    "tau": 0.18,
+    "eta": 0.2
+  },
+  "metrics": {
+    "expected_return_daily": 0.0004864554186249493,
+    "variance_daily": 9.106419297393104e-06,
+    "turnover": 0.2789741520799884,
+    "cardinality": 29,
+    "ann_return": 0.1303835033716365,
+    "ann_vol": 0.0479042551653093,
+    "ann_sharpe": 2.5589953349751817
+  },
+  "selected_assets": [
+    "VGK",
+    "EWG",
+    "EZA",
+    "XLP",
+    "XLE",
+    "XLF",
+    "XLK",
+    "XLB",
+    "SIZE",
+    "SCHD",
+    "VNQ",
+    "PSA",
+    "SHY",
+    "IEI",
+    "IEF",
+    "TIP",
+    "VGSH",
+    "VGIT",
+    "AGG",
+    "MUB",
+    "LQD",
+    "HYG",
+    "VCSH",
+    "EMB",
+    "EMLC",
+    "BNDX",
+    "SLV",
+    "PPLT",
+    "IBIT"
+  ]
+}
