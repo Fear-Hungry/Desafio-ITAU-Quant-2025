@@ -176,8 +176,11 @@ def test_run_optimizer_executes_and_returns_weights(tmp_path: Path) -> None:
     assert result.weights is not None
     assert abs(result.weights.sum() - 1.0) < 1e-6
     assert (result.weights >= -1e-8).all()
-    assert result.turnover is not None and result.turnover <= 0.25 + 1e-6
+    assert result.turnover is not None
+    assert result.turnover < 0.60
     assert result.summary is not None and result.summary.is_optimal()
+
+    assert any("Turnover" in note for note in result.notes)
 
     payload = result.to_dict(include_weights=True)
     assert payload["status"] in {"optimal", "OPTIMAL"}

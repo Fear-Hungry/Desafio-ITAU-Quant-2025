@@ -170,9 +170,10 @@ def solve_mean_variance(
     objective_terms = [mu_vec @ w - config.risk_aversion * cp.quad_form(w, cov_psd)]
 
     trades = w - prev.to_numpy(dtype=float)
+    total_turnover = cp.norm1(trades)
 
     if config.turnover_penalty > 0:
-        objective_terms.append(-config.turnover_penalty * cp.norm1(trades))
+        objective_terms.append(-config.turnover_penalty * total_turnover)
 
     if config.cost_vector is not None:
         cost_vec = config.cost_vector.reindex(assets).fillna(0.0).to_numpy(dtype=float)
@@ -234,15 +235,16 @@ def solve_mean_variance(
         budget_cons = budgets_to_constraints(w, budgets, assets)
         constraints.extend(budget_cons)
 
+    slack_var: cp.Variable | None = None
     if config.turnover_cap is not None and config.turnover_cap > 0:
-        turnover_abs = cp.Variable(n_assets, nonneg=True)
-        constraints.extend(
-            [
-                turnover_abs >= trades,
-                turnover_abs >= -trades,
-                cp.sum(turnover_abs) <= float(config.turnover_cap),
-            ]
+        slack_var = cp.Variable(nonneg=True, name="turnover_slack")
+        constraints.append(
+            total_turnover <= float(config.turnover_cap) + slack_var
         )
+        penalty_weight = (
+            config.turnover_penalty if config.turnover_penalty > 0 else max(config.risk_aversion, 1.0)
+        )
+        objective_terms.append(-penalty_weight * slack_var)
 
     if risk_config_for_builder:
         context: dict[str, Any] = {

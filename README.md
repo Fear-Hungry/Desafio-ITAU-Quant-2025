@@ -276,12 +276,13 @@ Fonte: `results/baselines/baseline_metrics_oos.csv` (execução 2025-10-31)
 - Equal-weight mantém o melhor Sharpe OOS, seguido de perto pelo ERC; ambos superam o 60/40 com custos de 30 bps.
 - A versão robusta (MV shrunk) oferece menor drawdown (-12.8%) à custa de turnover elevado (38%), indicando necessidade de controle adicional de fricção.
 - Testes de estresse (`results/baselines/baseline_stress_tests.csv`) confirmam que apenas as carteiras com beta mais baixo (min-var, 60/40) preservam capital em 2023, enquanto todas sofrem em 2022.
+- Histórico de turnover por rebalanceamento disponível em `results/baselines/baseline_turnover_oos.csv`.
 
 ### 2. Guardrails e significância
 - **Tracking-error ERC vs 60/40:** 6.03% anual.  
 - **Hit-rate mensal ERC:** 60.7% dos meses positivos contra o benchmark.  
 - **Bootstrap (21 dias, 2 000 amostras em blocos):** Sharpe(1/N)=0.61 \([−0.20, 1.48]\); Sharpe(ERC)=0.52 \([−0.29, 1.40]\); Sharpe(MV robust)=0.46 \([−0.24, 1.22]\); Sharpe(60/40)=0.45 \([−0.46, 1.41]\). Todos os intervalos cruzam zero, sugerindo ausência de significância estatística.  
-- Artefatos: `results/tracking_metrics/tracking_summary_102701.json`, `results/bootstrap_ci/bootstrap_sharpe_20251031_151041.json`.
+- Artefatos: `results/tracking_metrics/tracking_summary_102701.json`, `results/bootstrap_ci/bootstrap_sharpe_20251031_151937.json`, `results/baselines/baseline_turnover_oos.csv`.
 
 > *Conclusão:* apesar dos Sharpe superiores, a significância estatística não é robusta — as diferenças podem ser atribuídas ao ruído da amostra.
 

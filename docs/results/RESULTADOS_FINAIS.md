@@ -230,7 +230,7 @@ PYTHONPATH=src poetry run python scripts/research/run_ga_mv_walkforward.py
 - O portfólio otimizado aumenta o controle de cauda (CVaR 95% ≈ -0.34%) mas sacrifica retorno vs. equal-weight/RP na janela OOS.
 - Turnover médio continua elevado (~50%/rebalance), similar aos baselines, indicando necessidade de penalização extra se quiser reduzir custos.
 - Métricas adicionais do ERC: tracking-error anualizado ≈ 6.0% e hit-rate mensal ≈ 60.7% vs. 60/40. Aggregates em `results/tracking_metrics/tracking_summary_102701.json`.
-- Intervalos de confiança (bootstrap 21 dias, 2 000 amostras em blocos) apontam Sharpe OOS de 0.61 para 1/N (IC95% [-0.20, 1.48]) e 0.52 para ERC (IC95% [-0.29, 1.40]); MV robusto e 60/40 apresentam intervalos semelhantes (`results/bootstrap_ci/bootstrap_sharpe_20251031_151041.json`). Sem significância estatística clara, reforçando cautela quanto a diferenças de performance.
+- Intervalos de confiança (bootstrap 21 dias, 2 000 amostras em blocos) apontam Sharpe OOS de 0.61 para 1/N (IC95% [-0.20, 1.48]) e 0.52 para ERC (IC95% [-0.29, 1.40]); MV robusto e 60/40 apresentam intervalos semelhantes (`results/bootstrap_ci/bootstrap_sharpe_20251031_151937.json`). Sem significância estatística clara, reforçando cautela quanto a diferenças de performance.
 - Resultado walk-forward e artefatos salvos em `results/ga_metaheuristic/run_*/`.
 
 ---

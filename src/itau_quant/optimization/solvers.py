@@ -234,6 +234,17 @@ def run_optimizer(
     if mv_result.summary.status == "infeasible":
         result.notes.append("Solver reported infeasible problem")
 
+    if optimizer_config.turnover_cap is not None and optimizer_config.turnover_cap > 0 and result.turnover is not None:
+        target = float(optimizer_config.turnover_cap)
+        if result.turnover > target + 1e-6:
+            result.notes.append(
+                f"Turnover {result.turnover:.2%} exceeded soft target {target:.2%}; consider increasing η."
+            )
+        else:
+            result.notes.append(
+                f"Turnover {result.turnover:.2%} within soft target {target:.2%}."
+            )
+
     return result
 
 

@@ -75,6 +75,10 @@ Crypto (≤12%): 0.00% ✅ OK
 - Turnover interno (γ vs w_prev): 118.92%
 - η calibrado: 4.999995 (limite superior atingido)
 
+**Atualização (2025-10-31):**
+- “Hard cap” de turnover substituído por penalidade suave (`η·‖Δw‖₁`) com meta `τ` tratada como alvo soft (via slack penalizado). Isso evita instabilidades do CVXPY.
+- Logs de turnover por rebalanceamento passaram a ser gerados em `results/baselines/baseline_turnover_oos.csv` a cada execução de `run_baselines_comparison.py`.
+
 **Razão da Falha:**
 - Primeiro rebalance com w_prev = 1/N (37 ativos)
 - Cardinalidade força K=15 ativos
@@ -88,7 +92,7 @@ Crypto (≤12%): 0.00% ✅ OK
 - Sistema aceita turnover alto no primeiro rebalance
 - Monitora turnover médio rolling nos próximos rebalances
 
-**Status:** ⚠️ **FUNCIONAL (após warmup)**
+- **Status:** ⚠️ **FUNCIONAL (após warmup)** — primeira passagem ainda elevada, demais rebalanceamentos monitorados via log.
 
 ---
 

@@ -171,6 +171,23 @@ else:
     print("⚠️  Nenhum período de estresse coincidiu com a janela de avaliação.")
     print()
 
+# Turnover logs por rebalance
+turnover_records: list[dict[str, object]] = []
+for name, weight_snapshots in oos_result.weights.items():
+    series_turnovers = oos_result.turnovers.get(name, [])
+    for (date, _weights), turnover in zip(weight_snapshots, series_turnovers):
+        turnover_records.append({
+            "date": pd.Timestamp(date),
+            "strategy": name,
+            "turnover": float(turnover),
+        })
+
+turnover_df = pd.DataFrame(turnover_records)
+if not turnover_df.empty:
+    turnover_pivot = turnover_df.pivot(index="date", columns="strategy", values="turnover").sort_index()
+else:
+    turnover_pivot = pd.DataFrame()
+
 # ============================================================================
 # SALVAR RESULTADOS
 # ============================================================================
@@ -189,6 +206,11 @@ if not stress_df.empty:
     stress_file = output_dir / "baseline_stress_tests.csv"
     stress_df.to_csv(stress_file, index=False)
     print(f"   💾 Stress tests salvos em: {stress_file}")
+
+if not turnover_pivot.empty:
+    turnover_file = output_dir / "baseline_turnover_oos.csv"
+    turnover_pivot.to_csv(turnover_file)
+    print(f"   💾 Turnovers salvos em: {turnover_file}")
 
 print()
 print("Done ✅")
