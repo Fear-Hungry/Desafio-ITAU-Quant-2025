@@ -400,6 +400,10 @@ Saídas em `reports/figures/` (geradas para o snapshot 102701):
 - `cost_sensitivity_102701.png` – Sensibilidade aproximada do Sharpe do ERC a custos de 30, 50 e 75 bps.  
   ![Sensibilidade a custos](reports/figures/cost_sensitivity_102701.png)
 
+### 8. Notebook de Consolidação
+
+- `docs/notebooks/research_runs.ipynb` agrega as células para executar todos os scripts de pesquisa (baselines, CVaR, GA, tracking, bootstrap, custos, regimes, janelas). Execute em sequência para regenerar os artefatos citados acima.
+
 ---
 
 ### 📌 Próximos Passos para Você
