@@ -8,6 +8,7 @@ from typing import Any, Mapping, Sequence
 import pandas as pd
 
 from itau_quant.costs.transaction_costs import transaction_cost_vector
+from itau_quant.backtesting.risk_monitor import apply_turnover_cap
 from itau_quant.estimators import cov as covariance_estimators
 from itau_quant.optimization.core.mv_qp import (
     MeanVarianceConfig,
@@ -504,6 +505,16 @@ def rebalance(
             risk_config=risk_cfg or None,
         )
         target_weights = opt_weights.reindex(mu.index, fill_value=0.0).astype(float)
+        if mv_config.turnover_cap is not None and mv_config.turnover_cap > 0:
+            adjusted, adjusted_turnover = apply_turnover_cap(
+                previous_weights,
+                target_weights,
+                max_turnover=mv_config.turnover_cap,
+            )
+            if not adjusted.equals(target_weights):
+                solver_extra["turnover_cap_scaled"] = True
+                solver_extra["turnover_adjusted"] = adjusted_turnover
+            target_weights = adjusted
         optimizer_cost = compute_costs(
             target_weights, previous_weights, capital=capital, cost_config=cost_cfg
         )

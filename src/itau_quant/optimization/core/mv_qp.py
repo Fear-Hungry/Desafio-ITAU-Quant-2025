@@ -241,9 +241,8 @@ def solve_mean_variance(
         constraints.append(
             total_turnover <= float(config.turnover_cap) + slack_var
         )
-        penalty_weight = (
-            config.turnover_penalty if config.turnover_penalty > 0 else max(config.risk_aversion, 1.0)
-        )
+        base_weight = max(config.risk_aversion, 1.0) * 100.0
+        penalty_weight = max(config.turnover_penalty, base_weight)
         objective_terms.append(-penalty_weight * slack_var)
 
     if risk_config_for_builder:
