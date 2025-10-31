@@ -12,10 +12,13 @@ from __future__ import annotations
 
 import sys
 from datetime import datetime, timedelta
+import os
+import time
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from itau_quant.data import get_arara_universe
 
 print("=" * 80)
 print("  PRISM-R - Comparação de Estratégias Baseline (OOS)")
@@ -27,37 +30,7 @@ print()
 # CONFIGURAÇÃO
 # ============================================================================
 
-TICKERS = [
-    "SPY",
-    "QQQ",
-    "IWM",
-    "VTV",
-    "VUG",
-    "EFA",
-    "VGK",
-    "EWJ",
-    "EWU",
-    "EWG",
-    "EEM",
-    "VWO",
-    "EWZ",
-    "FXI",
-    "INDA",
-    "TLT",
-    "IEF",
-    "SHY",
-    "LQD",
-    "HYG",
-    "EMB",
-    "GLD",
-    "SLV",
-    "DBC",
-    "USO",
-    "VNQ",
-    "VNQI",
-    "IBIT",
-    "ETHA",
-]
+TICKERS = get_arara_universe()
 
 END_DATE = datetime.today()
 START_DATE = END_DATE - timedelta(days=365 * 5)
@@ -73,6 +46,9 @@ BOOTSTRAP_ITERATIONS = 1000
 BOOTSTRAP_BLOCK = 21
 BOOTSTRAP_CONFIDENCE = 0.95
 BOOTSTRAP_SEED = 1234
+HISTORY_BUFFER_DAYS = 45  # tolerância para início ligeiramente posterior ao corte
+FORCE_REMOTE = os.environ.get("BASELINES_FORCE_DOWNLOAD", "0") == "1"
+DOWNLOAD_SLEEP = float(os.environ.get("BASELINES_DOWNLOAD_SLEEP", "0") or 0.0)
 
 print("📊 Configuração:")
 print(f"   • Universo: {len(TICKERS)} ativos")
@@ -88,32 +64,87 @@ print()
 # ============================================================================
 print("📥 [1/3] Carregando dados...")
 
-try:
-    import yfinance as yf
+LOCAL_RETURNS_PATH = Path("data/processed/returns_full.parquet")
 
-    data = yf.download(
-        tickers=TICKERS,
-        start=START_DATE - timedelta(days=400),
-        end=END_DATE,
-        progress=False,
-        auto_adjust=True,
-    )
+if LOCAL_RETURNS_PATH.exists() and not FORCE_REMOTE:
+    print(f"   🔎 Usando painel local: {LOCAL_RETURNS_PATH}")
+    returns = pd.read_parquet(LOCAL_RETURNS_PATH)
+    returns = returns.sort_index()
+    window_start = START_DATE - timedelta(days=400)
+    window_end = END_DATE
+    returns = returns.loc[(returns.index >= window_start) & (returns.index <= window_end)]
 
-    prices = data["Close"] if isinstance(data.columns, pd.MultiIndex) else data
-    prices = prices.dropna(how="all").ffill().bfill()
+    available = [t for t in TICKERS if t in returns.columns]
+    if not available:
+        print("   ❌ Nenhum ticker requerido encontrado no painel local.")
+        sys.exit(1)
 
+    missing = sorted(set(TICKERS) - set(available))
+    if missing:
+        print(f"   ⚠️  Tickers ausentes no painel local: {', '.join(missing)}")
+
+    returns = returns[available].copy()
     min_obs = TRAIN_WINDOW + 50
-    valid_tickers = [t for t in TICKERS if prices[t].notna().sum() >= min_obs]
-    prices = prices[valid_tickers]
-    returns = prices.pct_change().dropna()
+    sufficient_history = [t for t in returns.columns if returns[t].count() >= min_obs]
 
-    print(f"   ✅ Dados carregados: {len(prices)} dias, {len(valid_tickers)} ativos")
+    history_cutoff = START_DATE - timedelta(days=HISTORY_BUFFER_DAYS)
+    first_dates = {t: returns[t].first_valid_index() for t in returns.columns}
+    deep_history = [
+        t
+        for t in sufficient_history
+        if first_dates.get(t) is not None and first_dates[t] <= history_cutoff
+    ]
+
+    removed = sorted(set(returns.columns) - set(deep_history))
+    if removed:
+        print(f"   ⚠️  Removendo tickers com histórico insuficiente: {', '.join(removed)}")
+
+    returns = returns[deep_history]
+    returns = returns.dropna(how="all")
+    returns = returns.ffill().dropna()
+
+    if returns.shape[1] == 0:
+        print("   ❌ Nenhum ativo com histórico suficiente após filtragem.")
+        sys.exit(1)
+
+    valid_tickers = list(returns.columns)
+
+    print(f"   ✅ Dados carregados: {len(returns)} dias, {len(valid_tickers)} ativos")
     print(f"   ✅ Período efetivo: {returns.index[0].date()} a {returns.index[-1].date()}")
     print()
+else:
+    if FORCE_REMOTE:
+        print("   ⚠️  Ignorando painel local por solicitação (BASELINES_FORCE_DOWNLOAD=1).")
+    try:
+        import yfinance as yf
 
-except Exception as exc:  # pragma: no cover - network dependency
-    print(f"   ❌ Erro ao carregar dados: {exc}")
-    sys.exit(1)
+        if DOWNLOAD_SLEEP > 0:
+            print(f"   ⏳ Aguardando {DOWNLOAD_SLEEP:.1f}s antes do download...")
+            time.sleep(DOWNLOAD_SLEEP)
+
+        data = yf.download(
+            tickers=TICKERS,
+            start=START_DATE - timedelta(days=400),
+            end=END_DATE,
+            progress=False,
+            auto_adjust=True,
+        )
+
+        prices = data["Close"] if isinstance(data.columns, pd.MultiIndex) else data
+        prices = prices.dropna(how="all").ffill().bfill()
+
+        min_obs = TRAIN_WINDOW + 50
+        valid_tickers = [t for t in TICKERS if prices[t].notna().sum() >= min_obs]
+        prices = prices[valid_tickers]
+        returns = prices.pct_change().dropna()
+
+        print(f"   ✅ Dados carregados: {len(prices)} dias, {len(valid_tickers)} ativos")
+        print(f"   ✅ Período efetivo: {returns.index[0].date()} a {returns.index[-1].date()}")
+        print()
+
+    except Exception as exc:  # pragma: no cover - network dependency
+        print(f"   ❌ Erro ao carregar dados: {exc}")
+        sys.exit(1)
 
 # ============================================================================
 # 2. DEFINIR ESTRATÉGIAS E RODAR WALK-FORWARD

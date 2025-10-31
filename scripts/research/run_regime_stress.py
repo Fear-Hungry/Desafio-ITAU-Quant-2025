@@ -18,9 +18,9 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 REGIME_CONFIG = {
     "window_days": 63,
-    "vol_thresholds": {"calm": 0.12, "stressed": 0.22},
-    "drawdown_crash": -0.18,
-    "multipliers": {"calm": 0.9, "neutral": 1.0, "stressed": 1.4, "crash": 1.8},
+    "vol_thresholds": {"calm": 0.06, "stressed": 0.10},
+    "drawdown_crash": -0.08,
+    "multipliers": {"calm": 0.75, "neutral": 1.0, "stressed": 2.5, "crash": 4.0},
 }
 
 PERIODS = {

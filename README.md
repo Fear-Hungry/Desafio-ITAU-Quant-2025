@@ -261,27 +261,47 @@ data/processed/cov_estimate.parquet             # Covariance (Ledoit-Wolf)
 ## 🧪 Relatório Consolidado de Experimentos (atualizado em 2025-10-31)
 
 ### 1. Baselines OOS (walk-forward 252/21d, purge/embargo 5/5, custos 30 bps)
-Fonte: `results/baselines/baseline_metrics_oos.csv` (execução 2025-10-31)
+Fonte: `results/baselines/baseline_metrics_oos.csv` (execução 2025-10-31, download direto via yfinance — série 2019-10-01 → 2025-10-31, 69 ativos)
 
-| Estratégia           | Retorno Anual | Vol Anual | Sharpe | CVaR 95% | Max DD  | Turnover médio |
+| Estratégia           | Retorno anual | Vol anual | Sharpe | CVaR 95% | Max DD  | Turnover médio |
 |----------------------|---------------|-----------|--------|----------|---------|----------------|
-| 1/N                  | 6.77%         | 11.94%    | 0.61   | -1.70%   | -18.73% | 2.0%           |
-| Risk Parity (ERC)    | 5.33%         | 11.06%    | 0.52   | -1.58%   | -18.20% | 3.6%           |
-| MV Robust (shrunk)   | 4.42%         | 10.53%    | 0.46   | -1.51%   | -12.83% | 37.9%          |
+| Min-Var (LW)         | 1.67%         | 2.45%     | 0.69   | -0.36%   | -3.44%  | 8.6%           |
+| MV Robust (shrunk)   | 8.35%         | 12.90%    | 0.69   | -1.94%   | -21.72% | 58.0%          |
+| 1/N                  | 7.40%         | 11.35%    | 0.69   | -1.64%   | -17.88% | 2.0%           |
+| Risk Parity (ERC)    | 6.58%         | 10.72%    | 0.65   | -1.55%   | -16.85% | 2.8%           |
 | 60/40                | 4.05%         | 9.80%     | 0.45   | -1.43%   | -20.77% | 2.0%           |
-| Min-Var (LW)         | 1.61%         | 6.20%     | 0.29   | -0.86%   | -12.76% | 7.7%           |
-| HRP                  | 0.81%         | 8.67%     | 0.14   | -1.23%   | -21.01% | 50.7%          |
+| HRP                  | 0.26%         | 5.85%     | 0.07   | -0.85%   | -15.09% | 60.3%          |
 
-**Insights rápidos**
-- Equal-weight mantém o melhor Sharpe OOS, seguido de perto pelo ERC; ambos superam o 60/40 com custos de 30 bps.
-- A versão robusta (MV shrunk) oferece menor drawdown (-12.8%) à custa de turnover elevado (38%), indicando necessidade de controle adicional de fricção.
-- Testes de estresse (`results/baselines/baseline_stress_tests.csv`) confirmam que apenas as carteiras com beta mais baixo (min-var, 60/40) preservam capital em 2023, enquanto todas sofrem em 2022.
-- Histórico de turnover por rebalanceamento disponível em `results/baselines/baseline_turnover_oos.csv`.
+**Notas principais**
+- Rodada executada com `BASELINES_FORCE_DOWNLOAD=1` e `BASELINES_DOWNLOAD_SLEEP=1`; painel cobre 69 tickers a partir de `itau_quant.data.universe`.
+- Min-Var (Ledoit-Wolf) entrega melhor Sharpe (0.69) graças à vol baixíssima (2.45%), mas com retorno ~1.7% a.a.
+- Equal-weight e MV shrunk empatam em Sharpe (~0.69) com drawdowns -18% e -21%; ERC fica logo abaixo (0.65) mantendo fricção baixo (2.8%).
+- HRP continua sensível ao universo estendido (Sharpe ≈0.07, turnover 60%).
+- Stress tests em `results/baselines/baseline_stress_tests.csv` mostram 2022 ainda crítico; shrunk MV foi o único positivo nesse ano (+7.4%).
+- Logs de turnover por rebalanceamento continuam em `results/baselines/baseline_turnover_oos.csv`.
+
+> Script removeu automaticamente os ETFs recentes (ETHA, IBIT) para preservar janela ≥5 anos.
+
+#### Snapshot curto (2024-07-24 → 2025-10-24, 316 dias – run sem filtro histórico, mantido para referência)
+Fonte: execução pré-filtragem (console de 2025-10-31; valores transcritos abaixo)
+
+| Estratégia           | Retorno anual | Vol anual | Sharpe | CVaR 95% | Max DD  | Turnover médio |
+|----------------------|---------------|-----------|--------|----------|---------|----------------|
+| HRP                  | 29.00%        | 4.79%     | 5.35   | -0.37%   | -0.63%  | 94.02%         |
+| MV Robust (shrunk)   | 43.34%        | 6.84%     | 5.30   | -0.71%   | -1.39%  | 61.75%         |
+| Risk Parity (ERC)    | 37.72%        | 6.90%     | 4.67   | -0.59%   | -1.03%  | 50.64%         |
+| 1/N                  | 43.06%        | 8.23%     | 4.39   | -0.76%   | -1.34%  | 50.00%         |
+| Min-Var (LW)         | 16.17%        | 3.46%     | 4.35   | -0.28%   | -0.53%  | 50.08%         |
+| 60/40                | 19.82%        | 4.94%     | 3.68   | -0.40%   | -0.98%  | 50.00%         |
+
+**Notas (snapshot curto)**
+- Resultados inflados (Sharpe > 4) devido à janela curta; mantidos apenas como smoke test.
+- Todos os turnos ≈50% porque o script original não reutilizava pesos anteriores – diferença corrigida após a filtragem.
 
 ### 2a. Regimes e testes direcionados
-- Script `scripts/research/run_regime_stress.py` executa walk-forward com aversão ao risco dinâmica (`regime_detection`) nos períodos críticos de Covid-19 e inflação/2022.
-- **Covid-19 (fev–dez/2020):** regime classificado como `crash`; o multiplicador elevou λ → portfólio defensivo, Sharpe do regime-aware MV = -1.96 (vol 6.1%).
-- **Inflação 2022:** regime `stressed`; λ ajustado ↑ reduziu risco mas entregou Sharpe -1.17 versus 1.34 do Risk Parity, sugerindo complementar a estratégia com views/tail hedges.
+- `scripts/research/run_regime_stress.py` roda MV com `lambda` dinâmico usando thresholds mais agressivos (`calm` 6%, `stressed` 10%, crash em drawdown -8%).
+- **Covid-19 (fev–dez/2020):** regime detectado como `crash`; λ multiplicado por 4.0 reduz a vol para 4.3%, drawdown cai para -1.19% (antes -1.77%), porém Sharpe segue negativo (-3.25).
+- **Inflação 2022:** regime `stressed`; λ=2.5× diminui a vol para 3.6% e drawdown para -1.12%, com Sharpe -0.47 (melhor que o MV robusto -1.17, mas ainda pior que EW/RP).
 - Artefatos: `results/regime_stress/covid_crash_metrics.csv`, `results/regime_stress/inflation_2022_metrics.csv`.
 
 | Covid-19 2020 | Ret. anual | Vol | Sharpe |
@@ -289,32 +309,32 @@ Fonte: `results/baselines/baseline_metrics_oos.csv` (execução 2025-10-31)
 | Equal-Weight  | 96.9% | 9.4% | 7.24 |
 | Risk Parity   | 60.3% | 7.2% | 6.58 |
 | 60/40         | 24.6% | 5.7% | 3.91 |
-| Regime MV     | -11.5% | 6.1% | -1.96 |
+| Regime MV     | -13.2% | 4.3% | -3.25 |
 
 | Inflação 2022 | Ret. anual | Vol | Sharpe |
 |---------------|-----------:|----:|-------:|
-| Risk Parity   | 18.7% | 13.5% | 1.34 |
-| 60/40         | 15.8% | 12.9% | 1.20 |
-| Equal-Weight  | 17.2% | 14.4% | 1.18 |
-| Regime MV     | -9.3% | 8.1% | -1.17 |
+| Risk Parity   | 18.5% | 15.1% | 1.34 |
+| 60/40         | 15.6% | 13.9% | 1.20 |
+| Equal-Weight  | 16.9% | 14.0% | 1.17 |
+| Regime MV     | -1.7% | 3.6% | -0.47 |
 
-*Obs.: janela bancária 2023 não possui splits suficientes após filtros (dados insuficientes para avaliação).*
+*Obs.: janela bancária 2023 continua sem splits suficientes após filtros.*
 
-Exemplo de configuração (`optimizer.regime_detection`):
+Exemplo de configuração (`optimizer.regime_detection`) alinhado com o experimento:
 ```yaml
 optimizer:
   lambda: 4.0
   regime_detection:
     window_days: 63
     vol_thresholds:
-      calm: 0.12
-      stressed: 0.22
-    drawdown_crash: -0.18
+      calm: 0.06
+      stressed: 0.10
+    drawdown_crash: -0.08
     multipliers:
-      calm: 0.9
+      calm: 0.75
       neutral: 1.0
-      stressed: 1.4
-      crash: 1.8
+      stressed: 2.5
+      crash: 4.0
 ```
 
 ### 2b. Sensibilidade à janela de estimação (μ, Σ)
@@ -345,6 +365,21 @@ optimizer:
 - Mínima variância determinante (MCD) e aproximação com 3 fatores principais produziram Sharpe superiores (~3.3), porém com maior retorno esperado — requer validação fora da amostra mais longa.
 - Tyler M-estimator tornou o portfólio excessivamente defensivo (Sharpe 1.92).
 - Artefatos: `results/cov_sensitivity/metrics.csv` e `results/cov_sensitivity/returns.parquet`.
+
+### 2d. Backtests MV com custos (configs/optimizer_*)
+Fonte: `reports/backtest_optimizer_*_20251031T17*.json`
+
+| Configuração                     | λ   | η    | K_min–K_max | Ret. anual | Vol anual | Sharpe | Max DD  |
+|----------------------------------|-----|------|-------------|------------|-----------|--------|---------|
+| optimizer_example_trimmed.yaml   | 15.0| 0.25 | 20–35       | 2.31%      | 6.06%     | 0.41   | -14.78% |
+| optimizer_tuning_a.yaml          | 8.0 | 0.15 | 18–32       | 2.16%      | 7.96%     | 0.31   | -19.03% |
+| optimizer_tuning_b.yaml          | 6.0 | 0.30 | 22–34       | 2.96%      | 8.91%     | 0.37   | -20.34% |
+
+**Insights**
+- Manter λ=15.0 e cap de renda fixa original limita o drawdown a -14.8% e atende ao guardrail do PRD.
+- Reduzir λ ou aumentar w_max/cardinalidade melhora retorno mas libera drawdown (-19% a -20%) e sobe a volatilidade para >8.9% a.a.
+- Primeiro fold apresenta turnover ≈100% (migrando de 1/N para suporte limitado); demais splits registram 0% graças ao reuso de pesos.  
+  Logs completos e séries por split disponíveis nos JSON acima (campo `walkforward`).
 
 ### 2. Guardrails e significância
 - **Tracking-error ERC vs 60/40:** 6.03% anual.  
