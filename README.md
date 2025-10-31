@@ -284,6 +284,22 @@ Fonte: `results/baselines/baseline_metrics_oos.csv` (execução 2025-10-31)
 - **Inflação 2022:** regime `stressed`; λ ajustado ↑ reduziu risco mas entregou Sharpe -1.17 versus 1.34 do Risk Parity, sugerindo complementar a estratégia com views/tail hedges.
 - Artefatos: `results/regime_stress/covid_crash_metrics.csv`, `results/regime_stress/inflation_2022_metrics.csv`.
 
+| Covid-19 2020 | Ret. anual | Vol | Sharpe |
+|---------------|-----------:|----:|-------:|
+| Equal-Weight  | 96.9% | 9.4% | 7.24 |
+| Risk Parity   | 60.3% | 7.2% | 6.58 |
+| 60/40         | 24.6% | 5.7% | 3.91 |
+| Regime MV     | -11.5% | 6.1% | -1.96 |
+
+| Inflação 2022 | Ret. anual | Vol | Sharpe |
+|---------------|-----------:|----:|-------:|
+| Risk Parity   | 18.7% | 13.5% | 1.34 |
+| 60/40         | 15.8% | 12.9% | 1.20 |
+| Equal-Weight  | 17.2% | 14.4% | 1.18 |
+| Regime MV     | -9.3% | 8.1% | -1.17 |
+
+*Obs.: janela bancária 2023 não possui splits suficientes após filtros (dados insuficientes para avaliação).*
+
 Exemplo de configuração (`optimizer.regime_detection`):
 ```yaml
 optimizer:
