@@ -8,25 +8,32 @@ import pandas as pd
 
 def pytest_sessionstart(session) -> None:
     """
-    Ensure integration tests have access to a precomputed returns dataset.
+    Materialise the production returns snapshot from the raw ARARA price history.
 
-    The production smoke test loads ``data/processed/returns_full.parquet`` at import
-    time. When developers clone the project the file is not versioned, so we lazily
-    materialise a lightweight synthetic sample to keep the test runnable while
-    preserving the original workflow.
+    The integration smoke test loads ``data/processed/returns_full.parquet``, which
+    is not versioned. When the file is absent we rebuild it deterministically from
+    ``data/raw/prices_arara.csv`` so that tests run against the real dataset used in
+    the project.
     """
 
     data_path = Path("data/processed/returns_full.parquet")
     if data_path.exists():
         return
 
+    raw_path = Path("data/raw/prices_arara.csv")
+    if not raw_path.exists():
+        raise FileNotFoundError("raw price history not found at data/raw/prices_arara.csv")
+
+    prices = pd.read_csv(raw_path, parse_dates=["Date"], index_col="Date").sort_index()
+    prices = prices.ffill().dropna(axis=1, how="all")
+
+    returns = prices.pct_change().dropna(how="all")
+    returns = returns.replace([np.inf, -np.inf], np.nan)
+
+    # Retain assets with at least one year of data to mimic the production bundle.
+    min_obs = returns.notna().sum()
+    valid_assets = min_obs[min_obs >= 252].index
+    filtered = returns.loc[:, valid_assets].dropna()
+
     data_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Generate two years of business-day returns for a dozen assets.
-    index = pd.bdate_range(end=pd.Timestamp.today(), periods=756, name="date")
-    asset_names = [f"ASSET_{i:02d}" for i in range(12)]
-    rng = np.random.default_rng(seed=42)
-    values = rng.normal(loc=0.0004, scale=0.01, size=(len(index), len(asset_names)))
-    synthetic_returns = pd.DataFrame(values, index=index, columns=asset_names)
-
-    synthetic_returns.to_parquet(data_path)
+    filtered.to_parquet(data_path)
