@@ -28,6 +28,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, Mapping, Optional, Sequence
 
+import numpy as np
 import pandas as pd
 
 from .cache import request_hash
@@ -247,12 +248,14 @@ class DataLoader:
         if not liquidity_stats.empty and "is_liquid" in liquidity_stats:
             liquid = int(liquidity_stats["is_liquid"].sum())
             illiquid_assets = liquidity_stats.index[~liquidity_stats["is_liquid"]].tolist()
+            coverage_series = liquidity_stats.get("coverage", pd.Series([np.nan]))
+            history_series = liquidity_stats.get("non_na", pd.Series([0]))
             metadata["liquidity"] = {
                 "total": int(len(liquidity_stats)),
                 "liquid": liquid,
                 "illiquid": int(len(liquidity_stats) - liquid),
-                "min_coverage": float(liquidity_stats["coverage"].min()),
-                "min_history": int(liquidity_stats["non_na"].min()),
+                "min_coverage": float(pd.Series(coverage_series).min()),
+                "min_history": int(pd.Series(history_series).min()),
             }
             if illiquid_assets:
                 metadata["illiquid_assets"] = illiquid_assets

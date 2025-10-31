@@ -73,7 +73,11 @@ def _sanitize_symbols(symbols: Sequence[str]) -> list[str]:
     for symbol in symbols:
         symbol = symbol.strip().upper()
         symbol = symbol.replace("-SPOT", "")
-        symbol = re.sub(r"[^A-Z0-9]", "", symbol)
+        # Preserve standard separators like "-" so downstream reporting keeps
+        # canonical tickers (e.g., BTC-USD) while still stripping noise.
+        symbol = re.sub(r"[^A-Z0-9\-]", "", symbol)
+        # Collapse repeated hyphens that may appear after cleanup.
+        symbol = re.sub(r"-{2,}", "-", symbol)
         cleaned.append(symbol)
     return cleaned
 

@@ -9,7 +9,7 @@ from itau_quant.data.sources import crypto
 
 
 def test_sanitize_symbols_normalizes_input():
-    assert crypto._sanitize_symbols([" btc-usd ", "ETH spot"]) == ["BTCUSD", "ETHSPOT"]
+    assert crypto._sanitize_symbols([" btc-usd ", "ETH spot"]) == ["BTC-USD", "ETHSPOT"]
 
 
 def test_download_crypto_prices_with_mocked_provider(monkeypatch):
