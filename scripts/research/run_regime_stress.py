@@ -33,6 +33,7 @@ PERIODS = {
 def load_returns() -> pd.DataFrame:
     candidates = [
         Path("results") / "baselines" / "baseline_returns_oos.parquet",
+        Path("data") / "processed" / "returns_full.parquet",
         Path("data") / "processed" / "returns_arara.parquet",
     ]
     for path in candidates:

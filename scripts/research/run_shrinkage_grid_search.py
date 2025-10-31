@@ -17,7 +17,7 @@ from itau_quant.estimators.mu import bayesian_shrinkage_mean
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
 from itau_quant.backtesting.walk_forward import generate_walk_forward_splits
-from itau_quant.backtesting.metrics import sharpe_ratio
+from itau_quant.backtesting.metrics import compute_performance_metrics
 
 print("=" * 80)
 print("  GRID SEARCH: Bayesian Shrinkage Strength")
@@ -107,7 +107,10 @@ def run_backtest_with_strength(strength):
             portfolio_returns.append(ret)
 
     returns_series = pd.Series(portfolio_returns)
-    sharpe = sharpe_ratio(returns_series) if len(returns_series) > 0 else 0.0
+    if len(returns_series) > 0:
+        sharpe = compute_performance_metrics(returns_series).sharpe_ratio
+    else:
+        sharpe = 0.0
 
     return sharpe, returns_series
 
