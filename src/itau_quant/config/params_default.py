@@ -40,7 +40,7 @@ class StrategyParams:
         }
 
     @classmethod
-    def from_mapping(cls, mapping: Mapping[str, Any]) -> "StrategyParams":
+    def from_mapping(cls, mapping: Mapping[str, Any]) -> StrategyParams:
         base = cls()
         base_dict = base.to_dict()
         merged = {**base_dict, **{k: mapping[k] for k in mapping if k in base_dict}}

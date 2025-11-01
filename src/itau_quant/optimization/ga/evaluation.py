@@ -30,7 +30,9 @@ class EvaluationResult:
     diagnostics: Mapping[str, Any]
 
 
-def build_candidate_solution(individual: Individual, data: Mapping[str, Any], config: Mapping[str, Any]) -> dict[str, Any]:
+def build_candidate_solution(
+    individual: Individual, data: Mapping[str, Any], config: Mapping[str, Any]
+) -> dict[str, Any]:
     universe = data.get("universe")
     if universe is None:
         raise ValueError("evaluation data must contain 'universe'")
@@ -45,22 +47,36 @@ def build_candidate_solution(individual: Individual, data: Mapping[str, Any], co
     return candidate
 
 
-def run_core_optimizer(candidate: Mapping[str, Any], core_solver: Callable[[Mapping[str, Any]], Mapping[str, Any]]) -> Mapping[str, Any]:
+def run_core_optimizer(
+    candidate: Mapping[str, Any],
+    core_solver: Callable[[Mapping[str, Any]], Mapping[str, Any]],
+) -> Mapping[str, Any]:
     result = core_solver(candidate)
     if not isinstance(result, Mapping):
         raise TypeError("core_solver must return a mapping")
     return result
 
 
-def compute_fitness(weights: pd.Series | Sequence[float] | None, metrics: Mapping[str, Any], penalties: Mapping[str, float] | None, config: Mapping[str, Any]) -> float:
+def compute_fitness(
+    weights: pd.Series | Sequence[float] | None,
+    metrics: Mapping[str, Any],
+    penalties: Mapping[str, float] | None,
+    config: Mapping[str, Any],
+) -> float:
     if penalties is None:
         penalties = {}
     metric_key = config.get("metric", "objective")
     base_metric = metrics.get(metric_key)
     if base_metric is None:
-        fallback = metrics.get("sharpe") or metrics.get("objective_value") or metrics.get("return")
+        fallback = (
+            metrics.get("sharpe")
+            or metrics.get("objective_value")
+            or metrics.get("return")
+        )
         if fallback is None:
-            raise ValueError(f"metric '{metric_key}' not available in metrics {list(metrics)}")
+            raise ValueError(
+                f"metric '{metric_key}' not available in metrics {list(metrics)}"
+            )
         base_metric = fallback
     fitness = float(base_metric)
 
@@ -78,13 +94,20 @@ def compute_fitness(weights: pd.Series | Sequence[float] | None, metrics: Mappin
     return fitness
 
 
-def handle_failures(individual: Individual, error: Exception, config: Mapping[str, Any]) -> EvaluationResult:
+def handle_failures(
+    individual: Individual, error: Exception, config: Mapping[str, Any]
+) -> EvaluationResult:
     fitness = float(config.get("failure_fitness", -1e9))
     diagnostics = {"error": str(error)}
     return EvaluationResult(individual, fitness, None, {}, "failed", diagnostics)
 
 
-def _evaluate_single(individual: Individual, data: Mapping[str, Any], core_solver: Callable[[Mapping[str, Any]], Mapping[str, Any]], config: Mapping[str, Any]) -> EvaluationResult:
+def _evaluate_single(
+    individual: Individual,
+    data: Mapping[str, Any],
+    core_solver: Callable[[Mapping[str, Any]], Mapping[str, Any]],
+    config: Mapping[str, Any],
+) -> EvaluationResult:
     candidate = build_candidate_solution(individual, data, config)
     result = run_core_optimizer(candidate, core_solver)
     weights = result.get("weights")

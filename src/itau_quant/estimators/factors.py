@@ -7,7 +7,7 @@ chain operations without losing labels.
 
 from __future__ import annotations
 
-from typing import Iterable, Optional, Sequence, Tuple, Union
+from typing import Iterable, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -28,7 +28,7 @@ __all__ = [
 
 
 def _to_dataframe(
-    data: DataLike, *, columns: Optional[Iterable[str]] = None
+    data: DataLike, *, columns: Iterable[str] | None = None
 ) -> pd.DataFrame:
     """Convert supported inputs into a float DataFrame with unique index."""
 
@@ -57,7 +57,7 @@ def _winsorize(df: pd.DataFrame, lower: float, upper: float) -> pd.DataFrame:
     return df.clip(lower=lower_bounds, upper=upper_bounds, axis=1)
 
 
-def _zscore(df: pd.DataFrame, window: Optional[int]) -> pd.DataFrame:
+def _zscore(df: pd.DataFrame, window: int | None) -> pd.DataFrame:
     """Return rolling (or global) z-scores with sensible safeguards."""
 
     if window is None or window <= 1:
@@ -79,10 +79,10 @@ def _zscore(df: pd.DataFrame, window: Optional[int]) -> pd.DataFrame:
 def prepare_factor_data(
     prices: DataLike,
     factor_returns: DataLike,
-    window: Optional[int] = 60,
+    window: int | None = 60,
     *,
-    winsor_limits: Tuple[float, float] = (0.01, 0.99),
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    winsor_limits: tuple[float, float] = (0.01, 0.99),
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Align and standardise asset and factor returns.
 
     Parameters
@@ -144,7 +144,7 @@ def time_series_regression(
     factors: DataLike,
     *,
     add_constant: bool = True,
-) -> Tuple[pd.DataFrame, Optional[pd.Series], pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.Series | None, pd.DataFrame]:
     """Estimate betas via time-series regression for each asset.
 
     Returns
@@ -208,10 +208,10 @@ def time_series_regression(
 
 def cross_sectional_regression(
     betas: pd.DataFrame,
-    future_returns: Union[pd.Series, pd.DataFrame, Sequence[float]],
+    future_returns: pd.Series | pd.DataFrame | Sequence[float],
     *,
     add_constant: bool = True,
-) -> Tuple[pd.Series, Optional[float]]:
+) -> tuple[pd.Series, float | None]:
     """Estimate factor premia from cross-sectional returns.
 
     Parameters
@@ -292,7 +292,7 @@ def shrink_betas(
         )
         shrunk = (1.0 - alpha) * betas_df + alpha * target
     else:
-        raise ValueError("Unsupported shrinkage method '%s'." % method)
+        raise ValueError(f"Unsupported shrinkage method '{method}'.")
 
     return shrunk
 
@@ -318,13 +318,13 @@ def factor_covariance(
     if method == "nonlinear":
         return cov_estimators.nonlinear_shrinkage(factors_df, **kwargs)
 
-    raise ValueError("Unsupported covariance estimation method '%s'." % method)
+    raise ValueError(f"Unsupported covariance estimation method '{method}'.")
 
 
 def implied_asset_returns(
     betas: pd.DataFrame,
-    factor_premia: Union[pd.Series, Sequence[float]],
-    residual_alpha: Optional[Union[pd.Series, Sequence[float]]] = None,
+    factor_premia: pd.Series | Sequence[float],
+    residual_alpha: pd.Series | Sequence[float] | None = None,
 ) -> pd.Series:
     """Reconstruct expected asset returns from factor premia."""
 
@@ -355,7 +355,7 @@ def implied_asset_returns(
 def principal_component_factors(
     returns: DataLike,
     n_components: int,
-) -> Tuple[pd.DataFrame, pd.DataFrame, np.ndarray]:
+) -> tuple[pd.DataFrame, pd.DataFrame, np.ndarray]:
     """Extract statistical factors via PCA.
 
     Returns

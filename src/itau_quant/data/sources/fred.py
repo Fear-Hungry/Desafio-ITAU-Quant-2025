@@ -11,10 +11,9 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Optional
-
 import logging
+from datetime import datetime
+
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -26,8 +25,8 @@ except ImportError:  # pragma: no cover - depende de extra opcional
 
 
 def download_dtb3(
-    start: Optional[str | datetime] = None,
-    end: Optional[str | datetime] = None,
+    start: str | datetime | None = None,
+    end: str | datetime | None = None,
 ) -> pd.Series:
     """Baixa DTB3 (% a.a.) e retorna r_f diário aproximado (BR business days)."""
     if pdr is None:

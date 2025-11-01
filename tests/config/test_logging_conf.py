@@ -23,12 +23,16 @@ def teardown_function() -> None:  # pragma: no cover - cleanup helper
 
 def test_configure_logging_structured_output(tmp_path: Path) -> None:
     stream = io.StringIO()
-    settings = Settings.from_env(overrides={
-        "project_root": tmp_path,
-        "LOGS_DIR": tmp_path / "logs",
-    })
+    settings = Settings.from_env(
+        overrides={
+            "project_root": tmp_path,
+            "LOGS_DIR": tmp_path / "logs",
+        }
+    )
 
-    configure_logging(settings=settings, structured=True, stream=stream, context={"run_id": "unit"})
+    configure_logging(
+        settings=settings, structured=True, stream=stream, context={"run_id": "unit"}
+    )
 
     logger = logging.getLogger("config.tests")
     logger.info("structured message", extra={"step": "load"})
@@ -45,7 +49,9 @@ def test_configure_logging_structured_output(tmp_path: Path) -> None:
 
 def test_configure_logging_plaintext(tmp_path: Path) -> None:
     stream = io.StringIO()
-    settings = Settings.from_env(overrides={"project_root": tmp_path, "LOGS_DIR": tmp_path / "logs"})
+    settings = Settings.from_env(
+        overrides={"project_root": tmp_path, "LOGS_DIR": tmp_path / "logs"}
+    )
 
     configure_logging(settings=settings, structured=False, stream=stream)
 

@@ -25,7 +25,9 @@ __all__ = [
 ]
 
 
-def _ensure_series(values: Sequence[float] | pd.Series | None, index: Sequence[str], *, name: str) -> pd.Series:
+def _ensure_series(
+    values: Sequence[float] | pd.Series | None, index: Sequence[str], *, name: str
+) -> pd.Series:
     if values is None:
         raise ValueError(f"{name} is required")
     if isinstance(values, pd.Series):
@@ -36,7 +38,9 @@ def _ensure_series(values: Sequence[float] | pd.Series | None, index: Sequence[s
     return pd.Series(array, index=index, dtype=float)
 
 
-def _ensure_dataframe(matrix: pd.DataFrame | np.ndarray, index: Sequence[str]) -> pd.DataFrame:
+def _ensure_dataframe(
+    matrix: pd.DataFrame | np.ndarray, index: Sequence[str]
+) -> pd.DataFrame:
     if isinstance(matrix, pd.DataFrame):
         return matrix.reindex(index=index, columns=index).astype(float)
     array = np.asarray(matrix, dtype=float)
@@ -167,7 +171,11 @@ def prune_after_optimisation(
     if method not in {"magnitude", "long_only"}:
         raise ValueError("unsupported pruning method")
 
-    series = weights.copy() if isinstance(weights, pd.Series) else pd.Series(weights, dtype=float)
+    series = (
+        weights.copy()
+        if isinstance(weights, pd.Series)
+        else pd.Series(weights, dtype=float)
+    )
     series = series.astype(float).fillna(0.0)
     if series.size <= k:
         return series / series.sum() if series.sum() != 0 else series
@@ -207,16 +215,24 @@ def reoptimize_with_subset(
         if full_matrix.shape[0] != full_matrix.shape[1]:
             raise ValueError("covariance must be square")
         if full_matrix.shape[0] == len(full_index):
-            cov_df = pd.DataFrame(full_matrix, index=full_index, columns=full_index, dtype=float)
+            cov_df = pd.DataFrame(
+                full_matrix, index=full_index, columns=full_index, dtype=float
+            )
             cov = cov_df.reindex(index=subset_list, columns=subset_list)
         elif full_matrix.shape[0] == len(subset_list):
-            cov = pd.DataFrame(full_matrix, index=subset_list, columns=subset_list, dtype=float)
+            cov = pd.DataFrame(
+                full_matrix, index=subset_list, columns=subset_list, dtype=float
+            )
         else:
             raise ValueError("covariance dimension mismatch with subset")
     previous_default = data.get("previous_weights")
     if previous_default is None:
-        previous_default = pd.Series(np.zeros(len(full_index)), index=full_index, dtype=float)
-    previous = _ensure_series(previous_default, full_index, name="previous").reindex(subset_list)
+        previous_default = pd.Series(
+            np.zeros(len(full_index)), index=full_index, dtype=float
+        )
+    previous = _ensure_series(previous_default, full_index, name="previous").reindex(
+        subset_list
+    )
 
     kwargs = dict(solver_kwargs or {})
     kwargs.setdefault("previous_weights", previous)
@@ -249,22 +265,36 @@ def cardinality_pipeline(
         return SelectionResult(assets=selected)
     if strategy == "beam":
         beam_width = int(config.get("beam_width", 3))
-        selected = beam_search_selection(mu, cov, costs, k, asset_index=asset_index, beam_width=beam_width)
+        selected = beam_search_selection(
+            mu, cov, costs, k, asset_index=asset_index, beam_width=beam_width
+        )
         return SelectionResult(assets=selected, metadata={"beam_width": beam_width})
     if strategy == "prune_then_reopt":
         base_weights = _ensure_series(data.get("weights"), asset_index, name="weights")
-        pruned = prune_after_optimisation(base_weights, k, method=str(config.get("method", "magnitude")))
+        pruned = prune_after_optimisation(
+            base_weights, k, method=str(config.get("method", "magnitude"))
+        )
         selected_assets = pruned.loc[pruned.ne(0.0)].index.tolist()
         solver = data.get("core_solver")
         if solver is None:
-            raise ValueError("core_solver callable required for prune_then_reopt strategy")
+            raise ValueError(
+                "core_solver callable required for prune_then_reopt strategy"
+            )
         solver_kwargs = config.get("solver_kwargs")
-        result = reoptimize_with_subset(selected_assets, data, solver, solver_kwargs=solver_kwargs)
+        result = reoptimize_with_subset(
+            selected_assets, data, solver, solver_kwargs=solver_kwargs
+        )
         weights = result.get("weights")
         weights_series = (
-            weights if isinstance(weights, pd.Series) else pd.Series(weights, index=selected_assets, dtype=float)
+            weights
+            if isinstance(weights, pd.Series)
+            else pd.Series(weights, index=selected_assets, dtype=float)
         )
-        return SelectionResult(assets=selected_assets, weights=weights_series, metadata={"reoptimised": True})
+        return SelectionResult(
+            assets=selected_assets,
+            weights=weights_series,
+            metadata={"reoptimised": True},
+        )
 
     raise ValueError("unsupported cardinality strategy")
 
@@ -429,7 +459,9 @@ def smart_topk_score(
 
     if costs_bps is not None:
         costs_aligned = costs_bps.reindex(weights.index, fill_value=15.0)
-        costs_norm = (costs_aligned - costs_aligned.min()) / (costs_aligned.max() - costs_aligned.min() + 1e-8)
+        costs_norm = (costs_aligned - costs_aligned.min()) / (
+            costs_aligned.max() - costs_aligned.min() + 1e-8
+        )
         score += alpha_cost * costs_norm
 
     return score

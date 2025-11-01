@@ -15,6 +15,7 @@ Este script executa:
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import yaml
@@ -60,7 +61,7 @@ TRAIN_WINDOW = 252
 TEST_WINDOW = 21
 REBALANCE_FREQ = 21
 
-print(f"📊 Configuração:")
+print("📊 Configuração:")
 print(f"   • Universo: {len(TICKERS)} ativos ARARA")
 print(f"   • Período: {START_DATE.date()} a {END_DATE.date()}")
 print(f"   • Vol Target: {VOL_TARGET:.1%}")
@@ -126,9 +127,7 @@ except Exception as e:
 # ============================================================================
 print("🔧 [2/7] Configurando estratégias de teste...")
 
-from itau_quant.estimators.mu import mean_return
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage, sample_cov
-from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
+from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 
 strategies = {
     "ERC_v2_Prod": {

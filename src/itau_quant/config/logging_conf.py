@@ -44,9 +44,13 @@ class JSONFormatter(logging.Formatter):
         super().__init__()
         self._default_context = dict(default_context or {})
 
-    def format(self, record: logging.LogRecord) -> str:  # pragma: no cover - exercised via tests
+    def format(
+        self, record: logging.LogRecord
+    ) -> str:  # pragma: no cover - exercised via tests
         payload: dict[str, Any] = {
-            "timestamp": datetime.fromtimestamp(record.created, tz=timezone.utc).isoformat(),
+            "timestamp": datetime.fromtimestamp(
+                record.created, tz=timezone.utc
+            ).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),

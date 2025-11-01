@@ -1,5 +1,4 @@
 import pytest
-
 from itau_quant.config.constants import (
     BPS,
     DEFAULT_BASE_CURRENCY,

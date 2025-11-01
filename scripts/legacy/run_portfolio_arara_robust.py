@@ -113,7 +113,7 @@ CLASS_LIMITS = {
     "us_equity_max": 0.70,  # US Equity ≤ 70%
 }
 
-print(f"📊 Configuração ROBUSTA:")
+print("📊 Configuração ROBUSTA:")
 print(f"   • Universo: {len(TICKERS)} ativos")
 print(f"   • Período: {START_DATE.date()} a {END_DATE.date()}")
 print(f"   • Risk Aversion: {RISK_AVERSION} (vs 3.0 original)")
@@ -123,7 +123,7 @@ print(f"   • Transaction Costs: {TRANSACTION_COST_BPS} bps round-trip")
 print(f"   • Window: {ESTIMATION_WINDOW} dias")
 print(f"   • μ estimador: Huber (robust, delta={HUBER_DELTA})")
 print()
-print(f"   Limites por classe:")
+print("   Limites por classe:")
 print(f"      • Crypto ≤ {CLASS_LIMITS['crypto']:.0%}")
 print(f"      • Precious metals ≤ {CLASS_LIMITS['precious']:.0%}")
 print(f"      • Commodities total ≤ {CLASS_LIMITS['commodities_all']:.0%}")
@@ -195,7 +195,7 @@ print("📊 [2/6] Calculando retornos...")
 returns = prices.pct_change().dropna()
 
 print(f"   ✅ Retornos calculados: {len(returns)} observações")
-print(f"   ✅ Estatísticas:")
+print("   ✅ Estatísticas:")
 print(f"      • Média diária: {returns.mean().mean():.4%}")
 print(f"      • Vol diária:   {returns.std().mean():.4%}")
 print()
@@ -205,8 +205,8 @@ print()
 # ============================================================================
 print("📈 [3/6] Estimando parâmetros com métodos ROBUSTOS...")
 
-from itau_quant.estimators.mu import mean_return, huber_mean
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
+from itau_quant.estimators.mu import huber_mean
 
 recent_returns = returns.tail(ESTIMATION_WINDOW)
 
@@ -215,23 +215,22 @@ recent_returns = returns.tail(ESTIMATION_WINDOW)
 # Resultado: Huber teve melhor Sharpe MV (0.81), mas 1/N domina (1.05)
 # Mantemos Huber como melhor opção MV, mas reconhecemos limitação
 print(f"   Estimando μ via Huber mean (delta={HUBER_DELTA})...")
-from itau_quant.estimators.mu import huber_mean
 mu_huber, weights_huber = huber_mean(recent_returns, c=HUBER_DELTA)
 mu_annual = mu_huber * 252
 
-print(f"   ✅ Huber mean calculado")
+print("   ✅ Huber mean calculado")
 print(f"      Outliers down-weighted: {(weights_huber < 0.5).sum().sum()} observações")
-print(f"      ⚠️  Nota: 1/N simples superou MV em testes OOS (1.05 vs 0.81 Sharpe)")
+print("      ⚠️  Nota: 1/N simples superou MV em testes OOS (1.05 vs 0.81 Sharpe)")
 
 # ESTIMAÇÃO DE Σ via Ledoit-Wolf
-print(f"   Estimando Σ via Ledoit-Wolf shrinkage...")
+print("   Estimando Σ via Ledoit-Wolf shrinkage...")
 sigma, shrinkage = ledoit_wolf_shrinkage(recent_returns)
 sigma_annual = sigma * 252
 
 print(f"   ✅ Ledoit-Wolf shrinkage: {shrinkage:.4f}")
 print()
 
-print(f"   ✅ Retornos esperados robustos (anualizados, top 5):")
+print("   ✅ Retornos esperados robustos (anualizados, top 5):")
 top5 = mu_annual.nlargest(5)
 for ticker in top5.index:
     print(f"      {ticker}: {mu_annual[ticker]:+.2%}")
@@ -332,7 +331,7 @@ print()
 # ============================================================================
 print("⚙️  [5/6] Otimizando portfolio (Mean-Variance + Risk Budgets)...")
 
-from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
+from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 # Custos de transação
 cost_vector = pd.Series(TRANSACTION_COST_BPS / 10000, index=valid_tickers)
@@ -353,7 +352,7 @@ config = MeanVarianceConfig(
 try:
     result = solve_mean_variance(mu_annual, sigma_annual, config)
 
-    print(f"   ✅ Otimização concluída!")
+    print("   ✅ Otimização concluída!")
     print(f"      Status: {result.summary.status}")
     print(f"      Solver: {result.summary.solver}")
     print(f"      Tempo: {result.summary.runtime:.3f}s")
@@ -379,12 +378,12 @@ weights = result.weights
 active_weights = weights[weights > 0.001].sort_values(ascending=False)
 n_active = len(active_weights)
 
-print(f"   ✅ Portfolio final:")
+print("   ✅ Portfolio final:")
 print(f"      • {n_active} ativos ativos (peso > 0.1%)")
 print(f"      • Soma dos pesos: {weights.sum():.6f}")
 print()
 
-print(f"   📊 Alocação (top 10):")
+print("   📊 Alocação (top 10):")
 for ticker in active_weights.head(10).index:
     w = weights[ticker]
     bar_length = int(w * 200)
@@ -393,7 +392,7 @@ for ticker in active_weights.head(10).index:
 print()
 
 # Validar budgets manualmente (budget_slack retorna formato incompatível)
-print(f"   🔍 Validação de Risk Budgets:")
+print("   🔍 Validação de Risk Budgets:")
 for budget in budgets:
     actual = sum(weights.get(t, 0.0) for t in budget.tickers if t in weights.index)
 
@@ -416,7 +415,7 @@ portfolio_return = float(mu_annual @ weights)
 portfolio_vol = float(np.sqrt(weights @ sigma_annual @ weights))
 sharpe = portfolio_return / portfolio_vol if portfolio_vol > 0 else 0
 
-print(f"   📈 Métricas Ex-Ante (anualizadas):")
+print("   📈 Métricas Ex-Ante (anualizadas):")
 print(f"      • Retorno esperado:  {portfolio_return:+.2%}")
 print(f"      • Volatilidade:      {portfolio_vol:.2%}")
 print(f"      • Sharpe Ratio:      {sharpe:.2f}")
@@ -431,7 +430,7 @@ effective_n = 1.0 / herfindahl if herfindahl > 0 else 0
 weights_positive = weights[weights > 1e-6]
 shannon = entropy(weights_positive) if len(weights_positive) > 0 else 0
 
-print(f"   📊 Diversificação:")
+print("   📊 Diversificação:")
 print(f"      • Herfindahl Index:  {herfindahl:.4f}")
 print(f"      • Effective N:       {effective_n:.1f} ativos")
 print(f"      • Shannon Entropy:   {shannon:.2f}")
@@ -448,7 +447,7 @@ asset_classes_display = {
     "Crypto": ["IBIT", "ETHA"],
 }
 
-print(f"   🎯 Exposição por classe de ativo:")
+print("   🎯 Exposição por classe de ativo:")
 for asset_class, tickers_in_class in asset_classes_display.items():
     exposure = sum(weights.get(t, 0.0) for t in tickers_in_class)
     if exposure > 0.001:
@@ -512,18 +511,18 @@ print("=" * 80)
 print("  ✅ OTIMIZAÇÃO ROBUSTA CONCLUÍDA!")
 print("=" * 80)
 print()
-print(f"🎯 Comparação com versão original:")
+print("🎯 Comparação com versão original:")
 print(f"   • Sharpe ex-ante: {sharpe:.2f} (vs ~2.15 original)")
 print(f"   • N_effective: {effective_n:.1f} (vs ~7.4 original)")
 print(f"   • Max position: {weights.max():.1%} (teto: {MAX_POSITION:.0%})")
 print()
-print(f"📁 Arquivos gerados:")
+print("📁 Arquivos gerados:")
 print(f"   • {weights_file}")
 print(f"   • {metrics_file}")
 print()
-print(f"⚠️  PRÓXIMOS PASSOS CRÍTICOS:")
-print(f"   1. Rodar walk-forward backtest (OOS validation)")
-print(f"   2. Comparar com baselines (1/N, min-var, risk parity)")
-print(f"   3. Verificar se Sharpe OOS ≥ Sharpe baseline + 0.2")
+print("⚠️  PRÓXIMOS PASSOS CRÍTICOS:")
+print("   1. Rodar walk-forward backtest (OOS validation)")
+print("   2. Comparar com baselines (1/N, min-var, risk parity)")
+print("   3. Verificar se Sharpe OOS ≥ Sharpe baseline + 0.2")
 print(f"   4. Validar turnover realizado ≤ {TURNOVER_CAP:.0%}/mês")
 print()

@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Mapping, Sequence
+from typing import Mapping, Sequence
 
 import numpy as np
 import pandas as pd
-from scipy.cluster.hierarchy import linkage, dendrogram
+from scipy.cluster.hierarchy import dendrogram, linkage
 from scipy.spatial.distance import squareform
 from sklearn.cluster import KMeans
 
@@ -20,7 +20,9 @@ __all__ = [
 ]
 
 
-def _ensure_series(values: Sequence[float] | pd.Series, index: Sequence[str]) -> pd.Series:
+def _ensure_series(
+    values: Sequence[float] | pd.Series, index: Sequence[str]
+) -> pd.Series:
     if isinstance(values, pd.Series):
         return values.reindex(index).astype(float)
     array = np.asarray(values, dtype=float)
@@ -29,7 +31,9 @@ def _ensure_series(values: Sequence[float] | pd.Series, index: Sequence[str]) ->
     return pd.Series(array, index=index, dtype=float)
 
 
-def _ensure_dataframe(matrix: pd.DataFrame | np.ndarray, index: Sequence[str]) -> pd.DataFrame:
+def _ensure_dataframe(
+    matrix: pd.DataFrame | np.ndarray, index: Sequence[str]
+) -> pd.DataFrame:
     if isinstance(matrix, pd.DataFrame):
         return matrix.reindex(index=index, columns=index).astype(float)
     array = np.asarray(matrix, dtype=float)
@@ -203,11 +207,20 @@ def heuristic_allocation(
             cov = data.get("cov")
         if cov is None:
             raise ValueError("inverse_variance requires 'covariance'")
-        cov_df = _ensure_dataframe(cov, cov.index if isinstance(cov, pd.DataFrame) else range(np.asarray(cov).shape[0]))
+        cov_df = _ensure_dataframe(
+            cov,
+            (
+                cov.index
+                if isinstance(cov, pd.DataFrame)
+                else range(np.asarray(cov).shape[0])
+            ),
+        )
         weights = inverse_variance_portfolio(cov_df)
         variances = np.diag(cov_df.to_numpy(dtype=float))
         diagnostics = {
-            "variances": {asset: float(var) for asset, var in zip(cov_df.index, variances)},
+            "variances": {
+                asset: float(var) for asset, var in zip(cov_df.index, variances)
+            },
         }
         return HeuristicResult(weights=weights, method=method, diagnostics=diagnostics)
 

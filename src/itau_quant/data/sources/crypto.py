@@ -36,9 +36,8 @@ import re
 from dataclasses import dataclass
 from functools import cached_property
 from pathlib import Path
-from typing import Any, Callable, Iterable, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
-import numpy as np
 import pandas as pd
 import requests
 
@@ -90,9 +89,16 @@ def _request_json(
     config: CryptoProviderConfig,
 ) -> Any:
     for attempt in range(config.retries):
-        response = requests.get(url, params=params, headers=headers, timeout=config.timeout)
+        response = requests.get(
+            url, params=params, headers=headers, timeout=config.timeout
+        )
         if response.status_code == 429:
-            logger.warning("Rate limited by %s (attempt %s/%s)", config.name, attempt + 1, config.retries)
+            logger.warning(
+                "Rate limited by %s (attempt %s/%s)",
+                config.name,
+                attempt + 1,
+                config.retries,
+            )
             continue
         response.raise_for_status()
         return response.json()
@@ -107,7 +113,11 @@ def _load_from_tiingo(
     fields: Sequence[str],
 ) -> pd.DataFrame:
     base_url = config.base_url or "https://api.tiingo.com/tiingo/crypto/prices"
-    headers = {"Content-Type": "application/json", "Authorization": f"Token {config.api_key}"} if config.api_key else {}
+    headers = (
+        {"Content-Type": "application/json", "Authorization": f"Token {config.api_key}"}
+        if config.api_key
+        else {}
+    )
     frames: list[pd.DataFrame] = []
     for symbol in symbols:
         params = {"tickers": symbol, "startDate": start, "endDate": end}
@@ -119,7 +129,21 @@ def _load_from_tiingo(
         frame["date"] = pd.to_datetime(frame["date"])
         frame = frame.set_index("date").sort_index()
         selected = frame.rename(columns=str.title)
-        available = [col for col in selected.columns if col in {"Open", "High", "Low", "Close", "AdjClose", "AdjCloseBid", "AdjCloseAsk", "Volume"}]
+        available = [
+            col
+            for col in selected.columns
+            if col
+            in {
+                "Open",
+                "High",
+                "Low",
+                "Close",
+                "AdjClose",
+                "AdjCloseBid",
+                "AdjCloseAsk",
+                "Volume",
+            }
+        ]
         selected = selected[available]
         selected.columns = pd.MultiIndex.from_product([[symbol], selected.columns])
         frames.append(selected)
@@ -150,7 +174,9 @@ def _load_from_coinbase(
         if not payload:
             continue
         # API returns [time, low, high, open, close, volume]
-        data = pd.DataFrame(payload, columns=["timestamp", "low", "high", "open", "close", "volume"])
+        data = pd.DataFrame(
+            payload, columns=["timestamp", "low", "high", "open", "close", "volume"]
+        )
         data["timestamp"] = pd.to_datetime(data["timestamp"], unit="s", utc=True)
         data = data.set_index("timestamp").sort_index()
         data = data.rename(columns=str.title)
@@ -212,7 +238,9 @@ def _pivot_close(frame: pd.DataFrame, field: str) -> pd.DataFrame:
 
 
 class CryptoDownloader:
-    def __init__(self, provider: str, api_key: str | None = None, **kwargs: object) -> None:
+    def __init__(
+        self, provider: str, api_key: str | None = None, **kwargs: object
+    ) -> None:
         name = provider.lower()
         defaults = _PROVIDERS.get(name)
         if defaults is None:
@@ -285,15 +313,23 @@ def _normalize_frame(
     if isinstance(data.columns, pd.MultiIndex):
         for sym, field in data.columns:
             normalized_columns.append((sym, _normalize_field_name(field)))
-        data.columns = pd.MultiIndex.from_tuples(normalized_columns, names=["symbol", "field"])
+        data.columns = pd.MultiIndex.from_tuples(
+            normalized_columns, names=["symbol", "field"]
+        )
     else:
-        data.columns = pd.MultiIndex.from_tuples([(col, "close") for col in data.columns], names=["symbol", "field"])
+        data.columns = pd.MultiIndex.from_tuples(
+            [(col, "close") for col in data.columns], names=["symbol", "field"]
+        )
 
     data = data.swaplevel(0, 1, axis=1)
     canonical_fields = [_normalize_field_name(field) for field in fields]
-    available = [field for field in canonical_fields if field in data.columns.get_level_values(0)]
+    available = [
+        field for field in canonical_fields if field in data.columns.get_level_values(0)
+    ]
     if not available:
-        raise ValueError(f"requested fields {fields} not available for provider '{provider}'")
+        raise ValueError(
+            f"requested fields {fields} not available for provider '{provider}'"
+        )
     data = data.loc[:, available]
     data = data.sort_index(axis=1)
     data.attrs.update(
@@ -313,15 +349,29 @@ def _apply_fx_conversion(
     target_currency: str | None,
     fx_series: pd.Series | None,
 ) -> pd.DataFrame:
-    if target_currency is None or target_currency == quote_currency or fx_series is None:
+    if (
+        target_currency is None
+        or target_currency == quote_currency
+        or fx_series is None
+    ):
         return frame
     aligned_fx = fx_series.reindex(frame.index).ffill()
-    price_fields = {"open", "high", "low", "close", "adj_close", "adj_close_bid", "adj_close_ask"}
+    price_fields = {
+        "open",
+        "high",
+        "low",
+        "close",
+        "adj_close",
+        "adj_close_bid",
+        "adj_close_ask",
+    }
     data = frame.copy()
     for field in data.columns.get_level_values(0).unique():
         if field not in price_fields:
             continue
-        data.loc[:, (field, slice(None))] = data.loc[:, (field, slice(None))].mul(aligned_fx, axis=0)
+        data.loc[:, (field, slice(None))] = data.loc[:, (field, slice(None))].mul(
+            aligned_fx, axis=0
+        )
     data.attrs["converted_to"] = target_currency
     return data
 
@@ -329,15 +379,24 @@ def _apply_fx_conversion(
 _PROVIDERS: dict[str, dict[str, Any]] = {
     "tiingo": {
         "loader": _load_from_tiingo,
-        "config": {"base_url": "https://api.tiingo.com/tiingo/crypto/prices", "quote_currency": "USD"},
+        "config": {
+            "base_url": "https://api.tiingo.com/tiingo/crypto/prices",
+            "quote_currency": "USD",
+        },
     },
     "coinbase": {
         "loader": _load_from_coinbase,
-        "config": {"base_url": "https://api.exchange.coinbase.com/products", "quote_currency": "USD"},
+        "config": {
+            "base_url": "https://api.exchange.coinbase.com/products",
+            "quote_currency": "USD",
+        },
     },
     "binance": {
         "loader": _load_from_binance,
-        "config": {"base_url": "https://api.binance.com/api/v3/klines", "quote_currency": "USD"},
+        "config": {
+            "base_url": "https://api.binance.com/api/v3/klines",
+            "quote_currency": "USD",
+        },
     },
 }
 
@@ -365,11 +424,17 @@ def download_crypto_prices(
     cache_path: Path | None = None
     if cache:
         settings = settings or get_settings()
-        base_dir = Path(cache_dir) if cache_dir is not None else settings.raw_data_dir / "crypto"
+        base_dir = (
+            Path(cache_dir)
+            if cache_dir is not None
+            else settings.raw_data_dir / "crypto"
+        )
         identifier = request_hash(cleaned + [provider], start, end)
         field_tag = "_".join(canonical_fields)
         target_tag = target_currency or "DEFAULT"
-        cache_path = base_dir / provider / f"{field_tag}_{target_tag}_{identifier}.parquet"
+        cache_path = (
+            base_dir / provider / f"{field_tag}_{target_tag}_{identifier}.parquet"
+        )
         if not force_refresh and cache_path.exists():
             logger.info("Loading crypto data from cache: %s", cache_path)
             return load_parquet(cache_path)
@@ -379,7 +444,9 @@ def download_crypto_prices(
     if frame.empty:
         return frame
 
-    normalized = _normalize_frame(frame, fields=fields, provider=provider, config=downloader.config)
+    normalized = _normalize_frame(
+        frame, fields=fields, provider=provider, config=downloader.config
+    )
     converted = _apply_fx_conversion(
         normalized,
         quote_currency=downloader.config.quote_currency,

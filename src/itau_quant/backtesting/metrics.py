@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import math
+from dataclasses import dataclass
 from typing import Mapping
 
-import numpy as np
 import pandas as pd
 
 __all__ = [
@@ -84,7 +83,9 @@ def compute_performance_metrics(
     total_return = float(nav.iloc[-1] - 1.0)
 
     n_periods = len(returns)
-    annualised_return = float((1.0 + total_return) ** (periods_in_year / n_periods) - 1.0)
+    annualised_return = float(
+        (1.0 + total_return) ** (periods_in_year / n_periods) - 1.0
+    )
 
     volatility = float(returns.std(ddof=0) * math.sqrt(periods_in_year))
 

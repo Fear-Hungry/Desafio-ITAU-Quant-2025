@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
-from itau_quant.optimization.ga.population import Individual
 from itau_quant.optimization.ga import evaluation
+from itau_quant.optimization.ga.population import Individual
 
 
 def _core_solver(candidate: dict[str, object]) -> dict[str, object]:
@@ -35,5 +34,7 @@ def test_evaluate_population_returns_fitness() -> None:
 
 def test_handle_failures_assigns_low_fitness() -> None:
     individual = Individual(np.array([1, 0], dtype=bool), {})
-    result = evaluation.handle_failures(individual, RuntimeError("fail"), {"failure_fitness": -99})
+    result = evaluation.handle_failures(
+        individual, RuntimeError("fail"), {"failure_fitness": -99}
+    )
     assert result.fitness == -99

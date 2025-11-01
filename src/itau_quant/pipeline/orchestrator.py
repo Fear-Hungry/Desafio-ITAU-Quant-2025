@@ -62,7 +62,9 @@ def validate_write_permissions(output_dir: Path) -> None:
         raise PipelineError(f"Cannot create directory {output_dir}: {e}") from e
 
     if not _can_write_directory(output_dir):
-        raise PipelineError(f"No write permission to {output_dir}: insufficient privileges")
+        raise PipelineError(
+            f"No write permission to {output_dir}: insufficient privileges"
+        )
 
     test_file = output_dir / ".write_test"
     try:

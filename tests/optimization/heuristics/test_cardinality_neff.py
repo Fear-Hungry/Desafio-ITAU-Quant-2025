@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-
 from itau_quant.optimization.heuristics.cardinality import (
     compute_effective_number,
     select_support_topk,
@@ -177,7 +176,9 @@ class TestSelectSupportTopK:
         """Tie-breaker uses turnover when scores equal."""
         w = pd.Series({"A": 0.33, "B": 0.33, "C": 0.34})
         w_prev = pd.Series({"A": 0.30, "B": 0.40, "C": 0.30})
-        selected = select_support_topk(w, k=2, weights_prev=w_prev, tie_breaker="low_turnover")
+        selected = select_support_topk(
+            w, k=2, weights_prev=w_prev, tie_breaker="low_turnover"
+        )
 
         # Should prefer assets with lower turnover
         assert len(selected) == 2

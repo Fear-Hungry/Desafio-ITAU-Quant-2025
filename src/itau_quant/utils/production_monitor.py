@@ -12,14 +12,16 @@ Triggers:
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional
-import pandas as pd
+from typing import Dict
+
 import numpy as np
+import pandas as pd
 
 
 @dataclass
 class TriggerStatus:
     """Status dos triggers de fallback"""
+
     sharpe_6m_negative: bool
     cvar_breach: bool
     drawdown_breach: bool
@@ -37,6 +39,7 @@ class TriggerStatus:
 @dataclass
 class PortfolioMetrics:
     """Métricas de portfolio para monitoramento"""
+
     sharpe_6m: float
     cvar_95: float  # CVaR 5% (negativo indica perda)
     max_dd: float  # Max drawdown (negativo)
@@ -44,8 +47,7 @@ class PortfolioMetrics:
 
 
 def calculate_portfolio_metrics(
-    returns: pd.Series,
-    lookback_days: int = 126  # 6 meses ~ 126 dias úteis
+    returns: pd.Series, lookback_days: int = 126  # 6 meses ~ 126 dias úteis
 ) -> PortfolioMetrics:
     """
     Calcula métricas de portfolio para os últimos N dias.
@@ -174,9 +176,15 @@ def should_fallback_to_1N(
 
     if verbose and trigger_status.any_triggered:
         print("⚠️  FALLBACK TRIGGER ATIVADO!")
-        print(f"   Sharpe 6M: {metrics.sharpe_6m:.2f} (limite: {sharpe_threshold:.2f}) {'❌' if trigger_status.sharpe_6m_negative else '✅'}")
-        print(f"   CVaR 95%: {metrics.cvar_95:.2%} (limite: {cvar_threshold:.2%}) {'❌' if trigger_status.cvar_breach else '✅'}")
-        print(f"   Max DD: {metrics.max_dd:.2%} (limite: {dd_threshold:.2%}) {'❌' if trigger_status.drawdown_breach else '✅'}")
+        print(
+            f"   Sharpe 6M: {metrics.sharpe_6m:.2f} (limite: {sharpe_threshold:.2f}) {'❌' if trigger_status.sharpe_6m_negative else '✅'}"
+        )
+        print(
+            f"   CVaR 95%: {metrics.cvar_95:.2%} (limite: {cvar_threshold:.2%}) {'❌' if trigger_status.cvar_breach else '✅'}"
+        )
+        print(
+            f"   Max DD: {metrics.max_dd:.2%} (limite: {dd_threshold:.2%}) {'❌' if trigger_status.drawdown_breach else '✅'}"
+        )
         print()
         print("   → SWITCH PARA 1/N RECOMENDADO")
     elif verbose:
@@ -191,6 +199,7 @@ def should_fallback_to_1N(
 # ============================================================================
 # TESTES
 # ============================================================================
+
 
 def test_triggers():
     """Smoke test dos triggers"""
@@ -226,10 +235,12 @@ def test_triggers():
     # Cenário 4: CVaR alto (tail risk)
     print("Cenário 4: CVaR alto (tail risk)")
     tail_returns = pd.Series(
-        np.concatenate([
-            np.random.normal(0.001, 0.005, 240),  # Dias normais
-            np.random.normal(-0.03, 0.01, 12),  # Dias de crash (5%)
-        ])
+        np.concatenate(
+            [
+                np.random.normal(0.001, 0.005, 240),  # Dias normais
+                np.random.normal(-0.03, 0.01, 12),  # Dias de crash (5%)
+            ]
+        )
     )
     fallback, status, metrics = should_fallback_to_1N(tail_returns, verbose=True)
     assert fallback, "Tail risk alto deve ativar fallback!"

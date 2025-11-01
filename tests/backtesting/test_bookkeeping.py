@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-
 from itau_quant.backtesting import bookkeeping
 
 
@@ -22,7 +21,9 @@ def test_build_ledger_aligns_inputs_and_computes_nav() -> None:
 
     frame = ledger.frame
     expected_nav = pd.Series([1.01, 0.9898, 0.9898], index=dates, name="nav")
-    pd.testing.assert_series_equal(frame["nav"], expected_nav, check_exact=False, atol=1e-6)
+    pd.testing.assert_series_equal(
+        frame["nav"], expected_nav, check_exact=False, atol=1e-6
+    )
     assert frame.loc[dates[2], "net_return"] == 0.0
     assert frame.loc[dates[1], "costs"] == 0.001
     assert frame.loc[dates[2], "turnover"] == 0.0

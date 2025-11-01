@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import pandas as pd
-import pytest
-
 from itau_quant.costs.cost_model import (
     CostModel,
     classify_asset,

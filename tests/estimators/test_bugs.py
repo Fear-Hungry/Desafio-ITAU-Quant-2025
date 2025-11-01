@@ -3,9 +3,8 @@
 import numpy as np
 import pandas as pd
 import pytest
-from numpy.testing import assert_allclose
-
 from itau_quant.estimators import bl, cov, factors, mu, validation
+from numpy.testing import assert_allclose
 
 
 class TestLedoitWolfBiasedEstimator:
@@ -38,9 +37,9 @@ class TestLedoitWolfBiasedEstimator:
         if shrinkage < 0.3:
             max_diff = np.max(np.abs(lw_cov.to_numpy() - sample_cov.to_numpy()))
             # Difference should be small relative to variance scale
-            assert max_diff < 0.1 * np.mean(np.diag(sample_cov.to_numpy())), (
-                "LW with low shrinkage should be close to unbiased sample_cov"
-            )
+            assert max_diff < 0.1 * np.mean(
+                np.diag(sample_cov.to_numpy())
+            ), "LW with low shrinkage should be close to unbiased sample_cov"
 
     def test_ledoit_wolf_should_match_unbiased_when_shrinkage_zero(self):
         """When shrinkage is near zero, LW should match unbiased sample cov."""
@@ -51,9 +50,9 @@ class TestLedoitWolfBiasedEstimator:
 
         if shrinkage < 0.01:
             max_diff = np.max(np.abs(lw_cov.to_numpy() - sample_cov.to_numpy()))
-            assert max_diff < 0.01, (
-                "LW should match unbiased sample_cov when shrinkage is near zero"
-            )
+            assert (
+                max_diff < 0.01
+            ), "LW should match unbiased sample_cov when shrinkage is near zero"
 
 
 class TestStudentTMeanScaleConsistency:
@@ -68,8 +67,8 @@ class TestStudentTMeanScaleConsistency:
 
         result = mu.student_t_mean(returns, nu=5.0, max_iter=1, tol=1e-12)
 
-        manual_mu = returns.mean()
-        manual_scale = returns.var(axis=0, ddof=1)
+        returns.mean()
+        returns.var(axis=0, ddof=1)
 
         assert isinstance(result, pd.Series), "Should return Series"
 
@@ -227,9 +226,9 @@ class TestBLConfidenceValidation:
             mode="diagonal",
         )
 
-        assert omega[0, 0] >= 1e6 * 0.05 * 0.04, (
-            "Zero confidence should give very high uncertainty"
-        )
+        assert (
+            omega[0, 0] >= 1e6 * 0.05 * 0.04
+        ), "Zero confidence should give very high uncertainty"
 
 
 class TestHuberMeanEdgeCases:
@@ -280,9 +279,9 @@ class TestNonlinearShrinkageHighDim:
 
         eigvals = np.linalg.eigvalsh(result.to_numpy())
         assert np.all(eigvals >= 0), "Should be PSD"
-        assert np.isclose(np.trace(result.to_numpy()), np.trace(result.to_numpy())), (
-            "Trace should be preserved"
-        )
+        assert np.isclose(
+            np.trace(result.to_numpy()), np.trace(result.to_numpy())
+        ), "Trace should be preserved"
 
 
 class TestCovTypoComment:

@@ -5,12 +5,12 @@ import pytest
 pd = pytest.importorskip("pandas")
 
 from itau_quant.data.processing.calendar import (
-    business_month_starts,
     business_month_ends,
-    weekly_last_trading_day,
+    business_month_starts,
+    clamp_to_index,
     next_trading_day,
     prev_trading_day,
-    clamp_to_index,
+    weekly_last_trading_day,
 )
 
 
@@ -47,8 +47,7 @@ def test_weekly_last_trading_day_and_neighbors():
 
 def test_clamp_to_index():
     idx = _mk_index()
-    dates = [idx[0], idx[5], idx[-1],
-             pd.Timestamp("1900-01-01")]  # inclui um fora
+    dates = [idx[0], idx[5], idx[-1], pd.Timestamp("1900-01-01")]  # inclui um fora
     clamped = clamp_to_index(idx, dates)
     assert clamped.min() >= idx.min()
     assert clamped.max() <= idx.max()

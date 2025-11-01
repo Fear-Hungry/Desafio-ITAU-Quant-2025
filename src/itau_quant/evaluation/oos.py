@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Callable, Iterable, Mapping, Sequence
+from typing import Callable, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -37,7 +37,9 @@ class OOSResult:
 
     returns: pd.DataFrame
     metrics: pd.DataFrame
-    weights: dict[str, list[tuple[pd.Timestamp, pd.Series]]] = field(default_factory=dict)
+    weights: dict[str, list[tuple[pd.Timestamp, pd.Series]]] = field(
+        default_factory=dict
+    )
     turnovers: dict[str, list[float]] = field(default_factory=dict)
 
 
@@ -85,7 +87,7 @@ def _moving_block_bootstrap(
         idx = rng.integers(0, n_obs, size=(n_bootstrap, n_obs))
         return values[idx]
 
-    n_blocks = int(np.ceil(n_obs / block_size))
+    int(np.ceil(n_obs / block_size))
     samples = np.empty((n_bootstrap, n_obs), dtype=float)
     for b in range(n_bootstrap):
         pos = 0
@@ -112,7 +114,9 @@ def _bootstrap_sharpe_ci(
     rng = np.random.default_rng(random_state)
     data = daily_returns.to_numpy(dtype=float)
     samples = (
-        _moving_block_bootstrap(data, n_bootstrap=n_bootstrap, block_size=block_size or 1, rng=rng)
+        _moving_block_bootstrap(
+            data, n_bootstrap=n_bootstrap, block_size=block_size or 1, rng=rng
+        )
         if block_size
         else data[rng.integers(0, len(data), size=(n_bootstrap, len(data)))]
     )
@@ -279,8 +283,12 @@ def default_strategies(
             weights["SPY"] = 0.60
             weights["IEF"] = 0.40
         else:
-            equities = [c for c in columns if c.startswith(("SP", "QQQ", "IWM", "VTV", "VUG"))]
-            bonds = [c for c in columns if c.startswith(("IE", "TLT", "SHY", "LQD", "HYG"))]
+            equities = [
+                c for c in columns if c.startswith(("SP", "QQQ", "IWM", "VTV", "VUG"))
+            ]
+            bonds = [
+                c for c in columns if c.startswith(("IE", "TLT", "SHY", "LQD", "HYG"))
+            ]
             if equities and bonds:
                 weights.loc[equities] = 0.60 / len(equities)
                 weights.loc[bonds] = 0.40 / len(bonds)
@@ -335,10 +343,10 @@ def compare_baselines(
         spec.name: [] for spec in strategies
     }
     prev_weights: dict[str, pd.Series] = {
-        spec.name: pd.Series(0.0, index=returns.columns, dtype=float) for spec in strategies
+        spec.name: pd.Series(0.0, index=returns.columns, dtype=float)
+        for spec in strategies
     }
 
-    idx = returns.index
     test_start_idx = train_window + purge_window
 
     while test_start_idx + test_window <= len(returns):
@@ -355,7 +363,9 @@ def compare_baselines(
 
         for spec in strategies:
             prev = prev_weights[spec.name]
-            weights = spec.builder(train_slice, prev).reindex(returns.columns).fillna(0.0)
+            weights = (
+                spec.builder(train_slice, prev).reindex(returns.columns).fillna(0.0)
+            )
             weights = weights.clip(lower=0.0, upper=max_position)
             total = float(weights.sum())
             if total > 0:

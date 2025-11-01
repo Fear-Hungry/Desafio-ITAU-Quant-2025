@@ -84,7 +84,7 @@ MAX_POSITION = 0.10
 TRANSACTION_COST_BPS = 30
 TURNOVER_CAP = 0.12
 
-print(f"📊 Configuração:")
+print("📊 Configuração:")
 print(f"   • Universo: {len(TICKERS)} ativos")
 print(f"   • Período: {START_DATE.date()} a {END_DATE.date()}")
 print(f"   • Train window: {TRAIN_WINDOW} dias")
@@ -136,9 +136,8 @@ except Exception as e:
 # ============================================================================
 print("🔧 [2/3] Definindo estratégias...")
 
-from itau_quant.estimators.mu import huber_mean
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
+from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 from itau_quant.optimization.core.risk_parity import risk_parity
 from itau_quant.optimization.heuristics.hrp import hierarchical_risk_parity
 
@@ -407,7 +406,7 @@ print()
 sharpe_vals = {row["Strategy"]: float(row["Sharpe"]) for row in metrics_summary}
 best_sharpe = max(sharpe_vals, key=sharpe_vals.get)
 
-print(f"🏆 Rankings:")
+print("🏆 Rankings:")
 print(f"   • Melhor Sharpe OOS: {best_sharpe} ({sharpe_vals[best_sharpe]:.2f})")
 
 # Comparar MV Robust vs 1/N
@@ -419,11 +418,11 @@ if "MV Robust (Huber)" in sharpe_vals and "1/N" in sharpe_vals:
     print(f"   • MV Robust vs 1/N: {diff:+.2f} Sharpe points")
 
     if diff >= 0.2:
-        print(f"   ✅ MV Robust bate 1/N por ≥ 0.2 → SUCCESS!")
+        print("   ✅ MV Robust bate 1/N por ≥ 0.2 → SUCCESS!")
     elif diff > 0:
-        print(f"   ⚠️  MV Robust bate 1/N mas por < 0.2 → marginal")
+        print("   ⚠️  MV Robust bate 1/N mas por < 0.2 → marginal")
     else:
-        print(f"   ❌ MV Robust PERDE para 1/N → overfit ou má estimação")
+        print("   ❌ MV Robust PERDE para 1/N → overfit ou má estimação")
 
 print()
 
@@ -458,9 +457,9 @@ print("=" * 80)
 print("  ✅ COMPARAÇÃO DE BASELINES CONCLUÍDA!")
 print("=" * 80)
 print()
-print(f"🎯 Próximos passos:")
+print("🎯 Próximos passos:")
 print(f"   1. Analisar métricas em {metrics_file}")
 print(f"   2. Plotar cumulative returns de {cumulative_file}")
-print(f"   3. Se MV Robust bate 1/N por ≥ 0.2, usar em produção")
-print(f"   4. Caso contrário, investigar overfit em μ ou refinar constraints")
+print("   3. Se MV Robust bate 1/N por ≥ 0.2, usar em produção")
+print("   4. Caso contrário, investigar overfit em μ ou refinar constraints")
 print()

@@ -94,7 +94,13 @@ def download_and_prepare_data(
         save_parquet(processed_path, bundle.returns)
 
     artefact_paths: dict[str, str | None] = {}
-    for key in ("prices_path", "returns_path", "excess_path", "rf_path", "metadata_path"):
+    for key in (
+        "prices_path",
+        "returns_path",
+        "excess_path",
+        "rf_path",
+        "metadata_path",
+    ):
         value = artefacts.get(key)
         artefact_paths[key] = str(value) if isinstance(value, Path) else None
 
@@ -119,9 +125,14 @@ def download_and_prepare_data(
     end_iso = end_ts.strftime("%Y-%m-%d") if pd.notna(end_ts) else None
 
     if artefacts.get("from_cache"):
-        logger.info("DataLoader reutilizou cache (request_id=%s)", artefacts["request_id"])
+        logger.info(
+            "DataLoader reutilizou cache (request_id=%s)", artefacts["request_id"]
+        )
     else:
-        logger.info("DataLoader persistiu novos artefatos (request_id=%s)", artefacts["request_id"])
+        logger.info(
+            "DataLoader persistiu novos artefatos (request_id=%s)",
+            artefacts["request_id"],
+        )
 
     metadata = artefacts.get("metadata") or {}
     trimmed_metadata = {k: v for k, v in metadata.items() if k != "tickers"}

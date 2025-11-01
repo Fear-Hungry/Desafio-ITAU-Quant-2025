@@ -19,7 +19,11 @@ def read_dataframe(path: Path) -> pd.DataFrame | pd.Series:
         return pd.read_pickle(path)
     if suffix in {".feather"}:
         frame = pd.read_feather(path)
-        frame = frame.set_index(frame.columns[0]) if not frame.columns[0] == "index" else frame
+        frame = (
+            frame.set_index(frame.columns[0])
+            if not frame.columns[0] == "index"
+            else frame
+        )
         return frame
     raise ValueError(f"Unsupported data format for {path}")
 
@@ -34,7 +38,9 @@ def read_vector(path: Path) -> pd.Series:
         return obj.iloc[0].astype(float)
     if obj.shape[1] == 1:
         return obj.iloc[:, 0].astype(float)
-    raise ValueError("Cannot infer vector from data frame; please provide series or single row.")
+    raise ValueError(
+        "Cannot infer vector from data frame; please provide series or single row."
+    )
 
 
 def to_datetime_index(index: pd.Index | pd.DatetimeIndex) -> pd.DatetimeIndex:

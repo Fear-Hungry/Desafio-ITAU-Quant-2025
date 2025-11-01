@@ -6,14 +6,12 @@ including parameter evolution, per-window performance, and consistency analysis.
 
 from __future__ import annotations
 
-from typing import Optional
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
 
-def _prepare_axis(ax: Optional[plt.Axes] = None, *, title: Optional[str] = None) -> plt.Axes:
+def _prepare_axis(ax: plt.Axes | None = None, *, title: str | None = None) -> plt.Axes:
     """Prepare matplotlib axis for plotting."""
     if ax is None:
         _, ax = plt.subplots(figsize=(10, 5))
@@ -25,8 +23,8 @@ def _prepare_axis(ax: Optional[plt.Axes] = None, *, title: Optional[str] = None)
 def plot_parameter_evolution(
     split_metrics: pd.DataFrame,
     *,
-    parameters: Optional[list[str]] = None,
-    ax: Optional[plt.Axes] = None,
+    parameters: list[str] | None = None,
+    ax: plt.Axes | None = None,
     title: str = "Parameter Evolution Across Windows",
 ) -> plt.Axes:
     """Plot evolution of key parameters (Sharpe, turnover, etc.) across walk-forward windows.
@@ -82,7 +80,9 @@ def plot_parameter_evolution(
             continue
 
         # Plot with offset for readability if multiple params
-        ax.plot(x, values, marker="o", label=param.replace("_", " ").title(), linewidth=2)
+        ax.plot(
+            x, values, marker="o", label=param.replace("_", " ").title(), linewidth=2
+        )
 
     ax.set_xlabel("Window Index", fontsize=10)
     ax.set_ylabel("Parameter Value", fontsize=10)
@@ -99,7 +99,7 @@ def plot_parameter_evolution(
 def plot_per_window_sharpe(
     split_metrics: pd.DataFrame,
     *,
-    ax: Optional[plt.Axes] = None,
+    ax: plt.Axes | None = None,
     title: str = "Sharpe Ratio by Window",
     highlight_negative: bool = True,
 ) -> plt.Axes:
@@ -144,7 +144,13 @@ def plot_per_window_sharpe(
 
     # Add mean line
     mean_sharpe = float(np.mean(sharpe_values))
-    ax.axhline(mean_sharpe, color="blue", linestyle="--", linewidth=1.5, label=f"Mean: {mean_sharpe:.2f}")
+    ax.axhline(
+        mean_sharpe,
+        color="blue",
+        linestyle="--",
+        linewidth=1.5,
+        label=f"Mean: {mean_sharpe:.2f}",
+    )
     ax.legend(loc="best", fontsize=9)
 
     return ax
@@ -153,7 +159,7 @@ def plot_per_window_sharpe(
 def plot_consistency_scatter(
     split_metrics: pd.DataFrame,
     *,
-    ax: Optional[plt.Axes] = None,
+    ax: plt.Axes | None = None,
     title: str = "Consistency: Period N vs N+1 Returns",
 ) -> plt.Axes:
     """Scatter plot of consecutive window returns to assess consistency.
@@ -200,7 +206,14 @@ def plot_consistency_scatter(
         slope, intercept = np.polyfit(previous, current, 1)
         x_line = np.array([previous.min(), previous.max()])
         y_line = slope * x_line + intercept
-        ax.plot(x_line, y_line, color="red", linestyle="--", linewidth=2, label=f"R² = {r_squared:.3f}")
+        ax.plot(
+            x_line,
+            y_line,
+            color="red",
+            linestyle="--",
+            linewidth=2,
+            label=f"R² = {r_squared:.3f}",
+        )
     else:
         r_squared = 0.0
 
@@ -254,7 +267,12 @@ def plot_walkforward_summary(
         plot_consistency_scatter(split_metrics, ax=axes[1, 0])
     else:
         axes[1, 0].text(
-            0.5, 0.5, "Need ≥2 windows for consistency", ha="center", va="center", fontsize=10
+            0.5,
+            0.5,
+            "Need ≥2 windows for consistency",
+            ha="center",
+            va="center",
+            fontsize=10,
         )
         axes[1, 0].axis("off")
 
@@ -262,21 +280,35 @@ def plot_walkforward_summary(
     if "turnover" in split_metrics.columns and "cost_fraction" in split_metrics.columns:
         ax_bottom_right = axes[1, 1]
         x = np.arange(len(split_metrics))
-        ax_bottom_right.plot(x, split_metrics["turnover"], marker="o", label="Turnover", linewidth=2)
+        ax_bottom_right.plot(
+            x, split_metrics["turnover"], marker="o", label="Turnover", linewidth=2
+        )
         ax_secondary = ax_bottom_right.twinx()
         ax_secondary.plot(
-            x, split_metrics["cost_fraction"] * 10000, marker="s", color="orange", label="Cost (bps)", linewidth=2
+            x,
+            split_metrics["cost_fraction"] * 10000,
+            marker="s",
+            color="orange",
+            label="Cost (bps)",
+            linewidth=2,
         )
         ax_bottom_right.set_xlabel("Window Index", fontsize=10)
         ax_bottom_right.set_ylabel("Turnover", fontsize=10, color="blue")
         ax_secondary.set_ylabel("Cost (bps)", fontsize=10, color="orange")
-        ax_bottom_right.set_title("Turnover & Cost Evolution", fontsize=10, fontweight="bold")
+        ax_bottom_right.set_title(
+            "Turnover & Cost Evolution", fontsize=10, fontweight="bold"
+        )
         ax_bottom_right.legend(loc="upper left", fontsize=9)
         ax_secondary.legend(loc="upper right", fontsize=9)
         ax_bottom_right.grid(True, alpha=0.3)
     else:
         axes[1, 1].text(
-            0.5, 0.5, "Turnover/Cost data unavailable", ha="center", va="center", fontsize=10
+            0.5,
+            0.5,
+            "Turnover/Cost data unavailable",
+            ha="center",
+            va="center",
+            fontsize=10,
         )
         axes[1, 1].axis("off")
 

@@ -1,9 +1,10 @@
 """Public API for optimisation core solvers (MV, CVaR, Sharpe)."""
 
-from . import mv_qp, cvar_lp, sharpe_socp
-from .mv_qp import MeanVarianceConfig, MeanVarianceResult, solve_mean_variance
+from . import cvar_lp, mv_qp, sharpe_socp
 from .cvar_lp import CvarConfig, CvarResult, solve_cvar_lp
-from .sharpe_socp import SharpeSocpResult, sharpe_socp as solve_sharpe_socp
+from .mv_qp import MeanVarianceConfig, MeanVarianceResult, solve_mean_variance
+from .sharpe_socp import SharpeSocpResult
+from .sharpe_socp import sharpe_socp as solve_sharpe_socp
 
 __all__ = [
     "mv_qp",

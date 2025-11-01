@@ -3,7 +3,6 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-
 from itau_quant.optimization.core.mv_qp import (
     MeanVarianceConfig,
     solve_mean_variance,
@@ -54,7 +53,9 @@ def test_mv_qp_turnover_cap_respected() -> None:
         dtype=float,
     )
     prev = pd.Series([1 / 3, 1 / 3, 1 / 3], index=mu.index, dtype=float)
-    config = _default_config(previous_weights=prev, turnover_cap=0.10, risk_aversion=4.0)
+    config = _default_config(
+        previous_weights=prev, turnover_cap=0.10, risk_aversion=4.0
+    )
 
     result = solve_mean_variance(mu, cov, config)
 
@@ -67,7 +68,9 @@ def test_mv_qp_cost_penalty_discourages_large_trade() -> None:
     cov = pd.DataFrame(np.eye(3) * 0.06, index=mu.index, columns=mu.index)
     prev = pd.Series([0.4, 0.3, 0.3], index=mu.index, dtype=float)
     cost_vector = pd.Series([0.0, 5e-4, 0.0], index=mu.index, dtype=float)
-    base_config = _default_config(previous_weights=prev, cost_vector=None, turnover_penalty=0.0, risk_aversion=2.0)
+    base_config = _default_config(
+        previous_weights=prev, cost_vector=None, turnover_penalty=0.0, risk_aversion=2.0
+    )
     base_result = solve_mean_variance(mu, cov, base_config)
 
     penalised_config = _default_config(

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 from itau_quant.optimization.core import postprocess as post_mod
 
 

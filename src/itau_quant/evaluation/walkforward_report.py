@@ -7,7 +7,6 @@ including summary metrics, per-window analysis, parameter stability, and stress 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -197,7 +196,9 @@ def build_per_window_table(
         lines.append("| " + " | ".join(headers) + " |")
         lines.append("| " + " | ".join(["---"] * len(headers)) + " |")
         for _, row in table_df.iterrows():
-            values = [f"{v:.4f}" if isinstance(v, (int, float)) else str(v) for v in row]
+            values = [
+                f"{v:.4f}" if isinstance(v, (int, float)) else str(v) for v in row
+            ]
             lines.append("| " + " | ".join(values) + " |")
         return "\n".join(lines)
     elif format == "latex":
@@ -213,7 +214,7 @@ def identify_stress_periods(
     *,
     drawdown_threshold: float = -0.15,
     sharpe_threshold: float = -0.5,
-) -> List[StressPeriod]:
+) -> list[StressPeriod]:
     """Identify windows with significant stress (high drawdown or negative Sharpe).
 
     Parameters
@@ -289,7 +290,7 @@ def _auto_label_period(date_str: str) -> str:
         return f"Stress {year}"
 
 
-def compute_range_ratio(split_metrics: pd.DataFrame) -> Dict[str, float]:
+def compute_range_ratio(split_metrics: pd.DataFrame) -> dict[str, float]:
     """Compute performance range statistics.
 
     Parameters
@@ -303,7 +304,12 @@ def compute_range_ratio(split_metrics: pd.DataFrame) -> Dict[str, float]:
         Dictionary with keys: best_nav, worst_nav, range_ratio, nav_std
     """
     if split_metrics.empty or "cumulative_nav" not in split_metrics.columns:
-        return {"best_nav": np.nan, "worst_nav": np.nan, "range_ratio": np.nan, "nav_std": np.nan}
+        return {
+            "best_nav": np.nan,
+            "worst_nav": np.nan,
+            "range_ratio": np.nan,
+            "nav_std": np.nan,
+        }
 
     navs = split_metrics["cumulative_nav"].values
     best = float(np.max(navs))

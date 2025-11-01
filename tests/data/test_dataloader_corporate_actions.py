@@ -1,10 +1,8 @@
 from __future__ import annotations
 
-import pytest
-import numpy as np
 import pandas as pd
-
-from itau_quant.data.loader import DataLoader, DataBundle
+import pytest
+from itau_quant.data.loader import DataBundle, DataLoader
 
 
 def _mock_prices() -> pd.DataFrame:
@@ -14,10 +12,10 @@ def _mock_prices() -> pd.DataFrame:
 
 def _mock_multi_ticker_prices() -> pd.DataFrame:
     idx = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04"])
-    return pd.DataFrame({
-        "AAA": [100.0, 50.0, 50.0, 55.0],
-        "BBB": [200.0, 210.0, 220.0, 230.0]
-    }, index=idx)
+    return pd.DataFrame(
+        {"AAA": [100.0, 50.0, 50.0, 55.0], "BBB": [200.0, 210.0, 220.0, 230.0]},
+        index=idx,
+    )
 
 
 def _liquidity_stats(df: pd.DataFrame) -> pd.DataFrame:
@@ -42,14 +40,20 @@ def test_dataloader_applies_corporate_actions(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df)))
+    monkeypatch.setattr(
+        dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df))
+    )
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
-    monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
+    monkeypatch.setattr(
+        dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index)
+    )
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
     monkeypatch.setattr(dl, "rebalance_schedule", lambda index, mode: index)
     monkeypatch.setattr(dl, "request_hash", lambda *args, **kwargs: "hash")
     monkeypatch.setattr(dl, "save_parquet", lambda *args, **kwargs: None)
-    monkeypatch.setattr(dl, "_calculate_returns", lambda df, method="log": returns.copy())
+    monkeypatch.setattr(
+        dl, "_calculate_returns", lambda df, method="log": returns.copy()
+    )
 
     actions = [
         {
@@ -75,14 +79,20 @@ def test_dataloader_applies_dividend_event(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df)))
+    monkeypatch.setattr(
+        dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df))
+    )
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
-    monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
+    monkeypatch.setattr(
+        dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index)
+    )
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
     monkeypatch.setattr(dl, "rebalance_schedule", lambda index, mode: index)
     monkeypatch.setattr(dl, "request_hash", lambda *args, **kwargs: "hash")
     monkeypatch.setattr(dl, "save_parquet", lambda *args, **kwargs: None)
-    monkeypatch.setattr(dl, "_calculate_returns", lambda df, method="log": returns.copy())
+    monkeypatch.setattr(
+        dl, "_calculate_returns", lambda df, method="log": returns.copy()
+    )
 
     actions = [
         {
@@ -110,14 +120,20 @@ def test_dataloader_applies_spinoff_event(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df)))
+    monkeypatch.setattr(
+        dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df))
+    )
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
-    monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
+    monkeypatch.setattr(
+        dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index)
+    )
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
     monkeypatch.setattr(dl, "rebalance_schedule", lambda index, mode: index)
     monkeypatch.setattr(dl, "request_hash", lambda *args, **kwargs: "hash")
     monkeypatch.setattr(dl, "save_parquet", lambda *args, **kwargs: None)
-    monkeypatch.setattr(dl, "_calculate_returns", lambda df, method="log": returns.copy())
+    monkeypatch.setattr(
+        dl, "_calculate_returns", lambda df, method="log": returns.copy()
+    )
 
     actions = [
         {
@@ -145,14 +161,20 @@ def test_dataloader_applies_multiple_sequential_events(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df)))
+    monkeypatch.setattr(
+        dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df))
+    )
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
-    monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
+    monkeypatch.setattr(
+        dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index)
+    )
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
     monkeypatch.setattr(dl, "rebalance_schedule", lambda index, mode: index)
     monkeypatch.setattr(dl, "request_hash", lambda *args, **kwargs: "hash")
     monkeypatch.setattr(dl, "save_parquet", lambda *args, **kwargs: None)
-    monkeypatch.setattr(dl, "_calculate_returns", lambda df, method="log": returns.copy())
+    monkeypatch.setattr(
+        dl, "_calculate_returns", lambda df, method="log": returns.copy()
+    )
 
     actions = [
         {
@@ -166,7 +188,7 @@ def test_dataloader_applies_multiple_sequential_events(monkeypatch):
             "event_type": "spinoff",
             "ex_date": "2020-01-04",
             "ratio": 0.2,
-        }
+        },
     ]
 
     loader = DataLoader(tickers=["AAA"], actions=actions)
@@ -176,7 +198,9 @@ def test_dataloader_applies_multiple_sequential_events(monkeypatch):
     assert adjusted_prices.loc[pd.Timestamp("2020-01-01")] == 100.0
     assert adjusted_prices.loc[pd.Timestamp("2020-01-02")] == 25.0
     assert adjusted_prices.loc[pd.Timestamp("2020-01-03")] == 25.0
-    assert adjusted_prices.loc[pd.Timestamp("2020-01-04")] == pytest.approx(40.0 * 0.5 * 0.8)
+    assert adjusted_prices.loc[pd.Timestamp("2020-01-04")] == pytest.approx(
+        40.0 * 0.5 * 0.8
+    )
 
 
 def test_dataloader_applies_events_on_same_date(monkeypatch):
@@ -187,14 +211,20 @@ def test_dataloader_applies_events_on_same_date(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df)))
+    monkeypatch.setattr(
+        dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df))
+    )
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
-    monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
+    monkeypatch.setattr(
+        dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index)
+    )
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
     monkeypatch.setattr(dl, "rebalance_schedule", lambda index, mode: index)
     monkeypatch.setattr(dl, "request_hash", lambda *args, **kwargs: "hash")
     monkeypatch.setattr(dl, "save_parquet", lambda *args, **kwargs: None)
-    monkeypatch.setattr(dl, "_calculate_returns", lambda df, method="log": returns.copy())
+    monkeypatch.setattr(
+        dl, "_calculate_returns", lambda df, method="log": returns.copy()
+    )
 
     actions = [
         {
@@ -208,7 +238,7 @@ def test_dataloader_applies_events_on_same_date(monkeypatch):
             "event_type": "cash_dividend",
             "ex_date": "2020-01-02",
             "cash_amount": 1.0,
-        }
+        },
     ]
 
     loader = DataLoader(tickers=["AAA"], actions=actions)
@@ -227,15 +257,22 @@ def test_dataloader_applies_events_to_different_tickers(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch_setattr = lambda df, **_: (df, _liquidity_stats(df))
+
+    def monkeypatch_setattr(df, **_):
+        return df, _liquidity_stats(df)
+
     monkeypatch.setattr(dl, "filter_liquid_assets", monkeypatch_setattr)
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
-    monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
+    monkeypatch.setattr(
+        dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index)
+    )
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
     monkeypatch.setattr(dl, "rebalance_schedule", lambda index, mode: index)
     monkeypatch.setattr(dl, "request_hash", lambda *args, **kwargs: "hash")
     monkeypatch.setattr(dl, "save_parquet", lambda *args, **kwargs: None)
-    monkeypatch.setattr(dl, "_calculate_returns", lambda df, method="log": returns.copy())
+    monkeypatch.setattr(
+        dl, "_calculate_returns", lambda df, method="log": returns.copy()
+    )
 
     actions = [
         {
@@ -249,7 +286,7 @@ def test_dataloader_applies_events_to_different_tickers(monkeypatch):
             "event_type": "cash_dividend",
             "ex_date": "2020-01-03",
             "cash_amount": 5.0,
-        }
+        },
     ]
 
     loader = DataLoader(tickers=["AAA", "BBB"], actions=actions)
@@ -273,14 +310,20 @@ def test_dataloader_with_no_actions_provided(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df)))
+    monkeypatch.setattr(
+        dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df))
+    )
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
-    monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
+    monkeypatch.setattr(
+        dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index)
+    )
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
     monkeypatch.setattr(dl, "rebalance_schedule", lambda index, mode: index)
     monkeypatch.setattr(dl, "request_hash", lambda *args, **kwargs: "hash")
     monkeypatch.setattr(dl, "save_parquet", lambda *args, **kwargs: None)
-    monkeypatch.setattr(dl, "_calculate_returns", lambda df, method="log": returns.copy())
+    monkeypatch.setattr(
+        dl, "_calculate_returns", lambda df, method="log": returns.copy()
+    )
 
     loader = DataLoader(tickers=["AAA"], actions=None)
     bundle = loader.load()
@@ -296,14 +339,20 @@ def test_dataloader_with_empty_actions_list(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df)))
+    monkeypatch.setattr(
+        dl, "filter_liquid_assets", lambda df, **_: (df, _liquidity_stats(df))
+    )
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
-    monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
+    monkeypatch.setattr(
+        dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index)
+    )
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
     monkeypatch.setattr(dl, "rebalance_schedule", lambda index, mode: index)
     monkeypatch.setattr(dl, "request_hash", lambda *args, **kwargs: "hash")
     monkeypatch.setattr(dl, "save_parquet", lambda *args, **kwargs: None)
-    monkeypatch.setattr(dl, "_calculate_returns", lambda df, method="log": returns.copy())
+    monkeypatch.setattr(
+        dl, "_calculate_returns", lambda df, method="log": returns.copy()
+    )
 
     loader = DataLoader(tickers=["AAA"], actions=[])
     bundle = loader.load()

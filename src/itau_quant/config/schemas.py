@@ -13,7 +13,7 @@ All YAML configuration files in configs/ should validate against these schemas.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, List, Literal, Optional
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -40,15 +40,15 @@ class AssetGroupConstraints(BaseModel):
         Maximum weight per individual asset in group (0-1)
     """
 
-    assets: List[str] = Field(min_length=1, description="List of tickers in this group")
+    assets: list[str] = Field(min_length=1, description="List of tickers in this group")
     max: float = Field(ge=0, le=1, description="Maximum total group weight")
-    per_asset_max: Optional[float] = Field(
+    per_asset_max: float | None = Field(
         default=None, ge=0, le=1, description="Maximum weight per asset in group"
     )
 
     @field_validator("assets")
     @classmethod
-    def validate_tickers_uppercase(cls, v: List[str]) -> List[str]:
+    def validate_tickers_uppercase(cls, v: list[str]) -> list[str]:
         """Ensure all tickers are uppercase."""
         return [ticker.upper() for ticker in v]
 
@@ -69,14 +69,14 @@ class UniverseConfig(BaseModel):
     """
 
     name: str = Field(description="Universe name identifier")
-    tickers: List[str] = Field(
+    tickers: list[str] = Field(
         min_length=1, description="List of ticker symbols to include"
     )
-    description: Optional[str] = Field(default=None, description="Universe description")
+    description: str | None = Field(default=None, description="Universe description")
 
     @field_validator("tickers")
     @classmethod
-    def validate_tickers_unique_uppercase(cls, v: List[str]) -> List[str]:
+    def validate_tickers_unique_uppercase(cls, v: list[str]) -> list[str]:
         """Ensure tickers are unique and uppercase."""
         tickers_upper = [ticker.upper() for ticker in v]
         if len(tickers_upper) != len(set(tickers_upper)):
@@ -99,10 +99,10 @@ class DataConfig(BaseModel):
         Minimum required observations per asset
     """
 
-    start_date: Optional[str] = Field(
+    start_date: str | None = Field(
         default=None, description="Start date (YYYY-MM-DD) or None"
     )
-    end_date: Optional[str] = Field(
+    end_date: str | None = Field(
         default=None, description="End date (YYYY-MM-DD) or None for today"
     )
     lookback_years: int = Field(
@@ -114,7 +114,7 @@ class DataConfig(BaseModel):
 
     @field_validator("start_date", "end_date")
     @classmethod
-    def validate_date_format(cls, v: Optional[str]) -> Optional[str]:
+    def validate_date_format(cls, v: str | None) -> str | None:
         """Validate date format if provided."""
         if v is None:
             return v
@@ -195,10 +195,10 @@ class PortfolioConfig(BaseModel):
     shrinkage_method: Literal["ledoit_wolf", "nonlinear", "tyler"] = Field(
         default="ledoit_wolf", description="Covariance shrinkage method"
     )
-    estimators: Optional[EstimatorConfig] = Field(
+    estimators: EstimatorConfig | None = Field(
         default_factory=EstimatorConfig, description="Estimator configuration"
     )
-    data: Optional[DataConfig] = Field(
+    data: DataConfig | None = Field(
         default_factory=DataConfig, description="Data loading configuration"
     )
 
@@ -240,9 +240,7 @@ class ProductionConfig(BaseModel):
     """
 
     vol_target: float = Field(ge=0, le=1, description="Target annualized volatility")
-    vol_tolerance: float = Field(
-        ge=0, le=0.1, description="Volatility tolerance band"
-    )
+    vol_tolerance: float = Field(ge=0, le=0.1, description="Volatility tolerance band")
     turnover_target: float = Field(ge=0, le=1, description="Target monthly turnover")
     turnover_tolerance: float = Field(
         ge=0, le=0.1, description="Turnover tolerance band"
@@ -255,15 +253,17 @@ class ProductionConfig(BaseModel):
     estimation_window: int = Field(
         default=252, gt=0, description="Estimation window (days)"
     )
-    groups: Dict[str, AssetGroupConstraints] = Field(
+    groups: dict[str, AssetGroupConstraints] = Field(
         default_factory=dict, description="Asset group constraints"
     )
-    estimators: Optional[EstimatorConfig] = Field(
+    estimators: EstimatorConfig | None = Field(
         default_factory=EstimatorConfig, description="Estimator configuration"
     )
 
     @field_validator("groups")
     @classmethod
-    def validate_group_names(cls, v: Dict[str, AssetGroupConstraints]) -> Dict[str, AssetGroupConstraints]:
+    def validate_group_names(
+        cls, v: dict[str, AssetGroupConstraints]
+    ) -> dict[str, AssetGroupConstraints]:
         """Ensure group names are lowercase."""
         return {k.lower(): v for k, v in v.items()}

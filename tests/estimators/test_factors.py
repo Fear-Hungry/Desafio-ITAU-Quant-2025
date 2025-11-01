@@ -3,7 +3,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-
 from itau_quant.estimators import factors as factors_mod
 
 
@@ -31,9 +30,7 @@ def test_prepare_factor_data_zscores_and_aligns():
     prices = _build_prices()
     factors = _build_factors()
 
-    asset_z, factor_z = factors_mod.prepare_factor_data(
-        prices, factors, window=None
-    )
+    asset_z, factor_z = factors_mod.prepare_factor_data(prices, factors, window=None)
 
     assert asset_z.index.equals(factor_z.index)
     assert not asset_z.isna().any().any()
@@ -62,9 +59,7 @@ def test_time_series_regression_recovers_known_betas():
     returns = returns + alpha_true.to_numpy()
     returns_df = pd.DataFrame(returns, index=index, columns=betas_true.columns)
 
-    betas, alphas, residuals = factors_mod.time_series_regression(
-        returns_df, factors
-    )
+    betas, alphas, residuals = factors_mod.time_series_regression(returns_df, factors)
 
     np.testing.assert_allclose(betas, betas_true, atol=1e-10)
     np.testing.assert_allclose(alphas, alpha_true, atol=1e-10)

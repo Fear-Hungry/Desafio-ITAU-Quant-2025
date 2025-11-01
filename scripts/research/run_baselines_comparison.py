@@ -10,13 +10,12 @@ inflation shocks.
 
 from __future__ import annotations
 
-import sys
-from datetime import datetime, timedelta
 import os
+import sys
 import time
+from datetime import datetime, timedelta
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from itau_quant.data import get_arara_universe
 

@@ -1,14 +1,15 @@
 import random
 
 import numpy as np
-
 from itau_quant.utils import seed as seed_utils
 
 
 def test_set_global_seeds_invokes_solver_seed(monkeypatch):
     calls = []
 
-    monkeypatch.setattr(seed_utils, "set_solver_seed", lambda value: calls.append(value))
+    monkeypatch.setattr(
+        seed_utils, "set_solver_seed", lambda value: calls.append(value)
+    )
 
     random.seed(0)
     np.random.seed(0)

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Mapping, Sequence
+from typing import Mapping, Sequence
 
 import cvxpy as cp
 import numpy as np
@@ -31,7 +31,9 @@ class BudgetConfig:
     min_leverage: float | None = None
 
 
-def _ensure_numpy(value: float | Sequence[float] | pd.Series, size: int, *, name: str) -> np.ndarray:
+def _ensure_numpy(
+    value: float | Sequence[float] | pd.Series, size: int, *, name: str
+) -> np.ndarray:
     array: np.ndarray
     if isinstance(value, pd.Series):
         array = value.to_numpy(dtype=float)
@@ -44,7 +46,9 @@ def _ensure_numpy(value: float | Sequence[float] | pd.Series, size: int, *, name
     return array
 
 
-def build_budget_constraints(weights: cp.Expression, config: BudgetConfig | Mapping[str, float] | None) -> list[cp.Constraint]:
+def build_budget_constraints(
+    weights: cp.Expression, config: BudgetConfig | Mapping[str, float] | None
+) -> list[cp.Constraint]:
     """Build budget and leverage constraints."""
 
     if config is None:
@@ -165,7 +169,9 @@ def build_sector_exposure_constraints(
     return constraints
 
 
-def _as_matrix(value: pd.DataFrame | np.ndarray, *, index: Sequence[str] | None = None) -> tuple[np.ndarray, list[str]]:
+def _as_matrix(
+    value: pd.DataFrame | np.ndarray, *, index: Sequence[str] | None = None
+) -> tuple[np.ndarray, list[str]]:
     if isinstance(value, pd.DataFrame):
         if index is not None:
             matrix = value.reindex(index=index, columns=index).to_numpy(dtype=float)
@@ -194,7 +200,9 @@ def build_risk_constraints(
 
     if any(key in config for key in ("volatility", "variance", "tracking_error")):
         if covariance is None:
-            raise ValueError("covariance is required for volatility or tracking-error constraints")
+            raise ValueError(
+                "covariance is required for volatility or tracking-error constraints"
+            )
         cov_matrix, _ = _as_matrix(covariance)
 
     if "volatility" in config:
@@ -237,7 +245,8 @@ def build_risk_constraints(
             [
                 aux >= 0,
                 aux >= losses - t_var,
-                t_var + (1.0 / ((1.0 - alpha) * num_scenarios)) * cp.sum(aux) <= max_cvar,
+                t_var + (1.0 / ((1.0 - alpha) * num_scenarios)) * cp.sum(aux)
+                <= max_cvar,
             ]
         )
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Callable, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -44,8 +44,8 @@ def block_bootstrap(
     *,
     block_size: int,
     n_samples: int,
-    random_state: Optional[int] = None,
-) -> List[pd.DataFrame]:
+    random_state: int | None = None,
+) -> list[pd.DataFrame]:
     """Classic moving-block bootstrap preserving short-term dependence."""
 
     df = _to_frame(returns)
@@ -55,10 +55,10 @@ def block_bootstrap(
         raise ValueError("n_samples must be positive")
 
     rng = np.random.default_rng(random_state)
-    samples: List[pd.DataFrame] = []
+    samples: list[pd.DataFrame] = []
 
     for _ in range(n_samples):
-        indices: List[int] = []
+        indices: list[int] = []
         while len(indices) < n_obs:
             start = int(rng.integers(0, n_obs - block_size + 1))
             block = list(range(start, start + block_size))
@@ -75,8 +75,8 @@ def stationary_bootstrap(
     *,
     p: float,
     n_samples: int,
-    random_state: Optional[int] = None,
-) -> List[pd.DataFrame]:
+    random_state: int | None = None,
+) -> list[pd.DataFrame]:
     """Stationary bootstrap with geometrically distributed block lengths."""
 
     if not 0 < p <= 1:
@@ -87,10 +87,10 @@ def stationary_bootstrap(
         raise ValueError("n_samples must be positive")
 
     rng = np.random.default_rng(random_state)
-    samples: List[pd.DataFrame] = []
+    samples: list[pd.DataFrame] = []
 
     for _ in range(n_samples):
-        indices: List[int] = []
+        indices: list[int] = []
         while len(indices) < n_obs:
             if not indices or rng.random() < p:
                 start = int(rng.integers(0, n_obs))
@@ -108,8 +108,8 @@ def _iid_bootstrap(
     returns: pd.DataFrame,
     n_samples: int,
     rng: np.random.Generator,
-) -> List[pd.DataFrame]:
-    samples: List[pd.DataFrame] = []
+) -> list[pd.DataFrame]:
+    samples: list[pd.DataFrame] = []
     n_obs = len(returns)
     for _ in range(n_samples):
         indices = rng.integers(0, n_obs, size=n_obs)
@@ -122,9 +122,9 @@ def bootstrap_metric(
     returns: ReturnsLike,
     *,
     n_samples: int,
-    block_size: Optional[int] = None,
-    stationary_p: Optional[float] = None,
-    random_state: Optional[int] = None,
+    block_size: int | None = None,
+    stationary_p: float | None = None,
+    random_state: int | None = None,
 ) -> pd.DataFrame:
     """Evaluate ``metric_fn`` across bootstrap samples.
 
@@ -139,14 +139,18 @@ def bootstrap_metric(
     rng = np.random.default_rng(random_state)
 
     if stationary_p is not None:
-        samples = stationary_bootstrap(df, p=stationary_p, n_samples=n_samples, random_state=random_state)
+        samples = stationary_bootstrap(
+            df, p=stationary_p, n_samples=n_samples, random_state=random_state
+        )
     elif block_size is not None:
-        samples = block_bootstrap(df, block_size=block_size, n_samples=n_samples, random_state=random_state)
+        samples = block_bootstrap(
+            df, block_size=block_size, n_samples=n_samples, random_state=random_state
+        )
     else:
         samples = _iid_bootstrap(df, n_samples=n_samples, rng=rng)
 
     metric_rows = []
-    columns: Optional[Sequence[str]] = None
+    columns: Sequence[str] | None = None
 
     for sample in samples:
         evaluated = metric_fn(sample)
@@ -169,11 +173,11 @@ def bootstrap_metric(
 
 
 def confidence_interval(
-    samples: Union[Sequence[float], pd.Series, np.ndarray],
+    samples: Sequence[float] | pd.Series | np.ndarray,
     *,
     alpha: float = 0.05,
     method: str = "percentile",
-) -> Tuple[float, float]:
+) -> tuple[float, float]:
     """Compute bootstrap confidence intervals."""
 
     if not 0 < alpha < 1:
@@ -200,9 +204,9 @@ def confidence_interval(
 
 
 def compare_vs_benchmark(
-    metric_samples: Union[Sequence[float], pd.Series, np.ndarray, pd.DataFrame],
-    benchmark_metric: Union[float, pd.Series],
-) -> Union[float, pd.Series]:
+    metric_samples: Sequence[float] | pd.Series | np.ndarray | pd.DataFrame,
+    benchmark_metric: float | pd.Series,
+) -> float | pd.Series:
     """Probability that the sampled metric exceeds the benchmark."""
 
     if isinstance(metric_samples, pd.DataFrame):

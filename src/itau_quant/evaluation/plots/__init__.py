@@ -1,5 +1,12 @@
 """Convenience exports for plotting utilities."""
 
+from .diagnostics import (
+    plot_drawdown_contributors,
+    plot_parameter_sensitivity,
+    plot_signal_distribution,
+    plot_turnover_vs_cost,
+    plot_weight_stability,
+)
 from .tearsheet import (
     TearsheetFigure,
     generate_tearsheet,
@@ -9,13 +16,6 @@ from .tearsheet import (
     plot_rolling_sharpe,
     plot_rolling_volatility,
     plot_turnover,
-)
-from .diagnostics import (
-    plot_drawdown_contributors,
-    plot_parameter_sensitivity,
-    plot_signal_distribution,
-    plot_turnover_vs_cost,
-    plot_weight_stability,
 )
 from .walkforward import (
     plot_consistency_scatter,

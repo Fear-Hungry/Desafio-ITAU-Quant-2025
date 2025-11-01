@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable, Mapping
+from typing import Any, Mapping
 
 import numpy as np
 import pandas as pd
@@ -119,7 +119,10 @@ def signal_change_trigger(
             trigger="signal_change",
             value=delta,
             threshold=float(threshold),
-            details={"previous": float(signals.iloc[-2]), "current": float(signals.iloc[-1])},
+            details={
+                "previous": float(signals.iloc[-2]),
+                "current": float(signals.iloc[-1]),
+            },
         )
     return None
 
@@ -155,12 +158,16 @@ def trigger_engine(
     cooldown_period = cooldown.get("days", 0)
     current_date = pd.Timestamp(data.get("date", pd.Timestamp.today()))
 
-    if cooldown_period and not cooldown_manager(last_date, cooldown_period, current_date):
+    if cooldown_period and not cooldown_manager(
+        last_date, cooldown_period, current_date
+    ):
         return events
 
     if "drawdown" in config:
         nav = pd.Series(data.get("nav", []))
-        event = drawdown_trigger(nav, threshold=float(config["drawdown"].get("threshold", -0.05)))
+        event = drawdown_trigger(
+            nav, threshold=float(config["drawdown"].get("threshold", -0.05))
+        )
         if event:
             events.append(event)
 

@@ -48,7 +48,9 @@ def _is_scalar(value: object) -> bool:
     return np.isscalar(value)
 
 
-def _as_array(value: ArrayLike | float, *, name: str, length: int | None = None) -> np.ndarray:
+def _as_array(
+    value: ArrayLike | float, *, name: str, length: int | None = None
+) -> np.ndarray:
     """Convert supported inputs to a 1-D ``np.ndarray``.
 
     Parameters
@@ -78,7 +80,9 @@ def _as_array(value: ArrayLike | float, *, name: str, length: int | None = None)
         raise ValueError(f"{name} must be 1-dimensional")
 
     if length is not None and array.size != length:
-        raise ValueError(f"{name} must contain {length} elements; received {array.size}")
+        raise ValueError(
+            f"{name} must contain {length} elements; received {array.size}"
+        )
 
     if np.isnan(array).any():
         raise ValueError(f"{name} contains NaN values")
@@ -86,7 +90,9 @@ def _as_array(value: ArrayLike | float, *, name: str, length: int | None = None)
     return array
 
 
-def _maybe_series(template: ArrayLike | float, values: np.ndarray, *, name: str) -> np.ndarray | pd.Series:
+def _maybe_series(
+    template: ArrayLike | float, values: np.ndarray, *, name: str
+) -> np.ndarray | pd.Series:
     """Match the output type to *template* when it is a pandas ``Series``."""
 
     if isinstance(template, pd.Series):
@@ -122,7 +128,9 @@ def bps_to_decimal(value: ArrayLike | float) -> np.ndarray | pd.Series | float:
     return _maybe_series(value, out, name="decimal_cost")
 
 
-def linear_cost_vector(costs_bps: ArrayLike | float, *, notional: float = 1.0) -> np.ndarray | pd.Series | float:
+def linear_cost_vector(
+    costs_bps: ArrayLike | float, *, notional: float = 1.0
+) -> np.ndarray | pd.Series | float:
     """Return the cost vector :math:`c` for |Delta w| given linear bps.
 
     Parameters
@@ -205,7 +213,9 @@ def slippage_square_root_bps(
     if np.any((trade_arr > 0) & (adv_arr <= 0)):
         raise ValueError("adv must be positive for assets with non-zero trades")
 
-    ratio = np.divide(trade_arr, adv_arr, out=np.zeros_like(trade_arr), where=adv_arr > 0)
+    ratio = np.divide(
+        trade_arr, adv_arr, out=np.zeros_like(trade_arr), where=adv_arr > 0
+    )
     impact = coefficient * np.power(ratio, exponent)
     if min_bps:
         impact = np.maximum(impact, min_bps)

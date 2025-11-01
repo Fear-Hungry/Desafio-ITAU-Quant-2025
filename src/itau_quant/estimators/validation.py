@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Iterable, Iterator, List, Optional, Sequence, Tuple, Union
+from typing import Callable, Iterable, Iterator, Sequence
 
 import numpy as np
 import pandas as pd
@@ -17,7 +17,7 @@ __all__ = [
 ]
 
 
-def _ensure_index(index: Union[pd.Index, Sequence]) -> pd.Index:
+def _ensure_index(index: pd.Index | Sequence) -> pd.Index:
     """Return an increasing pandas index from supported inputs."""
 
     if isinstance(index, pd.Index):
@@ -32,11 +32,11 @@ def _ensure_index(index: Union[pd.Index, Sequence]) -> pd.Index:
 
 
 def temporal_split(
-    index: Union[pd.Index, Sequence],
+    index: pd.Index | Sequence,
     n_splits: int,
     min_train: int,
     min_test: int,
-) -> List[Tuple[np.ndarray, np.ndarray]]:
+) -> list[tuple[np.ndarray, np.ndarray]]:
     """Generate ordered train/test splits honouring minimum window sizes.
 
     Parameters
@@ -69,7 +69,7 @@ def temporal_split(
     start_chunks = np.array_split(available_starts, n_splits)
     test_starts = [chunk[0] for chunk in start_chunks]
 
-    splits: List[Tuple[np.ndarray, np.ndarray]] = []
+    splits: list[tuple[np.ndarray, np.ndarray]] = []
     for start in test_starts:
         stop = start + min_test
         train_pre = np.arange(0, start)
@@ -86,7 +86,7 @@ def temporal_split(
 def purge_train_indices(
     train_idx: Iterable[int],
     test_idx: Iterable[int],
-    purge_window: Union[int, float] = 0,
+    purge_window: int | float = 0,
 ) -> np.ndarray:
     """Remove training indices that fall immediately before the test window."""
 
@@ -114,7 +114,7 @@ def apply_embargo(
     train_idx: Iterable[int],
     test_idx: Iterable[int],
     embargo_pct: float = 0.0,
-    total_observations: Optional[int] = None,
+    total_observations: int | None = None,
 ) -> np.ndarray:
     """Apply an embargo after the test window to avoid look-ahead bias."""
 
@@ -156,7 +156,7 @@ class PurgedKFold:
     n_splits: int = 5
     min_train: int = 60
     min_test: int = 10
-    purge_window: Union[int, float] = 0
+    purge_window: int | float = 0
     embargo_pct: float = 0.0
 
     def get_n_splits(self, X=None, y=None, groups=None) -> int:  # noqa: D401
@@ -166,10 +166,10 @@ class PurgedKFold:
 
     def split(
         self,
-        X: Union[pd.DataFrame, pd.Series, np.ndarray, Sequence],
-        y: Optional[Sequence] = None,
-        groups: Optional[Sequence] = None,
-    ) -> Iterator[Tuple[np.ndarray, np.ndarray]]:
+        X: pd.DataFrame | pd.Series | np.ndarray | Sequence,
+        y: Sequence | None = None,
+        groups: Sequence | None = None,
+    ) -> Iterator[tuple[np.ndarray, np.ndarray]]:
         """Yield purged train/test indices according to the configuration."""
 
         if isinstance(X, (pd.Series, pd.DataFrame)):
@@ -190,11 +190,9 @@ class PurgedKFold:
 
 
 def evaluate_estimator(
-    estimator_fn: Callable[
-        [pd.DataFrame, pd.DataFrame], Union[pd.Series, pd.DataFrame]
-    ],
+    estimator_fn: Callable[[pd.DataFrame, pd.DataFrame], pd.Series | pd.DataFrame],
     data: pd.DataFrame,
-    scoring: Callable[[pd.DataFrame, Union[pd.Series, pd.DataFrame]], float],
+    scoring: Callable[[pd.DataFrame, pd.Series | pd.DataFrame], float],
     splitter: PurgedKFold,
 ) -> pd.Series:
     """Apply cross-validation and return the per-fold scores."""
@@ -202,7 +200,7 @@ def evaluate_estimator(
     if not isinstance(data, pd.DataFrame):
         raise TypeError("data must be a pandas DataFrame.")
 
-    scores: List[float] = []
+    scores: list[float] = []
 
     for train_idx, test_idx in splitter.split(data):
         train_data = data.iloc[train_idx]

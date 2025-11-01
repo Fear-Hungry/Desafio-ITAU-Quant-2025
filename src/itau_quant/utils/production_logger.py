@@ -5,12 +5,12 @@ Production Logger - Logging estruturado para produção
 Registra todos os eventos de rebalance, métricas, triggers e custos.
 """
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional
+
 import pandas as pd
-import json
 
 
 @dataclass
@@ -138,9 +138,9 @@ class ProductionLogger:
             "cvar_95": log_entry.cvar_95,
             "max_dd": log_entry.max_dd,
             "fallback_active": log_entry.fallback_active,
-            "vol_realized": log_entry.vol_realized
-            if log_entry.vol_realized is not None
-            else "",
+            "vol_realized": (
+                log_entry.vol_realized if log_entry.vol_realized is not None else ""
+            ),
             "trigger_sharpe": trigger_status.get("sharpe_6m_negative", False),
             "trigger_cvar": trigger_status.get("cvar_breach", False),
             "trigger_dd": trigger_status.get("drawdown_breach", False),
@@ -208,7 +208,7 @@ class ProductionLogger:
         print(f"   Custo: {cost_bps:.1f} bps")
         print(f"   N_effective: {n_effective:.1f}")
         if fallback_active:
-            print(f"   ⚠️  FALLBACK ATIVO")
+            print("   ⚠️  FALLBACK ATIVO")
 
     def get_log_history(self) -> pd.DataFrame:
         """Retorna histórico completo de logs"""

@@ -8,6 +8,7 @@ from typing import Any, Iterable, Mapping
 
 import numpy as np
 import pandas as pd
+
 from itau_quant.backtesting.bookkeeping import PortfolioLedger, build_ledger
 from itau_quant.backtesting.metrics import PortfolioMetrics, compute_performance_metrics
 from itau_quant.backtesting.risk_monitor import evaluate_turnover_band
@@ -16,7 +17,6 @@ from itau_quant.config import Settings, get_settings
 from itau_quant.evaluation.walkforward_report import (
     WalkForwardSummary,
     compute_wf_summary_stats,
-    identify_stress_periods,
 )
 from itau_quant.optimization.solvers import resolve_config_path
 from itau_quant.portfolio import MarketData, rebalance
@@ -74,7 +74,9 @@ class BacktestResult:
         if include_timeseries and self.weights is not None:
             weights_df = self.weights.reset_index()
             if "date" in weights_df.columns:
-                weights_df["date"] = pd.to_datetime(weights_df["date"]).dt.strftime("%Y-%m-%d")
+                weights_df["date"] = pd.to_datetime(weights_df["date"]).dt.strftime(
+                    "%Y-%m-%d"
+                )
             payload["weights"] = weights_df.to_dict(orient="records")
         if include_timeseries and self.trades is not None:
             payload["trades"] = self.trades.to_dict(orient="records")
@@ -98,8 +100,6 @@ class BacktestResult:
                 "range_ratio": self.walkforward_summary.range_ratio,
             }
         return payload
-
-
 
 
 def _load_config(path: Path, settings: Settings) -> BacktestConfig:
@@ -130,14 +130,26 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
     estimators_section = raw.get("estimators", {})
     if not isinstance(estimators_section, Mapping):
         estimators_section = {}
-    costs_section = estimators_section.get("costs", {}) if isinstance(estimators_section.get("costs", {}), Mapping) else estimators_section.get("costs", 0.0)
+    costs_section = (
+        estimators_section.get("costs", {})
+        if isinstance(estimators_section.get("costs", {}), Mapping)
+        else estimators_section.get("costs", 0.0)
+    )
     if isinstance(costs_section, Mapping):
         linear_costs = costs_section.get("linear_bps", 0.0)
     else:
         linear_costs = costs_section or 0.0
 
-    mu_config = estimators_section.get("mu", {}) if isinstance(estimators_section.get("mu", {}), Mapping) else {}
-    sigma_config = estimators_section.get("sigma", {}) if isinstance(estimators_section.get("sigma", {}), Mapping) else {}
+    (
+        estimators_section.get("mu", {})
+        if isinstance(estimators_section.get("mu", {}), Mapping)
+        else {}
+    )
+    (
+        estimators_section.get("sigma", {})
+        if isinstance(estimators_section.get("sigma", {}), Mapping)
+        else {}
+    )
 
     walkforward = raw.get("walkforward", {})
     wf_defaults = {
@@ -154,7 +166,9 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
             try:
                 wf_config[key] = int(value)
             except (TypeError, ValueError) as exc:
-                raise ValueError(f"Invalid walkforward parameter '{key}': {value!r}") from exc
+                raise ValueError(
+                    f"Invalid walkforward parameter '{key}': {value!r}"
+                ) from exc
         else:
             wf_config[key] = value
     horizons = walkforward.get("evaluation_horizons") or raw.get("evaluation_horizons")
@@ -180,16 +194,22 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
             )
         returns_path = default_returns
     else:
-        returns_path = _resolve_data_path(returns_entry, base=path.parent, settings=settings)
+        returns_path = _resolve_data_path(
+            returns_entry, base=path.parent, settings=settings
+        )
 
     risk_free_entry = data_section.get("risk_free")
     risk_free_path = None
     if risk_free_entry is not None:
-        risk_free_path = _resolve_data_path(risk_free_entry, base=path.parent, settings=settings)
+        risk_free_path = _resolve_data_path(
+            risk_free_entry, base=path.parent, settings=settings
+        )
     prices_entry = data_section.get("prices")
     prices_path = None
     if prices_entry is not None:
-        prices_path = _resolve_data_path(prices_entry, base=path.parent, settings=settings)
+        prices_path = _resolve_data_path(
+            prices_entry, base=path.parent, settings=settings
+        )
 
     portfolio_section = raw.get("portfolio", {})
     if not isinstance(portfolio_section, Mapping):
@@ -199,9 +219,10 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
     portfolio_costs = portfolio_section.get("costs", {}) or {}
     if linear_costs and "linear_bps" not in portfolio_costs:
         portfolio_costs.setdefault("linear_bps", linear_costs)
-    returns_window_portfolio = int(portfolio_section.get("returns_window", wf_defaults["train_days"]))
+    returns_window_portfolio = int(
+        portfolio_section.get("returns_window", wf_defaults["train_days"])
+    )
     baseline_config = portfolio_section.get("baseline")
-
 
     optimizer_config = {
         "risk_aversion": risk_aversion,
@@ -214,16 +235,26 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
     }
 
     risk_section: dict[str, Any] = {}
-    optimizer_risk = optimizer_section.get("risk") or optimizer_section.get("risk_constraints")
+    optimizer_risk = optimizer_section.get("risk") or optimizer_section.get(
+        "risk_constraints"
+    )
     if isinstance(optimizer_risk, Mapping):
         risk_section.update({k: v for k, v in optimizer_risk.items()})
 
-    portfolio_risk = portfolio_section.get("risk") or portfolio_section.get("risk_constraints")
+    portfolio_risk = portfolio_section.get("risk") or portfolio_section.get(
+        "risk_constraints"
+    )
     if isinstance(portfolio_risk, Mapping):
         risk_section.update({k: v for k, v in portfolio_risk.items()})
 
     # Support shorthand keys declared directly under `portfolio`
-    for key in ("budgets", "max_leverage", "factor_exposure", "tracking_error", "turnover"):
+    for key in (
+        "budgets",
+        "max_leverage",
+        "factor_exposure",
+        "tracking_error",
+        "turnover",
+    ):
         if key in portfolio_section:
             risk_section[key] = portfolio_section[key]
 
@@ -265,7 +296,9 @@ def _resolve_data_path(value: str | Path, *, base: Path, settings: Settings) -> 
     return candidate
 
 
-def _load_market_data(config: BacktestConfig) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series | None]:
+def _load_market_data(
+    config: BacktestConfig,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.Series | None]:
     returns = read_dataframe(config.returns_path)
     if not isinstance(returns.index, pd.DatetimeIndex):
         returns.index = pd.to_datetime(returns.index)
@@ -277,7 +310,9 @@ def _load_market_data(config: BacktestConfig) -> tuple[pd.DataFrame, pd.DataFram
             prices = prices.to_frame().T
         if not isinstance(prices.index, pd.DatetimeIndex):
             prices.index = pd.to_datetime(prices.index)
-        prices = prices.sort_index().reindex(columns=returns.columns).fillna(method="ffill")
+        prices = (
+            prices.sort_index().reindex(columns=returns.columns).fillna(method="ffill")
+        )
     else:
         prices = (1.0 + returns).cumprod()
 
@@ -336,7 +371,12 @@ def _run_simulation(
         first_day = test_slice[0]
 
         rebal_config = dict(config.portfolio_config)
-        rebal_config.setdefault("returns_window", config.portfolio_config.get("returns_window", config.walkforward["train_days"]))
+        rebal_config.setdefault(
+            "returns_window",
+            config.portfolio_config.get(
+                "returns_window", config.walkforward["train_days"]
+            ),
+        )
         rebalance_result = rebalance(
             date=first_day,
             market_data=market,
@@ -345,7 +385,9 @@ def _run_simulation(
             config=rebal_config,
         )
 
-        executed_weights = rebalance_result.rounded_weights.reindex(returns.columns, fill_value=0.0).astype(float)
+        executed_weights = rebalance_result.rounded_weights.reindex(
+            returns.columns, fill_value=0.0
+        ).astype(float)
         optimizer_cost = rebalance_result.metrics.optimizer_cost
         rounding_cost = rebalance_result.metrics.rounding_cost
         total_cost = float(optimizer_cost + rounding_cost)
@@ -362,13 +404,23 @@ def _run_simulation(
                 "status": turnover_status,
                 "solver_status": rebalance_result.log.get("solver", {}).get("status"),
                 "allocator": rebalance_result.allocator,
-                "weights_pre_rounding": rebalance_result.log.get("weights_pre_rounding"),
-                "heuristic_method": rebalance_result.log.get("heuristic", {}).get("method"),
-                "heuristic_diagnostics": rebalance_result.log.get("heuristic", {}).get("diagnostics"),
+                "weights_pre_rounding": rebalance_result.log.get(
+                    "weights_pre_rounding"
+                ),
+                "heuristic_method": rebalance_result.log.get("heuristic", {}).get(
+                    "method"
+                ),
+                "heuristic_diagnostics": rebalance_result.log.get("heuristic", {}).get(
+                    "diagnostics"
+                ),
             }
         )
 
-        if rebalance_result.log.get("solver", {}).get("status") not in {None, "optimal", "OPTIMAL"}:
+        if rebalance_result.log.get("solver", {}).get("status") not in {
+            None,
+            "optimal",
+            "OPTIMAL",
+        }:
             notes.append(
                 f"Optimizer returned status {rebalance_result.log.get('solver', {}).get('status')} on {first_day.date()}"
             )
@@ -439,12 +491,20 @@ def _run_simulation(
         for horizon in horizons:
             if horizon <= 0 or len(series) < horizon:
                 continue
-            rolling = (1.0 + series).rolling(window=horizon).apply(lambda arr: float(np.prod(arr) - 1.0), raw=True)
+            rolling = (
+                (1.0 + series)
+                .rolling(window=horizon)
+                .apply(lambda arr: float(np.prod(arr) - 1.0), raw=True)
+            )
             rolling = rolling.dropna()
             if rolling.empty:
                 continue
             std = float(rolling.std(ddof=1))
-            sharpe_equiv = float(rolling.mean() / std * np.sqrt(252.0 / horizon)) if std > 0 else 0.0
+            sharpe_equiv = (
+                float(rolling.mean() / std * np.sqrt(252.0 / horizon))
+                if std > 0
+                else 0.0
+            )
             records.append(
                 {
                     "horizon_days": int(horizon),
@@ -457,7 +517,9 @@ def _run_simulation(
             )
         return pd.DataFrame(records)
 
-    horizon_df = _summarise_horizons(ledger.frame["net_return"], config.evaluation_horizons)
+    horizon_df = _summarise_horizons(
+        ledger.frame["net_return"], config.evaluation_horizons
+    )
 
     return ledger, weights_df, trades_df, metrics, notes, split_df, horizon_df
 

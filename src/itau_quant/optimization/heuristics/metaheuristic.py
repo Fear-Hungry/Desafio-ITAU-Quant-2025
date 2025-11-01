@@ -22,7 +22,11 @@ import numpy as np
 import pandas as pd
 
 from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
-from itau_quant.optimization.ga.genetic import GenerationSummary, GeneticRun, run_genetic_algorithm
+from itau_quant.optimization.ga.genetic import (
+    GenerationSummary,
+    GeneticRun,
+    run_genetic_algorithm,
+)
 from itau_quant.optimization.ga.population import Individual
 
 __all__ = [
@@ -64,19 +68,21 @@ def _build_candidate_config(
     universe_index = list(base_config.lower_bounds.index)
     assets_index = list(assets)
 
-    lower_bounds = _resolve_series(base_config.lower_bounds, universe_index, fill_value=0.0).reindex(
-        assets_index
-    )
-    upper_bounds = _resolve_series(base_config.upper_bounds, universe_index, fill_value=1.0).reindex(
-        assets_index
-    )
+    lower_bounds = _resolve_series(
+        base_config.lower_bounds, universe_index, fill_value=0.0
+    ).reindex(assets_index)
+    upper_bounds = _resolve_series(
+        base_config.upper_bounds, universe_index, fill_value=1.0
+    ).reindex(assets_index)
     previous_weights = _resolve_series(
         base_config.previous_weights, universe_index, fill_value=0.0
     ).reindex(assets_index)
 
     cost_vector = base_config.cost_vector
     if cost_vector is not None:
-        cost_vector = cost_vector.reindex(assets_index).fillna(float(cost_vector.mean()))
+        cost_vector = cost_vector.reindex(assets_index).fillna(
+            float(cost_vector.mean())
+        )
         if "cost_scale" in params:
             cost_vector = cost_vector * float(params["cost_scale"])
 
@@ -106,9 +112,13 @@ def _build_candidate_config(
     )
 
 
-def _build_full_weights(universe: Sequence[str], active_assets: Sequence[str], partial: pd.Series) -> pd.Series:
+def _build_full_weights(
+    universe: Sequence[str], active_assets: Sequence[str], partial: pd.Series
+) -> pd.Series:
     weights = pd.Series(0.0, index=universe, dtype=float)
-    weights.loc[list(active_assets)] = partial.reindex(active_assets).fillna(0.0).astype(float)
+    weights.loc[list(active_assets)] = (
+        partial.reindex(active_assets).fillna(0.0).astype(float)
+    )
     total = float(weights.sum())
     if not np.isclose(total, 1.0):
         if total == 0.0:
@@ -129,17 +139,25 @@ def _compute_penalties(
         lo, hi = turnover_target
         turnover = float(metrics.get("turnover", 0.0))
         if turnover > hi:
-            penalties["turnover"] = penalty_weights.get("turnover", 1.0) * (turnover - hi)
+            penalties["turnover"] = penalty_weights.get("turnover", 1.0) * (
+                turnover - hi
+            )
         elif turnover < lo:
-            penalties["turnover"] = penalty_weights.get("turnover", 1.0) * (lo - turnover)
+            penalties["turnover"] = penalty_weights.get("turnover", 1.0) * (
+                lo - turnover
+            )
 
     if cardinality_target is not None:
         lo_k, hi_k = cardinality_target
         cardinality = int(metrics.get("cardinality", 0))
         if cardinality > hi_k:
-            penalties["concentration"] = penalty_weights.get("cardinality", 1.0) * (cardinality - hi_k)
+            penalties["concentration"] = penalty_weights.get("cardinality", 1.0) * (
+                cardinality - hi_k
+            )
         elif cardinality < lo_k:
-            penalties["concentration"] = penalty_weights.get("cardinality", 1.0) * (lo_k - cardinality)
+            penalties["concentration"] = penalty_weights.get("cardinality", 1.0) * (
+                lo_k - cardinality
+            )
     return penalties
 
 
@@ -163,7 +181,9 @@ def _evaluate_candidate(candidate: Mapping[str, Any]) -> Mapping[str, Any]:
     result = solve_mean_variance(mu_subset, cov_subset, config)
 
     weights_full = _build_full_weights(universe, assets, result.weights)
-    previous_full = _resolve_series(base_config.previous_weights, universe, fill_value=0.0)
+    previous_full = _resolve_series(
+        base_config.previous_weights, universe, fill_value=0.0
+    )
     full_turnover = float((weights_full - previous_full).abs().sum())
 
     variance = float(result.variance)
@@ -215,7 +235,9 @@ def _core_solver_factory(
     return _core
 
 
-def _extract_selected_assets(individual: Individual, universe: Sequence[str]) -> list[str]:
+def _extract_selected_assets(
+    individual: Individual, universe: Sequence[str]
+) -> list[str]:
     return individual.active_assets(universe)
 
 

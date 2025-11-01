@@ -1,10 +1,8 @@
 import numpy as np
 import pandas as pd
 import pytest
-
 from itau_quant.costs.transaction_costs import (
     bps_to_decimal,
-    linear_cost_vector,
     linear_transaction_cost,
     slippage_square_root_bps,
     slippage_transaction_cost,
@@ -39,7 +37,9 @@ def test_linear_transaction_cost_returns_series_with_matching_index():
     expected = np.abs(weights - prev_weights) * 1_000_000 * costs_bps / 10_000
     pd.testing.assert_series_equal(per_asset, expected.rename("linear_cost"))
 
-    total = linear_transaction_cost(weights, prev_weights, costs_bps, notional=1_000_000)
+    total = linear_transaction_cost(
+        weights, prev_weights, costs_bps, notional=1_000_000
+    )
     assert total == pytest.approx(expected.sum())
 
 

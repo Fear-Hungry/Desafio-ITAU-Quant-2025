@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Iterable, Mapping, Sequence
+from typing import Callable, Mapping, Sequence
 
 import numpy as np
 
@@ -17,14 +17,21 @@ __all__ = [
 ]
 
 
-def _validate_inputs(population: Sequence[Individual], fitness: Sequence[float]) -> None:
+def _validate_inputs(
+    population: Sequence[Individual], fitness: Sequence[float]
+) -> None:
     if len(population) != len(fitness):
         raise ValueError("population and fitness must have the same length")
     if not population:
         raise ValueError("population must not be empty")
 
 
-def tournament_selection(population: Sequence[Individual], fitness: Sequence[float], tournament_size: int, rng: np.random.Generator) -> Individual:
+def tournament_selection(
+    population: Sequence[Individual],
+    fitness: Sequence[float],
+    tournament_size: int,
+    rng: np.random.Generator,
+) -> Individual:
     _validate_inputs(population, fitness)
     tournament_size = max(1, min(tournament_size, len(population)))
     indices = rng.choice(len(population), size=tournament_size, replace=False)
@@ -48,14 +55,21 @@ def _normalise_fitness(fitness: Sequence[float]) -> np.ndarray:
     return values
 
 
-def roulette_wheel_selection(population: Sequence[Individual], fitness: Sequence[float], rng: np.random.Generator) -> Individual:
+def roulette_wheel_selection(
+    population: Sequence[Individual], fitness: Sequence[float], rng: np.random.Generator
+) -> Individual:
     _validate_inputs(population, fitness)
     probabilities = _normalise_fitness(fitness)
     idx = rng.choice(len(population), p=probabilities)
     return population[idx]
 
 
-def stochastic_universal_sampling(population: Sequence[Individual], fitness: Sequence[float], num_samples: int, rng: np.random.Generator) -> list[Individual]:
+def stochastic_universal_sampling(
+    population: Sequence[Individual],
+    fitness: Sequence[float],
+    num_samples: int,
+    rng: np.random.Generator,
+) -> list[Individual]:
     _validate_inputs(population, fitness)
     num_samples = max(1, min(num_samples, len(population)))
     probabilities = _normalise_fitness(fitness)
@@ -73,9 +87,18 @@ def stochastic_universal_sampling(population: Sequence[Individual], fitness: Seq
     return selected
 
 
-def diversity_preserving_selection(population: Sequence[Individual], fitness: Sequence[float], rng: np.random.Generator, *, diversity_metric: Callable[[Individual, Individual], float] | None = None, num_parents: int = 2) -> list[Individual]:
+def diversity_preserving_selection(
+    population: Sequence[Individual],
+    fitness: Sequence[float],
+    rng: np.random.Generator,
+    *,
+    diversity_metric: Callable[[Individual, Individual], float] | None = None,
+    num_parents: int = 2,
+) -> list[Individual]:
     _validate_inputs(population, fitness)
-    diversity_metric = diversity_metric or (lambda a, b: jaccard_distance(a.assets_mask, b.assets_mask))
+    diversity_metric = diversity_metric or (
+        lambda a, b: jaccard_distance(a.assets_mask, b.assets_mask)
+    )
     order = np.argsort(fitness)[::-1]
     selected: list[Individual] = []
     for idx in order:
@@ -95,7 +118,14 @@ def diversity_preserving_selection(population: Sequence[Individual], fitness: Se
     return selected
 
 
-def selection_pipeline(population: Sequence[Individual], fitness: Sequence[float], config: Mapping[str, object], rng: np.random.Generator, *, num_parents: int | None = None) -> list[Individual]:
+def selection_pipeline(
+    population: Sequence[Individual],
+    fitness: Sequence[float],
+    config: Mapping[str, object],
+    rng: np.random.Generator,
+    *,
+    num_parents: int | None = None,
+) -> list[Individual]:
     _validate_inputs(population, fitness)
     cfg = dict(config or {})
     method = cfg.pop("method", "tournament")
@@ -106,7 +136,15 @@ def selection_pipeline(population: Sequence[Individual], fitness: Sequence[float
         for sub_method in method:
             if len(parents) >= num_parents:
                 break
-            parents.extend(selection_pipeline(population, fitness, {"method": sub_method, **cfg}, rng, num_parents=1))
+            parents.extend(
+                selection_pipeline(
+                    population,
+                    fitness,
+                    {"method": sub_method, **cfg},
+                    rng,
+                    num_parents=1,
+                )
+            )
         return parents[:num_parents]
 
     method = str(method).lower()
@@ -119,9 +157,15 @@ def selection_pipeline(population: Sequence[Individual], fitness: Sequence[float
             parents.append(roulette_wheel_selection(population, fitness, rng))
         elif method in {"sus", "stochastic_universal"}:
             needed = num_parents - len(parents)
-            parents.extend(stochastic_universal_sampling(population, fitness, needed, rng))
+            parents.extend(
+                stochastic_universal_sampling(population, fitness, needed, rng)
+            )
         elif method == "diversity":
-            parents.extend(diversity_preserving_selection(population, fitness, rng, num_parents=num_parents))
+            parents.extend(
+                diversity_preserving_selection(
+                    population, fitness, rng, num_parents=num_parents
+                )
+            )
         else:
             raise ValueError(f"unknown selection method '{method}'")
     return parents[:num_parents]

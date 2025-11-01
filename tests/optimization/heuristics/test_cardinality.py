@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 from itau_quant.optimization.heuristics import cardinality as card
 
 
@@ -25,7 +24,9 @@ def test_beam_search_selection_matches_or_exceeds_greedy():
     cov = np.diag([0.04, 0.02, 0.03])
     costs = pd.Series([0.001, 0.001, 0.002], index=mu.index)
     greedy = card.greedy_selection(mu, cov, costs, k=2, asset_index=mu.index)
-    beam = card.beam_search_selection(mu, cov, costs, k=2, asset_index=mu.index, beam_width=2)
+    beam = card.beam_search_selection(
+        mu, cov, costs, k=2, asset_index=mu.index, beam_width=2
+    )
     assert len(beam) == 2
     greedy_score = set(greedy)
     beam_score = set(beam)

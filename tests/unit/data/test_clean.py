@@ -36,9 +36,7 @@ def test_normalize_index_preserves_value_alignment():
 
     out = normalize_index(df)
 
-    expected_index = pd.DatetimeIndex(
-        ["2024-01-01", "2024-01-02", "2024-01-03"]
-    )
+    expected_index = pd.DatetimeIndex(["2024-01-01", "2024-01-02", "2024-01-03"])
     assert out.index.equals(expected_index)
     pd.testing.assert_series_equal(
         out.loc["2024-01-01"],
@@ -72,17 +70,14 @@ def test_normalize_index_handles_timezone_and_ordering():
     out = normalize_index(df)
 
     assert out.index.tz is None
-    expected_index = pd.DatetimeIndex(
-        ["2024-01-01 09:30", "2024-01-02 09:30"]
-    )
+    expected_index = pd.DatetimeIndex(["2024-01-01 09:30", "2024-01-02 09:30"])
     assert out.index.equals(expected_index)
     assert out.loc[pd.Timestamp("2024-01-01 09:30"), "A"] == 1
     assert out.loc[pd.Timestamp("2024-01-02 09:30"), "A"] == 2
 
 
 def test_validate_panel_basic_checks():
-    df = pd.DataFrame({"A": [1.0, 2.0]},
-                      index=pd.bdate_range("2024-01-01", periods=2))
+    df = pd.DataFrame({"A": [1.0, 2.0]}, index=pd.bdate_range("2024-01-01", periods=2))
     validate_panel(df)  # não deve lançar
 
 

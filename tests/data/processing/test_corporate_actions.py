@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import pytest
 import pandas as pd
-import numpy as np
-
+import pytest
 from itau_quant.data.processing import corporate_actions as ca
 
 
@@ -99,9 +97,24 @@ def test_load_corporate_actions_none_actions() -> None:
 
 def test_load_corporate_actions_filters_tickers() -> None:
     actions = [
-        {"ticker": "AAPL", "event_type": "split", "ex_date": "2020-08-31", "ratio": 4.0},
-        {"ticker": "MSFT", "event_type": "dividend", "ex_date": "2020-11-18", "cash_amount": 0.56},
-        {"ticker": "GOOG", "event_type": "split", "ex_date": "2022-07-15", "ratio": 20.0},
+        {
+            "ticker": "AAPL",
+            "event_type": "split",
+            "ex_date": "2020-08-31",
+            "ratio": 4.0,
+        },
+        {
+            "ticker": "MSFT",
+            "event_type": "dividend",
+            "ex_date": "2020-11-18",
+            "cash_amount": 0.56,
+        },
+        {
+            "ticker": "GOOG",
+            "event_type": "split",
+            "ex_date": "2022-07-15",
+            "ratio": 20.0,
+        },
     ]
     result = ca.load_corporate_actions(["AAPL", "MSFT"], actions=actions)
     assert len(result) == 2
@@ -112,9 +125,24 @@ def test_load_corporate_actions_filters_tickers() -> None:
 
 def test_load_corporate_actions_sorts_by_ticker_and_date() -> None:
     actions = [
-        {"ticker": "MSFT", "event_type": "dividend", "ex_date": "2020-11-18", "cash_amount": 0.56},
-        {"ticker": "AAPL", "event_type": "split", "ex_date": "2020-08-31", "ratio": 4.0},
-        {"ticker": "AAPL", "event_type": "dividend", "ex_date": "2020-05-08", "cash_amount": 0.82},
+        {
+            "ticker": "MSFT",
+            "event_type": "dividend",
+            "ex_date": "2020-11-18",
+            "cash_amount": 0.56,
+        },
+        {
+            "ticker": "AAPL",
+            "event_type": "split",
+            "ex_date": "2020-08-31",
+            "ratio": 4.0,
+        },
+        {
+            "ticker": "AAPL",
+            "event_type": "dividend",
+            "ex_date": "2020-05-08",
+            "cash_amount": 0.82,
+        },
     ]
     result = ca.load_corporate_actions(["AAPL", "MSFT"], actions=actions)
     assert result.iloc[0]["ticker"] == "AAPL"
@@ -126,7 +154,13 @@ def test_load_corporate_actions_sorts_by_ticker_and_date() -> None:
 
 def test_load_corporate_actions_normalizes_dates() -> None:
     actions = [
-        {"ticker": "AAPL", "event_type": "split", "ex_date": "2020-08-31 14:30:00", "effective_date": "2020-08-31 09:00:00", "ratio": 4.0},
+        {
+            "ticker": "AAPL",
+            "event_type": "split",
+            "ex_date": "2020-08-31 14:30:00",
+            "effective_date": "2020-08-31 09:00:00",
+            "ratio": 4.0,
+        },
     ]
     result = ca.load_corporate_actions(["AAPL"], actions=actions)
     assert result.iloc[0]["ex_date"] == pd.Timestamp("2020-08-31").normalize()
@@ -140,7 +174,9 @@ def test_load_corporate_actions_normalizes_dates() -> None:
 
 def test_calculate_adjustment_factors_empty_actions() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
-    empty_actions = pd.DataFrame(columns=["ticker", "event_type", "ex_date", "ratio", "cash_amount"])
+    empty_actions = pd.DataFrame(
+        columns=["ticker", "event_type", "ex_date", "ratio", "cash_amount"]
+    )
     factors = ca.calculate_adjustment_factors(empty_actions, index)
     assert factors.shape == (3, 2)
     assert (factors["price"] == 1.0).all()
@@ -149,15 +185,17 @@ def test_calculate_adjustment_factors_empty_actions() -> None:
 
 def test_calculate_adjustment_factors_split_only() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
-    actions = pd.DataFrame([
-        {
-            "ticker": "AAPL",
-            "event_type": "split",
-            "ex_date": pd.Timestamp("2020-01-02"),
-            "ratio": 2.0,
-            "cash_amount": None,
-        }
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "AAPL",
+                "event_type": "split",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "ratio": 2.0,
+                "cash_amount": None,
+            }
+        ]
+    )
     factors = ca.calculate_adjustment_factors(actions, index)
     assert factors.loc[pd.Timestamp("2020-01-01"), "price_AAPL"] == 1.0
     assert factors.loc[pd.Timestamp("2020-01-02"), "price_AAPL"] == 0.5
@@ -166,15 +204,17 @@ def test_calculate_adjustment_factors_split_only() -> None:
 
 def test_calculate_adjustment_factors_dividend_only() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
-    actions = pd.DataFrame([
-        {
-            "ticker": "MSFT",
-            "event_type": "cash_dividend",
-            "ex_date": pd.Timestamp("2020-01-02"),
-            "ratio": None,
-            "cash_amount": 0.56,
-        }
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "MSFT",
+                "event_type": "cash_dividend",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "ratio": None,
+                "cash_amount": 0.56,
+            }
+        ]
+    )
     factors = ca.calculate_adjustment_factors(actions, index)
     assert factors.loc[pd.Timestamp("2020-01-01"), "cash_MSFT"] == 1.0
     assert factors.loc[pd.Timestamp("2020-01-02"), "cash_MSFT"] == 1.56
@@ -183,15 +223,17 @@ def test_calculate_adjustment_factors_dividend_only() -> None:
 
 def test_calculate_adjustment_factors_spinoff_only() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
-    actions = pd.DataFrame([
-        {
-            "ticker": "XYZ",
-            "event_type": "spinoff",
-            "ex_date": pd.Timestamp("2020-01-02"),
-            "ratio": 0.15,
-            "cash_amount": None,
-        }
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "XYZ",
+                "event_type": "spinoff",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "ratio": 0.15,
+                "cash_amount": None,
+            }
+        ]
+    )
     factors = ca.calculate_adjustment_factors(actions, index)
     assert factors.loc[pd.Timestamp("2020-01-01"), "price_XYZ"] == 1.0
     assert factors.loc[pd.Timestamp("2020-01-02"), "price_XYZ"] == pytest.approx(0.85)
@@ -199,7 +241,9 @@ def test_calculate_adjustment_factors_spinoff_only() -> None:
 
 
 def test_calculate_adjustment_factors_combined_events() -> None:
-    index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04", "2020-01-05"])
+    index = pd.to_datetime(
+        ["2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04", "2020-01-05"]
+    )
     actions = _sample_actions()
     actions["ex_date"] = pd.to_datetime(actions["ex_date"])
 
@@ -212,10 +256,24 @@ def test_calculate_adjustment_factors_combined_events() -> None:
 
 def test_calculate_adjustment_factors_multiple_tickers() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
-    actions = pd.DataFrame([
-        {"ticker": "AAPL", "event_type": "split", "ex_date": pd.Timestamp("2020-01-02"), "ratio": 2.0, "cash_amount": None},
-        {"ticker": "MSFT", "event_type": "cash_dividend", "ex_date": pd.Timestamp("2020-01-02"), "ratio": None, "cash_amount": 0.5},
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "AAPL",
+                "event_type": "split",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "ratio": 2.0,
+                "cash_amount": None,
+            },
+            {
+                "ticker": "MSFT",
+                "event_type": "cash_dividend",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "ratio": None,
+                "cash_amount": 0.5,
+            },
+        ]
+    )
     factors = ca.calculate_adjustment_factors(actions, index)
     assert "price_AAPL" in factors.columns
     assert "cash_AAPL" in factors.columns
@@ -227,9 +285,17 @@ def test_calculate_adjustment_factors_multiple_tickers() -> None:
 
 def test_calculate_adjustment_factors_event_not_in_index() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-03"])
-    actions = pd.DataFrame([
-        {"ticker": "AAPL", "event_type": "split", "ex_date": pd.Timestamp("2020-01-02"), "ratio": 2.0, "cash_amount": None},
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "AAPL",
+                "event_type": "split",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "ratio": 2.0,
+                "cash_amount": None,
+            },
+        ]
+    )
     factors = ca.calculate_adjustment_factors(actions, index)
     assert factors.loc[pd.Timestamp("2020-01-01"), "price_AAPL"] == 1.0
     assert factors.loc[pd.Timestamp("2020-01-03"), "price_AAPL"] == 1.0
@@ -237,10 +303,24 @@ def test_calculate_adjustment_factors_event_not_in_index() -> None:
 
 def test_calculate_adjustment_factors_multiple_events_same_date() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
-    actions = pd.DataFrame([
-        {"ticker": "AAPL", "event_type": "split", "ex_date": pd.Timestamp("2020-01-02"), "ratio": 2.0, "cash_amount": None},
-        {"ticker": "AAPL", "event_type": "cash_dividend", "ex_date": pd.Timestamp("2020-01-02"), "ratio": None, "cash_amount": 0.82},
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "AAPL",
+                "event_type": "split",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "ratio": 2.0,
+                "cash_amount": None,
+            },
+            {
+                "ticker": "AAPL",
+                "event_type": "cash_dividend",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "ratio": None,
+                "cash_amount": 0.82,
+            },
+        ]
+    )
     factors = ca.calculate_adjustment_factors(actions, index)
     assert factors.loc[pd.Timestamp("2020-01-02"), "price_AAPL"] == 0.5
     assert factors.loc[pd.Timestamp("2020-01-02"), "cash_AAPL"] == pytest.approx(1.82)
@@ -253,7 +333,9 @@ def test_calculate_adjustment_factors_multiple_events_same_date() -> None:
 
 def test_apply_price_adjustments_empty_prices() -> None:
     empty_prices = pd.DataFrame()
-    factors = pd.DataFrame({"price": [1.0, 1.0]}, index=pd.to_datetime(["2020-01-01", "2020-01-02"]))
+    factors = pd.DataFrame(
+        {"price": [1.0, 1.0]}, index=pd.to_datetime(["2020-01-01", "2020-01-02"])
+    )
     result = ca.apply_price_adjustments(empty_prices, factors)
     assert result.empty
 
@@ -274,7 +356,9 @@ def test_apply_price_adjustments_and_returns() -> None:
 def test_apply_price_adjustments_no_ticker_specific_factors() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
     prices = pd.DataFrame({"AAPL": [100.0, 110.0, 120.0]}, index=index)
-    factors = pd.DataFrame({"price": [1.0, 1.0, 1.0], "cash_dividend": [1.0, 1.0, 1.0]}, index=index)
+    factors = pd.DataFrame(
+        {"price": [1.0, 1.0, 1.0], "cash_dividend": [1.0, 1.0, 1.0]}, index=index
+    )
     adjusted = ca.apply_price_adjustments(prices, factors)
     pd.testing.assert_frame_equal(adjusted, prices)
 
@@ -282,9 +366,17 @@ def test_apply_price_adjustments_no_ticker_specific_factors() -> None:
 def test_apply_price_adjustments_multiple_tickers() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
     prices = pd.DataFrame({"AAPL": [100, 50, 55], "MSFT": [200, 210, 220]}, index=index)
-    actions = pd.DataFrame([
-        {"ticker": "AAPL", "event_type": "split", "ex_date": pd.Timestamp("2020-01-02"), "ratio": 2.0, "cash_amount": None},
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "AAPL",
+                "event_type": "split",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "ratio": 2.0,
+                "cash_amount": None,
+            },
+        ]
+    )
     factors = ca.calculate_adjustment_factors(actions, index)
     adjusted = ca.apply_price_adjustments(prices, factors)
     assert adjusted.loc["2020-01-02", "AAPL"] == 25
@@ -300,9 +392,16 @@ def test_apply_price_adjustments_multiple_tickers() -> None:
 
 def test_apply_return_adjustments_empty_returns() -> None:
     empty_returns = pd.DataFrame()
-    actions = pd.DataFrame([
-        {"ticker": "AAPL", "event_type": "cash_dividend", "ex_date": pd.Timestamp("2020-01-02"), "cash_amount": 0.82}
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "AAPL",
+                "event_type": "cash_dividend",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "cash_amount": 0.82,
+            }
+        ]
+    )
     result = ca.apply_return_adjustments(empty_returns, actions)
     assert result.empty
 
@@ -310,7 +409,9 @@ def test_apply_return_adjustments_empty_returns() -> None:
 def test_apply_return_adjustments_empty_actions() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
     returns = pd.DataFrame({"AAPL": [0.0, 0.05, -0.02]}, index=index)
-    empty_actions = pd.DataFrame(columns=["ticker", "event_type", "ex_date", "cash_amount"])
+    empty_actions = pd.DataFrame(
+        columns=["ticker", "event_type", "ex_date", "cash_amount"]
+    )
     result = ca.apply_return_adjustments(returns, empty_actions)
     pd.testing.assert_frame_equal(result, returns)
 
@@ -318,9 +419,17 @@ def test_apply_return_adjustments_empty_actions() -> None:
 def test_apply_return_adjustments_no_dividends() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
     returns = pd.DataFrame({"AAPL": [0.0, 0.05, -0.02]}, index=index)
-    actions = pd.DataFrame([
-        {"ticker": "AAPL", "event_type": "split", "ex_date": pd.Timestamp("2020-01-02"), "ratio": 2.0, "cash_amount": None}
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "AAPL",
+                "event_type": "split",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "ratio": 2.0,
+                "cash_amount": None,
+            }
+        ]
+    )
     result = ca.apply_return_adjustments(returns, actions)
     pd.testing.assert_frame_equal(result, returns)
 
@@ -328,9 +437,17 @@ def test_apply_return_adjustments_no_dividends() -> None:
 def test_apply_return_adjustments_cash_dividend() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
     returns = pd.DataFrame({"AAPL": [0.0, 0.05, -0.02]}, index=index)
-    actions = pd.DataFrame([
-        {"ticker": "AAPL", "event_type": "cash_dividend", "ex_date": pd.Timestamp("2020-01-02"), "cash_amount": 0.82, "ratio": None}
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "AAPL",
+                "event_type": "cash_dividend",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "cash_amount": 0.82,
+                "ratio": None,
+            }
+        ]
+    )
     result = ca.apply_return_adjustments(returns, actions)
     assert result.loc[pd.Timestamp("2020-01-02"), "AAPL"] == pytest.approx(0.05 + 0.82)
     assert result.loc[pd.Timestamp("2020-01-01"), "AAPL"] == 0.0
@@ -340,9 +457,17 @@ def test_apply_return_adjustments_cash_dividend() -> None:
 def test_apply_return_adjustments_dividend_not_in_index() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-03"])
     returns = pd.DataFrame({"AAPL": [0.0, -0.02]}, index=index)
-    actions = pd.DataFrame([
-        {"ticker": "AAPL", "event_type": "dividend", "ex_date": pd.Timestamp("2020-01-02"), "cash_amount": 0.82, "ratio": None}
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "AAPL",
+                "event_type": "dividend",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "cash_amount": 0.82,
+                "ratio": None,
+            }
+        ]
+    )
     result = ca.apply_return_adjustments(returns, actions)
     pd.testing.assert_frame_equal(result, returns)
 
@@ -350,9 +475,17 @@ def test_apply_return_adjustments_dividend_not_in_index() -> None:
 def test_apply_return_adjustments_ticker_not_in_returns() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
     returns = pd.DataFrame({"AAPL": [0.0, 0.05, -0.02]}, index=index)
-    actions = pd.DataFrame([
-        {"ticker": "MSFT", "event_type": "cash_dividend", "ex_date": pd.Timestamp("2020-01-02"), "cash_amount": 0.56, "ratio": None}
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "MSFT",
+                "event_type": "cash_dividend",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "cash_amount": 0.56,
+                "ratio": None,
+            }
+        ]
+    )
     result = ca.apply_return_adjustments(returns, actions)
     pd.testing.assert_frame_equal(result, returns)
 
@@ -360,8 +493,16 @@ def test_apply_return_adjustments_ticker_not_in_returns() -> None:
 def test_apply_return_adjustments_zero_cash_amount() -> None:
     index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03"])
     returns = pd.DataFrame({"AAPL": [0.0, 0.05, -0.02]}, index=index)
-    actions = pd.DataFrame([
-        {"ticker": "AAPL", "event_type": "cash_dividend", "ex_date": pd.Timestamp("2020-01-02"), "cash_amount": 0.0, "ratio": None}
-    ])
+    actions = pd.DataFrame(
+        [
+            {
+                "ticker": "AAPL",
+                "event_type": "cash_dividend",
+                "ex_date": pd.Timestamp("2020-01-02"),
+                "cash_amount": 0.0,
+                "ratio": None,
+            }
+        ]
+    )
     result = ca.apply_return_adjustments(returns, actions)
     pd.testing.assert_frame_equal(result, returns)

@@ -6,12 +6,11 @@ Gera automaticamente o arquivo docs/results/CARTEIRA_ARARA_STATUS.md
 a partir dos logs de produção.
 """
 
-from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Tuple
-import pandas as pd
-import numpy as np
+from pathlib import Path
+from typing import Dict
 
+import pandas as pd
 
 # Asset class mappings (expandir conforme necessário)
 ASSET_CLASS_MAP = {
@@ -172,7 +171,7 @@ def generate_status_snapshot(
     md_lines.append("")
     md_lines.append(f"**Data do rebalance:** {latest['date']}")
     md_lines.append(
-        f"**Pipeline:** `scripts/production/run_portfolio_production_erc_v2.py`"
+        "**Pipeline:** `scripts/production/run_portfolio_production_erc_v2.py`"
     )
     md_lines.append(
         f"**Fontes:** `results/production/production_log.csv` (linha {log_line_number}) e `{weights_file.name}`"

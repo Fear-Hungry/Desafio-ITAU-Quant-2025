@@ -24,7 +24,9 @@ def test_compute_excess_returns_alignment_and_broadcast():
     assert xr.index.equals(returns.index)
     # Checa broadcast por linha: primeira linha subtrai 0.0001 em ambas as colunas
     np.testing.assert_allclose(
-        xr.loc[idx[0]].values, returns.loc[idx[0]].values - 0.0001)
+        xr.loc[idx[0]].values, returns.loc[idx[0]].values - 0.0001
+    )
     # Última linha usa ffill do rf (0.0001)
     np.testing.assert_allclose(
-        xr.loc[idx[-1]].values, returns.loc[idx[-1]].values - 0.0001)
+        xr.loc[idx[-1]].values, returns.loc[idx[-1]].values - 0.0001
+    )

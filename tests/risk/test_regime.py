@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 from itau_quant.risk.regime import RegimeSnapshot, detect_regime, regime_multiplier
 
 
@@ -43,7 +42,9 @@ def test_detect_regime_flags_stressed_and_crash() -> None:
 
 
 def test_regime_multiplier_uses_mapping() -> None:
-    snapshot = RegimeSnapshot(label="stressed", volatility=0.3, drawdown=-0.1, window=63)
+    snapshot = RegimeSnapshot(
+        label="stressed", volatility=0.3, drawdown=-0.1, window=63
+    )
     multiplier = regime_multiplier(
         snapshot,
         config={"multipliers": {"stressed": 1.5, "default": 1.0}},

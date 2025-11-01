@@ -13,6 +13,7 @@ Este script compara:
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import yaml
@@ -85,7 +86,7 @@ print("🔍 [2/4] TESTE 1: Sample Cov vs Ledoit-Wolf")
 print("=" * 80)
 print()
 
-from itau_quant.estimators.cov import sample_cov, ledoit_wolf_shrinkage
+from itau_quant.estimators.cov import ledoit_wolf_shrinkage, sample_cov
 
 # Sample covariance
 sample_sigma = sample_cov(returns_window, ddof=1) * 252
@@ -94,7 +95,7 @@ sample_sigma = sample_cov(returns_window, ddof=1) * 252
 lw_sigma, lw_shrinkage = ledoit_wolf_shrinkage(returns_window)
 lw_sigma = lw_sigma * 252
 
-print(f"   Sample Covariance:")
+print("   Sample Covariance:")
 sample_eigenvalues = np.linalg.eigvalsh(sample_sigma.values)
 sample_cond = np.linalg.cond(sample_sigma.values)
 print(f"      • Condition number: {sample_cond:.2e}")
@@ -103,7 +104,7 @@ print(f"      • Max eigenvalue: {sample_eigenvalues.max():.6f}")
 print(f"      • Negative eigenvalues: {(sample_eigenvalues < 0).sum()}")
 print()
 
-print(f"   Ledoit-Wolf Shrinkage:")
+print("   Ledoit-Wolf Shrinkage:")
 lw_eigenvalues = np.linalg.eigvalsh(lw_sigma.values)
 lw_cond = np.linalg.cond(lw_sigma.values)
 print(f"      • Shrinkage intensity: {lw_shrinkage:.4f}")
@@ -173,7 +174,7 @@ try:
     n_eff_sample = 1 / herfindahl_sample
     max_weight_sample = weights_sample.max()
 
-    print(f"   Pesos com Sample Cov:")
+    print("   Pesos com Sample Cov:")
     print(f"      • N ativos ativos: {n_active_sample}")
     print(f"      • N effective: {n_eff_sample:.1f}")
     print(f"      • Max weight: {max_weight_sample:.1%}")
@@ -195,7 +196,7 @@ try:
     n_eff_lw = 1 / herfindahl_lw
     max_weight_lw = weights_lw.max()
 
-    print(f"   Pesos com Ledoit-Wolf:")
+    print("   Pesos com Ledoit-Wolf:")
     print(f"      • N ativos ativos: {n_active_lw}")
     print(f"      • N effective: {n_eff_lw:.1f}")
     print(f"      • Max weight: {max_weight_lw:.1%}")
@@ -211,7 +212,7 @@ if weights_sample_series is not None and weights_lw_series is not None:
     weight_diff = np.abs(weights_sample - weights_lw).sum()
     correlation = np.corrcoef(weights_sample, weights_lw)[0, 1]
 
-    print(f"   Comparação de Pesos:")
+    print("   Comparação de Pesos:")
     print(f"      • L1 difference: {weight_diff:.2f}")
     print(f"      • Correlation: {correlation:.3f}")
     print()
@@ -259,7 +260,7 @@ if len(cond_numbers) > 1:
     cond_mean = np.mean(cond_numbers)
     cv = cond_std / cond_mean if cond_mean > 0 else 0
 
-    print(f"   Estabilidade:")
+    print("   Estabilidade:")
     print(f"      • CV(condition number): {cv:.2f}")
     print()
 

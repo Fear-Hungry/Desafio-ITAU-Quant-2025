@@ -28,7 +28,8 @@ Guia das funções
 
 from __future__ import annotations
 
-from typing import Iterable, Mapping, Tuple, Union
+from typing import Iterable, Mapping, Union
+
 import pandas as pd
 from pandas import DatetimeIndex
 
@@ -134,7 +135,7 @@ def filter_liquid_assets(
     min_coverage: float = 0.85,
     max_gap: int = 5,
     per_asset_min_history: Mapping[str, int] | None = None,
-) -> Tuple[pd.DataFrame, pd.DataFrame]:
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     """Drop assets that fail basic liquidity screens.
 
     Parameters
@@ -162,14 +163,10 @@ def filter_liquid_assets(
     effective_min_history = min(len(prices), max(min_history, 0))
     per_asset_min_history = per_asset_min_history or {}
 
-    required_history = pd.Series(
-        effective_min_history, index=stats.index, dtype=float
-    )
+    required_history = pd.Series(effective_min_history, index=stats.index, dtype=float)
     for ticker, override in per_asset_min_history.items():
         if ticker in required_history.index:
-            required_history.at[ticker] = min(
-                len(prices), max(int(override), 0)
-            )
+            required_history.at[ticker] = min(len(prices), max(int(override), 0))
     stats["required_history"] = required_history
     stats["is_liquid"] = (
         (stats["non_na"] >= stats["required_history"])
@@ -184,9 +181,7 @@ def filter_liquid_assets(
 DataLike = Union[pd.Series, pd.DataFrame]
 
 
-def _winsorize_series(
-    series: pd.Series, lower: float, upper: float
-) -> pd.Series:
+def _winsorize_series(series: pd.Series, lower: float, upper: float) -> pd.Series:
     if series.empty:
         return series.copy()
     quantiles = series.quantile([lower, upper])
@@ -218,7 +213,9 @@ def winsorize_outliers(
         bounds.
     """
     if not 0.0 <= lower < upper <= 1.0:
-        raise ValueError("Parâmetros 'lower' e 'upper' devem obedecer 0 <= lower < upper <= 1.")
+        raise ValueError(
+            "Parâmetros 'lower' e 'upper' devem obedecer 0 <= lower < upper <= 1."
+        )
 
     if isinstance(data, pd.Series):
         return _winsorize_series(data, lower, upper)

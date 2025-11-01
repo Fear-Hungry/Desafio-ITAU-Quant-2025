@@ -5,7 +5,6 @@ from typing import Sequence
 
 import pandas as pd
 import pytest
-
 from itau_quant.data.sources import crypto
 
 
@@ -23,7 +22,9 @@ def test_download_crypto_prices_unknown_provider() -> None:
         crypto.download_crypto_prices(["BTCUSD"], provider="unknown")
 
 
-def test_download_crypto_prices_caching(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+def test_download_crypto_prices_caching(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
     call_counter = {"count": 0}
 
     def fake_prices(self, symbols, *, start, end, fields):  # type: ignore[override]
@@ -52,13 +53,17 @@ def test_download_crypto_prices_caching(monkeypatch: pytest.MonkeyPatch, tmp_pat
     pd.testing.assert_frame_equal(result, result_cached, check_freq=False)
 
 
-def test_download_crypto_prices_normalizes_fields(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_download_crypto_prices_normalizes_fields(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     def fake_prices(self, symbols, *, start, end, fields):  # type: ignore[override]
         return _fake_frame(symbols, fields)
 
     monkeypatch.setattr(crypto.CryptoDownloader, "prices", fake_prices)
 
-    frame = crypto.download_crypto_prices(["BTC-USD"], provider="tiingo", fields=("Close", "Volume"))
+    frame = crypto.download_crypto_prices(
+        ["BTC-USD"], provider="tiingo", fields=("Close", "Volume")
+    )
     assert frame.columns.nlevels == 2
     level_zero = list(frame.columns.get_level_values(0).unique())
     assert level_zero == ["close", "volume"]

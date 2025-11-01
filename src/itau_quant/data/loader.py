@@ -26,7 +26,7 @@ import logging
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Iterable, Mapping, Optional, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -42,10 +42,10 @@ from .processing.corporate_actions import (
 )
 from .processing.returns import calculate_returns as _calculate_returns
 from .processing.returns import compute_excess_returns
+from .sources.crypto import download_crypto_prices as crypto_download
 from .sources.fred import download_dtb3 as fred_download_dtb3
 from .sources.yf import download_prices as yf_download
 from .storage import load_parquet, save_parquet
-from .sources.crypto import download_crypto_prices as crypto_download
 from .universe import get_arara_metadata, get_arara_universe
 
 logger = logging.getLogger(__name__)
@@ -78,8 +78,8 @@ def calculate_returns(prices_df: pd.DataFrame, method: str = "log") -> pd.DataFr
 
 
 def download_and_cache_arara_prices(
-    start: Optional[str | datetime] = None,
-    end: Optional[str | datetime] = None,
+    start: str | datetime | None = None,
+    end: str | datetime | None = None,
     raw_file_name: str = "prices_arara.csv",
 ) -> Path:
     """Download ARARA universe prices and persist a CSV under ``data/raw``."""
@@ -106,8 +106,8 @@ def preprocess_data(raw_file_name: str, processed_file_name: str) -> pd.DataFram
 
 
 def download_and_preprocess_arara(
-    start: Optional[str | datetime] = None,
-    end: Optional[str | datetime] = None,
+    start: str | datetime | None = None,
+    end: str | datetime | None = None,
     processed_file_name: str = "returns_arara.parquet",
 ) -> pd.DataFrame:
     """Convenience function that downloads prices and returns processed returns."""
@@ -116,8 +116,8 @@ def download_and_preprocess_arara(
 
 
 def download_fred_dtb3(
-    start: Optional[str | datetime] = None,
-    end: Optional[str | datetime] = None,
+    start: str | datetime | None = None,
+    end: str | datetime | None = None,
 ) -> pd.Series:
     """Public wrapper around the FRED DTB3 downloader."""
     return fred_download_dtb3(start=start, end=end)
@@ -138,11 +138,11 @@ class DataLoader:
 
     def __init__(
         self,
-        tickers: Optional[Iterable[str]] = None,
-        start: Optional[str | datetime] = None,
-        end: Optional[str | datetime] = None,
+        tickers: Iterable[str] | None = None,
+        start: str | datetime | None = None,
+        end: str | datetime | None = None,
         mode: str = "BMS",
-        actions: Optional[list[Mapping[str, object]]] = None,
+        actions: list[Mapping[str, object]] | None = None,
     ) -> None:
         self.tickers = list(tickers) if tickers is not None else get_arara_universe()
         self.start = start
@@ -155,7 +155,9 @@ class DataLoader:
     def artifacts(self) -> dict[str, Any]:
         """Return artefact metadata for the last ``load`` execution."""
         if self._artifacts is None:
-            raise RuntimeError("DataLoader.load must be called before accessing artefacts.")
+            raise RuntimeError(
+                "DataLoader.load must be called before accessing artefacts."
+            )
         return dict(self._artifacts)
 
     def _build_artifact_paths(self) -> dict[str, Any]:
@@ -184,7 +186,9 @@ class DataLoader:
         return series
 
     def _load_from_cache(self, paths: Mapping[str, Path]) -> DataBundle:
-        logger.info("DataLoader: reutilizando artefatos em cache (id=%s)", paths["request_id"])
+        logger.info(
+            "DataLoader: reutilizando artefatos em cache (id=%s)", paths["request_id"]
+        )
         prices = load_parquet(Path(paths["prices_path"]))
         returns = load_parquet(Path(paths["returns_path"]))
         excess = load_parquet(Path(paths["excess_path"]))
@@ -247,7 +251,9 @@ class DataLoader:
         }
         if not liquidity_stats.empty and "is_liquid" in liquidity_stats:
             liquid = int(liquidity_stats["is_liquid"].sum())
-            illiquid_assets = liquidity_stats.index[~liquidity_stats["is_liquid"]].tolist()
+            illiquid_assets = liquidity_stats.index[
+                ~liquidity_stats["is_liquid"]
+            ].tolist()
             coverage_series = liquidity_stats.get("coverage", pd.Series([np.nan]))
             history_series = liquidity_stats.get("non_na", pd.Series([0]))
             metadata["liquidity"] = {
@@ -282,7 +288,9 @@ class DataLoader:
         save_parquet(Path(paths["excess_path"]), bundle.excess_returns)
         save_parquet(Path(paths["rf_path"]), bundle.rf_daily)
 
-        metadata = self._persist_metadata(paths, bundle=bundle, liquidity_stats=liquidity_stats)
+        metadata = self._persist_metadata(
+            paths, bundle=bundle, liquidity_stats=liquidity_stats
+        )
 
         artefacts = {
             "request_id": paths["request_id"],
@@ -310,7 +318,9 @@ class DataLoader:
         return yf_tickers, crypto_tickers
 
     @staticmethod
-    def _normalize_crypto_frame(frame: pd.DataFrame, tickers: Sequence[str]) -> pd.DataFrame:
+    def _normalize_crypto_frame(
+        frame: pd.DataFrame, tickers: Sequence[str]
+    ) -> pd.DataFrame:
         if frame.empty:
             return frame
 
@@ -318,12 +328,16 @@ class DataLoader:
         for candidate in ("adj_close", "close"):
             if candidate in columns:
                 data = frame.loc[:, (candidate, slice(None))].copy()
-                data.columns = [symbol.upper() for symbol in data.columns.get_level_values(1)]
+                data.columns = [
+                    symbol.upper() for symbol in data.columns.get_level_values(1)
+                ]
                 ordered = [ticker for ticker in tickers if ticker in data.columns]
                 return data.reindex(columns=ordered).sort_index()
         raise ValueError("Crypto frame missing expected close/adj_close fields.")
 
-    def _download_crypto_assets(self, tickers: Sequence[str], *, force_download: bool) -> pd.DataFrame:
+    def _download_crypto_assets(
+        self, tickers: Sequence[str], *, force_download: bool
+    ) -> pd.DataFrame:
         if not tickers:
             return pd.DataFrame()
         try:
@@ -377,14 +391,21 @@ class DataLoader:
             price_frames.append(yf_prices)
 
         if crypto_tickers:
-            crypto_prices = self._download_crypto_assets(crypto_tickers, force_download=force_download)
+            crypto_prices = self._download_crypto_assets(
+                crypto_tickers, force_download=force_download
+            )
             if crypto_prices.empty:
-                logger.warning("Painel cripto vazio; removendo tickers: %s", ", ".join(crypto_tickers))
+                logger.warning(
+                    "Painel cripto vazio; removendo tickers: %s",
+                    ", ".join(crypto_tickers),
+                )
             else:
                 price_frames.append(crypto_prices)
 
         if not price_frames:
-            raise ValueError("Nenhum dado de preços foi obtido para os tickers solicitados.")
+            raise ValueError(
+                "Nenhum dado de preços foi obtido para os tickers solicitados."
+            )
 
         prices = pd.concat(price_frames, axis=1, join="outer")
         prices = normalize_index(prices)
@@ -398,8 +419,7 @@ class DataLoader:
         per_asset_min_history = {
             ticker: int(meta.get("min_history_days"))
             for ticker, meta in metadata.items()
-            if isinstance(meta, Mapping)
-            and meta.get("min_history_days") is not None
+            if isinstance(meta, Mapping) and meta.get("min_history_days") is not None
         }
 
         prices, liquidity_stats = filter_liquid_assets(

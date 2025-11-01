@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-
-from itau_quant.optimization.ga.population import Individual
 from itau_quant.optimization.ga import crossover
+from itau_quant.optimization.ga.population import Individual
 
 
 def _parents() -> tuple[Individual, Individual]:

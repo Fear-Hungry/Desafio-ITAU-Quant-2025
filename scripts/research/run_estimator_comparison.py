@@ -42,7 +42,7 @@ TURNOVER_PENALTY = 0.0015
 TURNOVER_CAP = 0.12
 TRANSACTION_COST_BPS = 30
 
-print(f"📊 Configuração:")
+print("📊 Configuração:")
 print(f"   • Universo: {len(TICKERS)} ativos")
 print(f"   • Período: {START_DATE.date()} a {END_DATE.date()}")
 print(f"   • Window: {ESTIMATION_WINDOW} dias")
@@ -109,8 +109,8 @@ print()
 # ============================================================================
 print("📈 [3/4] Estimando μ com 4 métodos diferentes...")
 
-from itau_quant.estimators.mu import mean_return, huber_mean, bayesian_shrinkage_mean
 from itau_quant.estimators.bl import black_litterman, reverse_optimization
+from itau_quant.estimators.mu import bayesian_shrinkage_mean, huber_mean, mean_return
 
 # Método 1: Sample mean (baseline)
 print("   [1/4] Sample mean (baseline overfit)...")
@@ -158,7 +158,7 @@ print()
 # ============================================================================
 print("⚙️  [4/4] Otimizando portfolio com cada estimador...")
 
-from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
+from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 ESTIMATORS = {
     "sample": mu_sample,
@@ -267,7 +267,7 @@ if valid_results:
         valid_results, key=lambda k: valid_results[k]["at_ceiling"]
     )
 
-    print(f"🏆 Rankings:")
+    print("🏆 Rankings:")
     print(
         f"   • Melhor Sharpe: {best_sharpe_name} ({valid_results[best_sharpe_name]['sharpe']:.2f})"
     )
@@ -279,13 +279,13 @@ if valid_results:
     )
     print()
 
-    print(f"💡 Recomendação:")
+    print("💡 Recomendação:")
     if valid_results["huber"]["at_ceiling"] < valid_results["sample"]["at_ceiling"]:
         print(
             f"   ✅ Use HUBER: menos cap-banging ({valid_results['huber']['at_ceiling']} vs {valid_results['sample']['at_ceiling']})"
         )
     if valid_results["sample"]["sharpe"] > 2.0:
-        print(f"   ⚠️  Sample mean com Sharpe > 2.0 → provável overfit!")
+        print("   ⚠️  Sample mean com Sharpe > 2.0 → provável overfit!")
     if valid_results.get("shrunk_50") and valid_results["shrunk_50"]["sharpe"] > 0.8:
         print(
             f"   ✅ Shrunk_50 com Sharpe {valid_results['shrunk_50']['sharpe']:.2f} → conservador mas realista"
@@ -325,11 +325,11 @@ print("=" * 80)
 print("  ✅ COMPARAÇÃO DE ESTIMADORES CONCLUÍDA!")
 print("=" * 80)
 print()
-print(f"🎯 Próximo passo:")
-print(f"   • Escolha o estimador baseado em:")
-print(f"     1. Sharpe ex-ante razoável (< 2.0)")
-print(f"     2. Baixo cap-banging (at_ceiling < 3)")
-print(f"     3. Alta diversificação (N_eff ≥ 10)")
-print(f"   • Rode walk-forward backtest com o estimador escolhido")
-print(f"   • Valide que Sharpe OOS ≥ baseline + 0.2")
+print("🎯 Próximo passo:")
+print("   • Escolha o estimador baseado em:")
+print("     1. Sharpe ex-ante razoável (< 2.0)")
+print("     2. Baixo cap-banging (at_ceiling < 3)")
+print("     3. Alta diversificação (N_eff ≥ 10)")
+print("   • Rode walk-forward backtest com o estimador escolhido")
+print("   • Valide que Sharpe OOS ≥ baseline + 0.2")
 print()

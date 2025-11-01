@@ -65,7 +65,9 @@ def round_to_lots(
     if isinstance(lot_size_map, (int, float)):
         lot_sizes = pd.Series(float(lot_size_map), index=shares.index)
     else:
-        lot_sizes = pd.Series(lot_size_map, dtype=float).reindex(shares.index).fillna(1.0)
+        lot_sizes = (
+            pd.Series(lot_size_map, dtype=float).reindex(shares.index).fillna(1.0)
+        )
     lot_sizes = lot_sizes.clip(lower=1e-9)
 
     scaled = shares / lot_sizes
@@ -77,11 +79,15 @@ def round_to_lots(
         rounded_units = np.ceil(scaled)
     else:
         raise ValueError(f"Unsupported rounding method '{method}'.")
-    rounded_shares = pd.Series(rounded_units, index=shares.index, dtype=float) * lot_sizes
+    rounded_shares = (
+        pd.Series(rounded_units, index=shares.index, dtype=float) * lot_sizes
+    )
     return rounded_shares
 
 
-def shares_to_weights(shares: pd.Series, capital: float, prices: pd.Series) -> pd.Series:
+def shares_to_weights(
+    shares: pd.Series, capital: float, prices: pd.Series
+) -> pd.Series:
     """Convert share quantities back to weights."""
 
     aligned_prices = prices.reindex(shares.index).astype(float)
@@ -144,7 +150,10 @@ def estimate_rounding_costs(
 ) -> float:
     """Estimate the monetary cost introduced by rounding."""
 
-    diff = (rounded_weights.reindex(original_weights.index, fill_value=0.0) - original_weights).fillna(0.0)
+    diff = (
+        rounded_weights.reindex(original_weights.index, fill_value=0.0)
+        - original_weights
+    ).fillna(0.0)
     return _linear_cost_from_config(diff, capital, cost_model)
 
 

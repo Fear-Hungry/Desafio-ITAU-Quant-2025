@@ -1,5 +1,12 @@
 """Convenience exports for evaluation statistics."""
 
+from .bootstrap import (
+    block_bootstrap,
+    bootstrap_metric,
+    compare_vs_benchmark,
+    confidence_interval,
+    stationary_bootstrap,
+)
 from .performance import (
     ExcessMetrics,
     aggregate_performance,
@@ -23,13 +30,6 @@ from .risk import (
     realized_leverage,
     risk_contribution,
     tracking_error,
-)
-from .bootstrap import (
-    block_bootstrap,
-    bootstrap_metric,
-    compare_vs_benchmark,
-    confidence_interval,
-    stationary_bootstrap,
 )
 
 __all__ = [

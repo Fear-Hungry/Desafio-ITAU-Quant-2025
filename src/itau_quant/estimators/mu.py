@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence, Tuple, Union
+from typing import Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -63,7 +63,7 @@ def mean_return(
             raise ValueError("Geometric mean requires all returns > -100%.")
         means = growth.prod(axis=0) ** (1.0 / len(clean)) - 1.0
     else:
-        raise ValueError("Unsupported mean method '%s'." % method)
+        raise ValueError(f"Unsupported mean method '{method}'.")
 
     return means.astype(float)
 
@@ -74,7 +74,7 @@ def huber_mean(
     c: float = 1.5,
     max_iter: int = 100,
     tol: float = 1e-6,
-) -> Tuple[pd.Series, pd.DataFrame]:
+) -> tuple[pd.Series, pd.DataFrame]:
     """Huber-robust mean estimate and effective weights per observation."""
 
     if c <= 0:
@@ -171,7 +171,7 @@ def student_t_mean(
 def bayesian_shrinkage_mean(
     returns: ReturnsLike,
     *,
-    prior: Optional[Union[pd.Series, Sequence[float], float]] = None,
+    prior: pd.Series | Sequence[float] | float | None = None,
     strength: float = 0.2,
 ) -> pd.Series:
     """Linear shrinkage of the sample mean towards a prior benchmark."""
@@ -206,7 +206,7 @@ def shrunk_mean(
     returns: ReturnsLike,
     *,
     strength: float = 0.5,
-    prior: Optional[Union[pd.Series, Sequence[float], float]] = None,
+    prior: pd.Series | Sequence[float] | float | None = None,
 ) -> pd.Series:
     """Convenience wrapper shrinking the mean towards a prior (default zero).
 
@@ -231,7 +231,7 @@ def confidence_intervals(
     method: str = "bootstrap",
     alpha: float = 0.05,
     n_bootstrap: int = 1000,
-    random_state: Optional[int] = None,
+    random_state: int | None = None,
 ) -> pd.DataFrame:
     """Empirical confidence intervals for mean returns."""
 
@@ -266,10 +266,10 @@ def confidence_intervals(
 
 
 def blend_with_black_litterman(
-    mu_prior: Union[pd.Series, Sequence[float], np.ndarray],
-    cov: Union[pd.DataFrame, np.ndarray],
+    mu_prior: pd.Series | Sequence[float] | np.ndarray,
+    cov: pd.DataFrame | np.ndarray,
     *,
-    views: Optional[Sequence[dict]] = None,
+    views: Sequence[dict] | None = None,
     **kwargs,
 ) -> pd.Series:
     """Delegate to Black-Litterman when views are present, otherwise passthrough."""
@@ -305,11 +305,11 @@ def blend_with_black_litterman(
 
 
 def annualize(
-    mu: Union[pd.Series, pd.DataFrame, Sequence[float], np.ndarray],
+    mu: pd.Series | pd.DataFrame | Sequence[float] | np.ndarray,
     *,
     periods_per_year: float,
     compound: bool = False,
-) -> Union[pd.Series, pd.DataFrame]:
+) -> pd.Series | pd.DataFrame:
     """Convert periodic mean returns to annualised figures."""
 
     if periods_per_year <= 0:

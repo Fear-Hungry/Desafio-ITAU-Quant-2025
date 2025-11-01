@@ -34,7 +34,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Mapping, Sequence
 
-import numpy as np
 import pandas as pd
 
 from itau_quant.utils.data_loading import to_datetime_index
@@ -61,14 +60,22 @@ class CorporateAction:
     cash_amount: float | None = None
 
     @staticmethod
-    def from_mapping(payload: Mapping[str, object]) -> "CorporateAction":
+    def from_mapping(payload: Mapping[str, object]) -> CorporateAction:
         return CorporateAction(
             ticker=str(payload["ticker"]),
             event_type=str(payload["event_type"]).lower(),
             ex_date=pd.Timestamp(payload["ex_date"]),
-            effective_date=pd.Timestamp(payload["effective_date"]) if payload.get("effective_date") else None,
+            effective_date=(
+                pd.Timestamp(payload["effective_date"])
+                if payload.get("effective_date")
+                else None
+            ),
             ratio=float(payload["ratio"]) if payload.get("ratio") is not None else None,
-            cash_amount=float(payload["cash_amount"]) if payload.get("cash_amount") is not None else None,
+            cash_amount=(
+                float(payload["cash_amount"])
+                if payload.get("cash_amount") is not None
+                else None
+            ),
         )
 
 
@@ -81,7 +88,16 @@ def load_corporate_actions(
 
     if actions is None:
         logger.info("No corporate actions provided; returning empty frame.")
-        return pd.DataFrame(columns=["ticker", "event_type", "ex_date", "effective_date", "ratio", "cash_amount"])
+        return pd.DataFrame(
+            columns=[
+                "ticker",
+                "event_type",
+                "ex_date",
+                "effective_date",
+                "ratio",
+                "cash_amount",
+            ]
+        )
 
     records = []
     for entry in actions:
@@ -93,7 +109,11 @@ def load_corporate_actions(
                 "ticker": action.ticker,
                 "event_type": action.event_type,
                 "ex_date": action.ex_date.normalize(),
-                "effective_date": action.effective_date.normalize() if action.effective_date is not None else None,
+                "effective_date": (
+                    action.effective_date.normalize()
+                    if action.effective_date is not None
+                    else None
+                ),
                 "ratio": action.ratio,
                 "cash_amount": action.cash_amount,
             }
@@ -106,7 +126,9 @@ def load_corporate_actions(
     return frame.reset_index(drop=True)
 
 
-def calculate_adjustment_factors(actions: pd.DataFrame, index: pd.DatetimeIndex) -> pd.DataFrame:
+def calculate_adjustment_factors(
+    actions: pd.DataFrame, index: pd.DatetimeIndex
+) -> pd.DataFrame:
     """Compute cumulative adjustment factors aligned with the provided index."""
 
     if actions.empty:
@@ -117,7 +139,9 @@ def calculate_adjustment_factors(actions: pd.DataFrame, index: pd.DatetimeIndex)
 
     grouped = actions.groupby("ticker")
     for ticker, group in grouped:
-        ticker_factors = pd.DataFrame(1.0, index=index, columns=["price", "cash_dividend"])
+        ticker_factors = pd.DataFrame(
+            1.0, index=index, columns=["price", "cash_dividend"]
+        )
         for _, action in group.iterrows():
             ex_date = pd.Timestamp(action["ex_date"])
             if ex_date not in ticker_factors.index:
@@ -125,19 +149,23 @@ def calculate_adjustment_factors(actions: pd.DataFrame, index: pd.DatetimeIndex)
             if action["event_type"] == "split" and action["ratio"] not in (None, 0):
                 ratio = float(action["ratio"])
                 ticker_factors.loc[ex_date:, "price"] /= ratio
-            elif action["event_type"] in {"cash_dividend", "dividend"} and action["cash_amount"] not in (None, 0):
+            elif action["event_type"] in {"cash_dividend", "dividend"} and action[
+                "cash_amount"
+            ] not in (None, 0):
                 cash = float(action["cash_amount"])
                 ticker_factors.loc[ex_date:, "cash_dividend"] += cash
             elif action["event_type"] == "spinoff" and action["ratio"] not in (None, 0):
                 ratio = float(action["ratio"])
-                ticker_factors.loc[ex_date:, "price"] *= (1.0 - ratio)
+                ticker_factors.loc[ex_date:, "price"] *= 1.0 - ratio
         factors[f"price_{ticker}"] = ticker_factors["price"]
         factors[f"cash_{ticker}"] = ticker_factors["cash_dividend"]
 
     return factors
 
 
-def apply_price_adjustments(prices: pd.DataFrame, factors: pd.DataFrame) -> pd.DataFrame:
+def apply_price_adjustments(
+    prices: pd.DataFrame, factors: pd.DataFrame
+) -> pd.DataFrame:
     """Apply multiplicative price factors to historical prices."""
 
     if prices.empty:
@@ -145,13 +173,19 @@ def apply_price_adjustments(prices: pd.DataFrame, factors: pd.DataFrame) -> pd.D
     adjusted = prices.copy()
     for column in prices.columns:
         factor_col = f"price_{column}"
-        base_factor = factors["price"] if factor_col not in factors.columns else factors[factor_col]
+        base_factor = (
+            factors["price"]
+            if factor_col not in factors.columns
+            else factors[factor_col]
+        )
         aligned = base_factor.reindex(adjusted.index, method="ffill").fillna(1.0)
         adjusted[column] = adjusted[column] * aligned
     return adjusted
 
 
-def apply_return_adjustments(returns: pd.DataFrame, actions: pd.DataFrame) -> pd.DataFrame:
+def apply_return_adjustments(
+    returns: pd.DataFrame, actions: pd.DataFrame
+) -> pd.DataFrame:
     """Adjust simple returns to include cash dividends when prices are unadjusted."""
 
     if returns.empty or actions.empty:
@@ -172,7 +206,6 @@ def apply_return_adjustments(returns: pd.DataFrame, actions: pd.DataFrame) -> pd
                 continue
             if ex_date not in series.index:
                 continue
-            price_value = series.name  # placeholder for compatibility
             idx = series.index.get_loc(ex_date)
             base_return = series.iloc[idx]
             series.iloc[idx] = base_return + cash

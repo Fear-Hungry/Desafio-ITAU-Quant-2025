@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-
 from itau_quant.data.sources.csv import CSVSchemaError, load_price_panel
 
 

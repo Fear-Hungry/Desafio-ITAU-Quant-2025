@@ -14,25 +14,20 @@ Correções implementadas:
 
 from datetime import datetime
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
-
+from itau_quant.estimators.cov import ledoit_wolf_shrinkage
+from itau_quant.utils.production_logger import ProductionLogger
 from itau_quant.utils.production_monitor import (
     should_fallback_to_1N,
-    calculate_portfolio_metrics,
-)
-from itau_quant.utils.production_logger import ProductionLogger
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.optimization.erc_calibrated import (
-    calibrate_gamma_for_vol,
-    calibrate_eta_for_turnover,
-    solve_erc_with_cardinality,
 )
 
 try:
-    import yfinance as yf
     import os
     import warnings
+
+    import yfinance as yf
 
     # Fix yfinance cache permissions to suppress readonly database warnings
     cache_dir = os.path.expanduser("~/.cache/py-yfinance")
@@ -42,7 +37,7 @@ try:
                 db_path = os.path.join(cache_dir, db_file)
                 if os.path.exists(db_path):
                     os.chmod(db_path, 0o644)
-        except Exception as e:
+        except Exception:
             # Silently ignore permission errors - not critical
             pass
 
@@ -201,7 +196,7 @@ def check_spy_risk_off_signals(prices_df, current_date, config):
         if current_date in spy_ma200.index and pd.notna(spy_ma200.at[current_date]):
             if spy_price < spy_ma200.at[current_date]:
                 risk_off = True
-                print(f"      🚨 SPY < MA200 detectado")
+                print("      🚨 SPY < MA200 detectado")
 
     # Filtro MA50
     if config["spy_filters"].get("ma50", False):
@@ -209,7 +204,7 @@ def check_spy_risk_off_signals(prices_df, current_date, config):
         if current_date in spy_ma50.index and pd.notna(spy_ma50.at[current_date]):
             if spy_price < spy_ma50.at[current_date]:
                 risk_off = True
-                print(f"      🚨 SPY < MA50 detectado")
+                print("      🚨 SPY < MA50 detectado")
 
     # Filtro momentum 126d
     momentum_126d_threshold = config["spy_filters"].get("momentum_126d", 0.0)
@@ -374,7 +369,7 @@ cov_annual = cov * 252
 print(f"   Σ via Ledoit-Wolf (shrinkage: {shrinkage:.4f})")
 
 if fallback_needed:
-    print(f"   ⚠️  FALLBACK ATIVADO → Usando 1/N")
+    print("   ⚠️  FALLBACK ATIVADO → Usando 1/N")
     weights = pd.Series(1.0 / len(valid_tickers), index=valid_tickers)
     strategy = "1/N"
     n_active = len(valid_tickers)
@@ -385,7 +380,7 @@ if fallback_needed:
     turnover_realized = 0.0
 
 else:
-    print(f"   ✅ Triggers OK → Usando ERC Calibrado")
+    print("   ✅ Triggers OK → Usando ERC Calibrado")
 
     # Pesos anteriores (ou equal-weight se primeiro rebalance)
     w_prev = np.ones(len(valid_tickers)) / len(valid_tickers)
@@ -626,7 +621,7 @@ else:
     turnover_realized = to_realized
 
 print()
-print(f"   ✅ Otimização concluída!")
+print("   ✅ Otimização concluída!")
 print(f"      Estratégia: {strategy}")
 print(f"      N_active: {n_active}")
 print(f"      N_effective: {n_effective:.1f}")
@@ -745,12 +740,12 @@ if strategy.startswith("ERC"):
         print(
             f"   ⚠️  WARNING: US Equity {equity_weight:.1%} ABAIXO do target {equity_target:.0%}"
         )
-        print(f"      Ações sugeridas:")
+        print("      Ações sugeridas:")
         print(f"      • Considere aumentar vol_target (atual: {VOL_TARGET:.1%})")
         print(
             f"      • Ou reduzir cash_floor_normal (atual: {DEFENSIVE_OVERLAY['cash_floor_normal']:.0%})"
         )
-        print(f"      • Ou aguardar regime normal (se SPY em tendência de baixa)")
+        print("      • Ou aguardar regime normal (se SPY em tendência de baixa)")
 
 print()
 
@@ -799,12 +794,12 @@ for ticker in top_weights.index:
     print(f"   {ticker:6s}: {weights[ticker]:6.2%} {bar}")
 
 print()
-print(f"💰 Custos:")
+print("💰 Custos:")
 print(f"   Turnover: {turnover_vs_baseline:.2%}")
 print(f"   Custo: {cost_bps:.1f} bps (@ {TRANSACTION_COST_BPS} bps one-way)")
 print()
 
-print(f"📈 Métricas de Risco (6M):")
+print("📈 Métricas de Risco (6M):")
 print(f"   Sharpe: {metrics.sharpe_6m:.2f}")
 print(f"   CVaR 95%: {metrics.cvar_95:.2%}")
 print(f"   Max DD: {metrics.max_dd:.2%}")

@@ -25,7 +25,9 @@ def _ensure_gamma(gamma: float, name: str) -> float:
     return value
 
 
-def _ensure_series(candidate: Sequence[float] | Mapping[str, float] | pd.Series, index: Sequence[str]) -> pd.Series:
+def _ensure_series(
+    candidate: Sequence[float] | Mapping[str, float] | pd.Series, index: Sequence[str]
+) -> pd.Series:
     if isinstance(candidate, pd.Series):
         return candidate.reindex(index).astype(float).fillna(0.0)
     if isinstance(candidate, Mapping):
@@ -84,7 +86,9 @@ def group_lasso_penalty(
                 try:
                     indices.append(asset_index.index(str(member)))
                 except ValueError as exc:  # pragma: no cover - defensive guard
-                    raise ValueError(f"unknown asset '{member}' in group_lasso_penalty") from exc
+                    raise ValueError(
+                        f"unknown asset '{member}' in group_lasso_penalty"
+                    ) from exc
         if not indices:
             continue
         group_weights = cp.vstack([weights[i] for i in indices])
@@ -182,7 +186,9 @@ def penalty_factory(
         gamma = float(entry.get("gamma", 0.0))
         groups = entry.get("groups", {})
         group_index = entry.get("asset_index", asset_index)
-        penalties.append(group_lasso_penalty(weights, groups, gamma, asset_index=group_index))
+        penalties.append(
+            group_lasso_penalty(weights, groups, gamma, asset_index=group_index)
+        )
 
     if "cardinality" in config:
         entry = config["cardinality"]
@@ -192,7 +198,11 @@ def penalty_factory(
         k_target = int(entry.get("k_target", 0))
         method = str(entry.get("method", "huber"))
         epsilon = float(entry.get("epsilon", 1e-3))
-        penalties.append(cardinality_soft_penalty(weights, k_target, gamma, method=method, epsilon=epsilon))
+        penalties.append(
+            cardinality_soft_penalty(
+                weights, k_target, gamma, method=method, epsilon=epsilon
+            )
+        )
 
     if "turnover" in config:
         entry = config["turnover"]
@@ -213,4 +223,6 @@ def penalty_factory(
             )
         )
 
-    return [pen for pen in penalties if not isinstance(pen, cp.Constant) or pen.value != 0.0]
+    return [
+        pen for pen in penalties if not isinstance(pen, cp.Constant) or pen.value != 0.0
+    ]

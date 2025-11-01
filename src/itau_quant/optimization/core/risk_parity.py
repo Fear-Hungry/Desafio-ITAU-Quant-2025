@@ -17,7 +17,9 @@ __all__ = [
 ]
 
 
-def _ensure_series(values: Sequence[float] | pd.Series, index: Sequence[str]) -> pd.Series:
+def _ensure_series(
+    values: Sequence[float] | pd.Series, index: Sequence[str]
+) -> pd.Series:
     if isinstance(values, pd.Series):
         return values.reindex(index).astype(float)
     array = np.asarray(values, dtype=float)
@@ -26,7 +28,9 @@ def _ensure_series(values: Sequence[float] | pd.Series, index: Sequence[str]) ->
     return pd.Series(array, index=index, dtype=float)
 
 
-def _ensure_dataframe(matrix: pd.DataFrame | np.ndarray, index: Sequence[str]) -> pd.DataFrame:
+def _ensure_dataframe(
+    matrix: pd.DataFrame | np.ndarray, index: Sequence[str]
+) -> pd.DataFrame:
     if isinstance(matrix, pd.DataFrame):
         return matrix.reindex(index=index, columns=index).astype(float)
     array = np.asarray(matrix, dtype=float)
@@ -44,7 +48,9 @@ def _normalise(weights: pd.Series) -> pd.Series:
     return weights / total
 
 
-def risk_contribution(weights: Sequence[float] | pd.Series, cov: pd.DataFrame | np.ndarray) -> pd.Series:
+def risk_contribution(
+    weights: Sequence[float] | pd.Series, cov: pd.DataFrame | np.ndarray
+) -> pd.Series:
     """Return percentage risk contributions of each asset."""
 
     if isinstance(cov, pd.DataFrame):
@@ -75,7 +81,10 @@ def solve_log_barrier(
 ) -> pd.Series:
     """Solve risk parity using a log-barrier formulation."""
 
-    cov_df = _ensure_dataframe(cov, cov.index if isinstance(cov, pd.DataFrame) else range(np.asarray(cov).shape[0]))
+    cov_df = _ensure_dataframe(
+        cov,
+        cov.index if isinstance(cov, pd.DataFrame) else range(np.asarray(cov).shape[0]),
+    )
     assets = list(cov_df.index)
 
     if target_risk is None:
@@ -84,7 +93,7 @@ def solve_log_barrier(
         target_series = _ensure_series(target_risk, assets)
         target = _normalise(target_series).to_numpy(dtype=float)
 
-    lower, upper = (bounds or (0.0, 1.0))
+    lower, upper = bounds or (0.0, 1.0)
     lower = float(lower)
     upper = float(upper)
     if lower < 0 or upper <= 0 or lower >= upper:
@@ -94,7 +103,9 @@ def solve_log_barrier(
 
     for _ in range(max_iter):
         inv_weights = 1.0 / np.clip(weights, lower + 1e-12, None)
-        gradient = cov_df.values @ weights - target * np.sum(weights * (cov_df.values @ weights))
+        gradient = cov_df.values @ weights - target * np.sum(
+            weights * (cov_df.values @ weights)
+        )
         gradient -= inv_weights
         hessian = cov_df.values + np.diag(inv_weights**2)
 
@@ -128,7 +139,10 @@ def iterative_risk_parity(
 ) -> pd.Series:
     """Multiplicative iteration to equalise risk contributions."""
 
-    cov_df = _ensure_dataframe(cov, cov.index if isinstance(cov, pd.DataFrame) else range(np.asarray(cov).shape[0]))
+    cov_df = _ensure_dataframe(
+        cov,
+        cov.index if isinstance(cov, pd.DataFrame) else range(np.asarray(cov).shape[0]),
+    )
     assets = list(cov_df.index)
 
     if init_weights is None:
@@ -157,13 +171,18 @@ def cluster_risk_parity(
 ) -> pd.Series:
     """Risk parity applied hierarchically across provided clusters."""
 
-    cov_df = _ensure_dataframe(cov, cov.index if isinstance(cov, pd.DataFrame) else range(np.asarray(cov).shape[0]))
+    cov_df = _ensure_dataframe(
+        cov,
+        cov.index if isinstance(cov, pd.DataFrame) else range(np.asarray(cov).shape[0]),
+    )
     assets = list(cov_df.index)
 
     if isinstance(clusters, Mapping):
         cluster_map = {str(key): list(values) for key, values in clusters.items()}
     else:
-        cluster_map = {f"cluster_{idx}": list(group) for idx, group in enumerate(clusters)}
+        cluster_map = {
+            f"cluster_{idx}": list(group) for idx, group in enumerate(clusters)
+        }
 
     filtered_clusters: list[str] = []
     cluster_weights: list[pd.Series] = []
@@ -186,17 +205,33 @@ def cluster_risk_parity(
     if not filtered_clusters:
         raise ValueError("no valid clusters found for risk parity")
 
-    group_cov = pd.DataFrame(0.0, index=filtered_clusters, columns=filtered_clusters, dtype=float)
+    group_cov = pd.DataFrame(
+        0.0, index=filtered_clusters, columns=filtered_clusters, dtype=float
+    )
     for i, cluster_i in enumerate(filtered_clusters):
         for j, cluster_j in enumerate(filtered_clusters):
-            assets_i = [asset for asset, cluster in cluster_assignments.items() if cluster == cluster_i]
-            assets_j = [asset for asset, cluster in cluster_assignments.items() if cluster == cluster_j]
+            assets_i = [
+                asset
+                for asset, cluster in cluster_assignments.items()
+                if cluster == cluster_i
+            ]
+            assets_j = [
+                asset
+                for asset, cluster in cluster_assignments.items()
+                if cluster == cluster_j
+            ]
             if not assets_i or not assets_j:
                 continue
             sub_cov = cov_df.loc[assets_i, assets_j]
-            weight_i = cluster_weights[i].reindex(assets_i).fillna(0.0).to_numpy(dtype=float)
-            weight_j = cluster_weights[j].reindex(assets_j).fillna(0.0).to_numpy(dtype=float)
-            group_cov.loc[cluster_i, cluster_j] = float(weight_i @ sub_cov.to_numpy(dtype=float) @ weight_j)
+            weight_i = (
+                cluster_weights[i].reindex(assets_i).fillna(0.0).to_numpy(dtype=float)
+            )
+            weight_j = (
+                cluster_weights[j].reindex(assets_j).fillna(0.0).to_numpy(dtype=float)
+            )
+            group_cov.loc[cluster_i, cluster_j] = float(
+                weight_i @ sub_cov.to_numpy(dtype=float) @ weight_j
+            )
 
     if method == "log_barrier":
         cluster_alloc = solve_log_barrier(group_cov, **kwargs)
@@ -230,7 +265,10 @@ def risk_parity(
     config = dict(config or {})
     method = str(config.get("method", "iterative")).lower()
 
-    cov_df = _ensure_dataframe(cov, cov.index if isinstance(cov, pd.DataFrame) else range(np.asarray(cov).shape[0]))
+    cov_df = _ensure_dataframe(
+        cov,
+        cov.index if isinstance(cov, pd.DataFrame) else range(np.asarray(cov).shape[0]),
+    )
     assets = list(cov_df.index)
 
     weights: pd.Series
@@ -249,7 +287,9 @@ def risk_parity(
         elif method == "cluster":
             cluster_cfg = config.get("clusters")
             if not cluster_cfg:
-                raise ValueError("cluster risk parity requires 'clusters' configuration")
+                raise ValueError(
+                    "cluster risk parity requires 'clusters' configuration"
+                )
             weights = cluster_risk_parity(
                 cov_df,
                 cluster_cfg,
@@ -268,4 +308,10 @@ def risk_parity(
         weights = pd.Series(1.0 / len(assets), index=assets, dtype=float)
 
     contributions = risk_contribution(weights, cov_df)
-    return RiskParityResult(weights=_normalise(weights), contributions=contributions, method=method, converged=converged, notes=notes)
+    return RiskParityResult(
+        weights=_normalise(weights),
+        contributions=contributions,
+        method=method,
+        converged=converged,
+        notes=notes,
+    )

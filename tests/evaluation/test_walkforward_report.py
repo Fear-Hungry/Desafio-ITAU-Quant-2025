@@ -4,35 +4,36 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-
 from itau_quant.evaluation.walkforward_report import (
-    WalkForwardSummary,
     StressPeriod,
-    compute_wf_summary_stats,
+    WalkForwardSummary,
     build_per_window_table,
-    identify_stress_periods,
     compute_range_ratio,
+    compute_wf_summary_stats,
     format_wf_summary_markdown,
+    identify_stress_periods,
 )
 
 
 @pytest.fixture
 def sample_split_metrics() -> pd.DataFrame:
     """Create sample split metrics for testing."""
-    return pd.DataFrame({
-        "train_start": ["2020-01-01", "2020-03-01", "2020-05-01"],
-        "train_end": ["2020-02-28", "2020-04-30", "2020-06-30"],
-        "test_start": ["2020-03-01", "2020-05-01", "2020-07-01"],
-        "test_end": ["2020-03-31", "2020-05-31", "2020-07-31"],
-        "total_return": [0.05, -0.02, 0.08],
-        "annualized_return": [0.25, -0.10, 0.40],
-        "annualized_volatility": [0.12, 0.10, 0.15],
-        "sharpe_ratio": [1.2, -0.5, 1.8],
-        "max_drawdown": [-0.03, -0.12, -0.05],
-        "cumulative_nav": [1.05, 1.03, 1.11],
-        "turnover": [0.15, 0.20, 0.12],
-        "cost_fraction": [0.0015, 0.0020, 0.0012],
-    })
+    return pd.DataFrame(
+        {
+            "train_start": ["2020-01-01", "2020-03-01", "2020-05-01"],
+            "train_end": ["2020-02-28", "2020-04-30", "2020-06-30"],
+            "test_start": ["2020-03-01", "2020-05-01", "2020-07-01"],
+            "test_end": ["2020-03-31", "2020-05-31", "2020-07-31"],
+            "total_return": [0.05, -0.02, 0.08],
+            "annualized_return": [0.25, -0.10, 0.40],
+            "annualized_volatility": [0.12, 0.10, 0.15],
+            "sharpe_ratio": [1.2, -0.5, 1.8],
+            "max_drawdown": [-0.03, -0.12, -0.05],
+            "cumulative_nav": [1.05, 1.03, 1.11],
+            "turnover": [0.15, 0.20, 0.12],
+            "cost_fraction": [0.0015, 0.0020, 0.0012],
+        }
+    )
 
 
 def test_compute_wf_summary_stats(sample_split_metrics):
@@ -62,10 +63,12 @@ def test_compute_wf_summary_stats_empty():
 
 def test_compute_wf_summary_stats_missing_columns():
     """Test that missing required columns raises ValueError."""
-    incomplete_df = pd.DataFrame({
-        "total_return": [0.05, 0.08],
-        "sharpe_ratio": [1.2, 1.8],
-    })
+    incomplete_df = pd.DataFrame(
+        {
+            "total_return": [0.05, 0.08],
+            "sharpe_ratio": [1.2, 1.8],
+        }
+    )
     with pytest.raises(ValueError, match="Missing required columns"):
         compute_wf_summary_stats(incomplete_df)
 
@@ -116,7 +119,9 @@ def test_identify_stress_periods(sample_split_metrics):
     )
 
     assert isinstance(stress_periods, list)
-    assert len(stress_periods) == 1  # Only the second window (drawdown=-0.12, sharpe=-0.5)
+    assert (
+        len(stress_periods) == 1
+    )  # Only the second window (drawdown=-0.12, sharpe=-0.5)
 
     period = stress_periods[0]
     assert isinstance(period, StressPeriod)
@@ -136,13 +141,15 @@ def test_identify_stress_periods_empty():
 
 def test_identify_stress_periods_none_found():
     """Test when no stress periods meet thresholds."""
-    good_metrics = pd.DataFrame({
-        "test_start": ["2020-01-01"],
-        "test_end": ["2020-01-31"],
-        "sharpe_ratio": [1.5],
-        "max_drawdown": [-0.02],
-        "annualized_return": [0.20],
-    })
+    good_metrics = pd.DataFrame(
+        {
+            "test_start": ["2020-01-01"],
+            "test_end": ["2020-01-31"],
+            "sharpe_ratio": [1.5],
+            "max_drawdown": [-0.02],
+            "annualized_return": [0.20],
+        }
+    )
     stress_periods = identify_stress_periods(
         good_metrics,
         drawdown_threshold=-0.10,
@@ -206,20 +213,22 @@ def test_format_wf_summary_markdown():
 
 def test_consistency_r2_single_window():
     """Test consistency R² with only 1 window returns 0."""
-    single_window = pd.DataFrame({
-        "train_start": ["2020-01-01"],
-        "train_end": ["2020-02-28"],
-        "test_start": ["2020-03-01"],
-        "test_end": ["2020-03-31"],
-        "total_return": [0.05],
-        "annualized_return": [0.25],
-        "annualized_volatility": [0.12],
-        "sharpe_ratio": [1.2],
-        "max_drawdown": [-0.03],
-        "cumulative_nav": [1.05],
-        "turnover": [0.15],
-        "cost_fraction": [0.0015],
-    })
+    single_window = pd.DataFrame(
+        {
+            "train_start": ["2020-01-01"],
+            "train_end": ["2020-02-28"],
+            "test_start": ["2020-03-01"],
+            "test_end": ["2020-03-31"],
+            "total_return": [0.05],
+            "annualized_return": [0.25],
+            "annualized_volatility": [0.12],
+            "sharpe_ratio": [1.2],
+            "max_drawdown": [-0.03],
+            "cumulative_nav": [1.05],
+            "turnover": [0.15],
+            "cost_fraction": [0.0015],
+        }
+    )
 
     summary = compute_wf_summary_stats(single_window)
     assert summary.consistency_r2 == 0.0

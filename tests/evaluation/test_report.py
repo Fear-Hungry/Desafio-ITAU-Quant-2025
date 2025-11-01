@@ -4,7 +4,6 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import pandas as pd
-
 from itau_quant.evaluation import (
     AdvancedTearsheetData,
     ReportArtifacts,
@@ -15,7 +14,11 @@ from itau_quant.evaluation import (
     export_pdf,
     render_html,
 )
-from itau_quant.evaluation.stats import RiskContributionResult, RiskSummary, aggregate_risk_metrics
+from itau_quant.evaluation.stats import (
+    RiskContributionResult,
+    RiskSummary,
+    aggregate_risk_metrics,
+)
 from itau_quant.risk.budgets import RiskBudget
 
 
@@ -31,8 +34,12 @@ def _bundle_components():
         {"strategy": [0.1]},
         index=pd.MultiIndex.from_tuples([("risk", "volatility")]),
     )
-    drawdowns = pd.DataFrame({"strategy": [-0.2, -0.05]}, index=["2024-01-01", "2024-02-01"])
-    risk_summary = RiskSummary(metrics=risk_df, drawdowns=drawdowns, risk_contribution=None)
+    drawdowns = pd.DataFrame(
+        {"strategy": [-0.2, -0.05]}, index=["2024-01-01", "2024-02-01"]
+    )
+    risk_summary = RiskSummary(
+        metrics=risk_df, drawdowns=drawdowns, risk_contribution=None
+    )
     fig, ax = plt.subplots()
     ax.plot([0, 1], [0, 1])
     figure = TearsheetFigure(title="Test Figure", figure=fig)
@@ -42,7 +49,9 @@ def _bundle_components():
 
 def test_build_report_bundle_normalises_inputs():
     perf, risk_summary, figures, metadata = _bundle_components()
-    bundle = build_report_bundle(perf, risk_summary, figures, metadata, auto_tearsheet=False)
+    bundle = build_report_bundle(
+        perf, risk_summary, figures, metadata, auto_tearsheet=False
+    )
     assert isinstance(bundle, ReportBundle)
     assert bundle.performance.equals(perf)
     assert bundle.risk.equals(risk_summary.metrics)
@@ -64,7 +73,9 @@ def test_build_report_bundle_generates_tearsheet_figures():
         component=pd.DataFrame([[0.6]], index=contrib_index, columns=["strategy"]),
         marginal=pd.DataFrame([[0.6]], index=contrib_index, columns=["strategy"]),
         percentage=pd.DataFrame([[1.0]], index=contrib_index, columns=["strategy"]),
-        portfolio_volatility=pd.Series([0.1], index=contrib_index, name="portfolio_volatility"),
+        portfolio_volatility=pd.Series(
+            [0.1], index=contrib_index, name="portfolio_volatility"
+        ),
     )
     risk_summary = RiskSummary(
         metrics=risk_summary.metrics,
@@ -108,7 +119,9 @@ def test_export_pdf_fallback_to_html(tmp_path):
 
 def test_build_and_export_report_creates_files(tmp_path):
     perf, risk_summary, figures, metadata = _bundle_components()
-    artifacts = build_and_export_report(perf, risk_summary, figures, metadata, tmp_path, filename="demo_report")
+    artifacts = build_and_export_report(
+        perf, risk_summary, figures, metadata, tmp_path, filename="demo_report"
+    )
     assert isinstance(artifacts, ReportArtifacts)
     assert artifacts.html_path.exists()
     assert artifacts.pdf_path.exists()
@@ -134,7 +147,9 @@ def test_build_and_export_report_with_advanced_tearsheet(tmp_path):
         columns=["EQ", "FI"],
     )
 
-    risk_summary = aggregate_risk_metrics(returns, weights=weights, covariance=covariance)
+    risk_summary = aggregate_risk_metrics(
+        returns, weights=weights, covariance=covariance
+    )
 
     performance = pd.DataFrame(
         {"strategy": [returns.mean()]},

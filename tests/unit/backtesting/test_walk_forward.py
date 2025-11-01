@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-
 from itau_quant.backtesting.walk_forward import generate_walk_forward_splits
 
 

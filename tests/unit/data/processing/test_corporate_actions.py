@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-
 from itau_quant.data.processing import corporate_actions as ca
 
 
@@ -32,7 +31,9 @@ def _sample_actions() -> pd.DataFrame:
 
 
 def test_calculate_adjustment_factors_combined_events() -> None:
-    index = pd.to_datetime(["2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04", "2020-01-05"])
+    index = pd.to_datetime(
+        ["2020-01-01", "2020-01-02", "2020-01-03", "2020-01-04", "2020-01-05"]
+    )
     actions = _sample_actions()
     actions["ex_date"] = pd.to_datetime(actions["ex_date"])
 

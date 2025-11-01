@@ -12,11 +12,10 @@ Este script consolida:
 6. Sumário executivo
 """
 
-import sys
-from pathlib import Path
 from datetime import datetime
+from pathlib import Path
+
 import pandas as pd
-import numpy as np
 
 print("=" * 80)
 print("  PRISM-R - COMPREHENSIVE VALIDATION REPORT")
@@ -39,7 +38,7 @@ if production_log.exists():
     prod_df = pd.read_csv(production_log)
     latest_prod = prod_df.iloc[-1]
 
-    print(f"   ✅ Último rebalance de produção:")
+    print("   ✅ Último rebalance de produção:")
     print(f"      • Data: {latest_prod['timestamp']}")
     print(f"      • Estratégia: {latest_prod['strategy']}")
     print(f"      • Vol ex-ante: {latest_prod['vol_exante']:.2%}")
@@ -55,7 +54,7 @@ strategy_comparison = sorted(validation_dir.glob("strategy_comparison_*.csv"))
 if strategy_comparison:
     comparison_df = pd.read_csv(strategy_comparison[-1], index_col=0)
 
-    print(f"   ✅ Comparação de estratégias carregada:")
+    print("   ✅ Comparação de estratégias carregada:")
     print(f"      • Arquivo: {strategy_comparison[-1].name}")
     print(f"      • Estratégias testadas: {len(comparison_df)}")
     print()
@@ -97,7 +96,7 @@ if comparison_df is not None:
 
         print("Validação de Targets (ERC v2 Production):")
         print()
-        print(f"   Métrica              Target        Atual        Status")
+        print("   Métrica              Target        Atual        Status")
         print(f"   {'-' * 60}")
         print(
             f"   Sharpe Ratio         ≥ 0.80        {sharpe:.2f}        {'✅' if sharpe >= 0.80 else '❌'}"
@@ -287,7 +286,7 @@ if comparison_df is not None:
 
     if erc_rank:
         if erc_rank == 1:
-            print(f"   🏆 ERC v2 é a MELHOR estratégia testada!")
+            print("   🏆 ERC v2 é a MELHOR estratégia testada!")
         elif erc_rank == 2:
             best = ranking[0][0]
             delta = ranking[0][1] - sharpes[strategies.index("ERC_v2_Prod")]
@@ -316,8 +315,6 @@ timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 report_file = output_dir / f"VALIDATION_REPORT_{timestamp}.txt"
 
 # Redirecionar output para arquivo
-import io
-import contextlib
 
 # Por simplicidade, apenas confirmar que salvamos
 print(f"   ✅ Relatório salvo: {report_file}")
@@ -331,9 +328,7 @@ print()
 print("📋 CONCLUSÃO FINAL:")
 print()
 print(
-    "   O sistema PRISM-R ERC v2 passou em {}/{} testes ({:.1f}%).".format(
-        passed_tests, total_tests, passed_tests / total_tests * 100
-    )
+    f"   O sistema PRISM-R ERC v2 passou em {passed_tests}/{total_tests} testes ({passed_tests / total_tests * 100:.1f}%)."
 )
 print()
 print("   Sistema APROVADO para produção com monitoramento de drawdown.")

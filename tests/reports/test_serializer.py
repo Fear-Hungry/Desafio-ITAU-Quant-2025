@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-
-import pytest
 
 from itau_quant.reports.serializer import generate_markdown, save_results
 

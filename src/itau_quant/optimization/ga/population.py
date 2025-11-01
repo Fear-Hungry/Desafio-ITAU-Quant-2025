@@ -20,7 +20,9 @@ __all__ = [
 ]
 
 
-def _to_bool_mask(mask: Sequence[bool] | np.ndarray, size: int | None = None) -> np.ndarray:
+def _to_bool_mask(
+    mask: Sequence[bool] | np.ndarray, size: int | None = None
+) -> np.ndarray:
     array = np.asarray(mask, dtype=bool)
     if array.ndim != 1:
         raise ValueError("assets_mask must be 1-dimensional")
@@ -51,8 +53,18 @@ class Individual:
             raise ValueError("universe length must match mask length")
         return [asset for asset, active in zip(universe, self.assets_mask) if active]
 
-    def copy(self, *, assets_mask: Sequence[bool] | np.ndarray | None = None, params: Mapping[str, Any] | None = None, metadata: Mapping[str, Any] | None = None) -> "Individual":
-        new_mask = _to_bool_mask(assets_mask, self.assets_mask.size) if assets_mask is not None else self.assets_mask.copy()
+    def copy(
+        self,
+        *,
+        assets_mask: Sequence[bool] | np.ndarray | None = None,
+        params: Mapping[str, Any] | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> Individual:
+        new_mask = (
+            _to_bool_mask(assets_mask, self.assets_mask.size)
+            if assets_mask is not None
+            else self.assets_mask.copy()
+        )
         new_params = dict(self.params if params is None else params)
         new_metadata = dict(self.metadata if metadata is None else metadata)
         return Individual(new_mask, new_params, new_metadata)
@@ -65,7 +77,7 @@ class Individual:
         }
 
     @staticmethod
-    def from_dict(payload: Mapping[str, Any]) -> "Individual":
+    def from_dict(payload: Mapping[str, Any]) -> Individual:
         return Individual(
             np.asarray(payload["assets_mask"], dtype=bool),
             payload.get("params", {}),
@@ -73,7 +85,9 @@ class Individual:
         )
 
 
-def encode_individual(assets: Iterable[str], params: Mapping[str, Any], universe: Sequence[str]) -> Individual:
+def encode_individual(
+    assets: Iterable[str], params: Mapping[str, Any], universe: Sequence[str]
+) -> Individual:
     universe_index = {asset: idx for idx, asset in enumerate(universe)}
     mask = np.zeros(len(universe), dtype=bool)
     for asset in assets:
@@ -83,13 +97,17 @@ def encode_individual(assets: Iterable[str], params: Mapping[str, Any], universe
     return Individual(mask, params, {"origin": "encoded"})
 
 
-def decode_individual(individual: Individual, universe: Sequence[str]) -> tuple[list[str], dict[str, Any]]:
+def decode_individual(
+    individual: Individual, universe: Sequence[str]
+) -> tuple[list[str], dict[str, Any]]:
     assets = individual.active_assets(universe)
     params = dict(individual.params)
     return assets, params
 
 
-def _sample_hyperparams(hyper_cfg: Mapping[str, Any], rng: np.random.Generator) -> dict[str, Any]:
+def _sample_hyperparams(
+    hyper_cfg: Mapping[str, Any], rng: np.random.Generator
+) -> dict[str, Any]:
     params: dict[str, Any] = {}
     for name, spec in hyper_cfg.items():
         if isinstance(spec, Mapping):
@@ -114,7 +132,9 @@ def _sample_hyperparams(hyper_cfg: Mapping[str, Any], rng: np.random.Generator) 
     return params
 
 
-def _cardinality_bounds(universe_size: int, config: Mapping[str, Any]) -> tuple[int, int]:
+def _cardinality_bounds(
+    universe_size: int, config: Mapping[str, Any]
+) -> tuple[int, int]:
     card_cfg = config.get("cardinality", {})
     min_assets = int(card_cfg.get("min", min(5, universe_size)))
     max_assets = int(card_cfg.get("max", universe_size))
@@ -123,7 +143,9 @@ def _cardinality_bounds(universe_size: int, config: Mapping[str, Any]) -> tuple[
     return min_assets, max_assets
 
 
-def random_individual(universe: Sequence[str], config: Mapping[str, Any], rng: np.random.Generator) -> Individual:
+def random_individual(
+    universe: Sequence[str], config: Mapping[str, Any], rng: np.random.Generator
+) -> Individual:
     if not universe:
         raise ValueError("universe must not be empty")
     min_assets, max_assets = _cardinality_bounds(len(universe), config)
@@ -143,7 +165,12 @@ def jaccard_distance(mask_a: np.ndarray, mask_b: np.ndarray) -> float:
     return 1.0 - (intersect / union)
 
 
-def diversified_population(universe: Sequence[str], config: Mapping[str, Any], size: int, rng: np.random.Generator) -> list[Individual]:
+def diversified_population(
+    universe: Sequence[str],
+    config: Mapping[str, Any],
+    size: int,
+    rng: np.random.Generator,
+) -> list[Individual]:
     if size <= 0:
         raise ValueError("population size must be positive")
     diversity_cfg = config.get("diversity", {})
@@ -154,7 +181,10 @@ def diversified_population(universe: Sequence[str], config: Mapping[str, Any], s
     attempts = 0
     while len(population) < size and attempts < max_attempts:
         candidate = random_individual(universe, config, rng)
-        if all(jaccard_distance(candidate.assets_mask, indiv.assets_mask) >= min_jaccard for indiv in population):
+        if all(
+            jaccard_distance(candidate.assets_mask, indiv.assets_mask) >= min_jaccard
+            for indiv in population
+        ):
             population.append(candidate)
         attempts += 1
 
@@ -163,9 +193,15 @@ def diversified_population(universe: Sequence[str], config: Mapping[str, Any], s
     return population
 
 
-def warm_start_population(universe: Sequence[str], historical_weights: pd.DataFrame | Mapping[str, Any] | Sequence[pd.Series], config: Mapping[str, Any]) -> list[Individual]:
+def warm_start_population(
+    universe: Sequence[str],
+    historical_weights: pd.DataFrame | Mapping[str, Any] | Sequence[pd.Series],
+    config: Mapping[str, Any],
+) -> list[Individual]:
     if isinstance(historical_weights, pd.DataFrame):
-        records = [historical_weights.iloc[idx] for idx in range(len(historical_weights))]
+        records = [
+            historical_weights.iloc[idx] for idx in range(len(historical_weights))
+        ]
     elif isinstance(historical_weights, Mapping):
         records = [pd.Series(historical_weights)]
     else:
@@ -183,7 +219,11 @@ def warm_start_population(universe: Sequence[str], historical_weights: pd.DataFr
     return population
 
 
-def ensure_feasible(individual: Individual, constraints: Mapping[str, Any] | None, rng: np.random.Generator | None = None) -> Individual:
+def ensure_feasible(
+    individual: Individual,
+    constraints: Mapping[str, Any] | None,
+    rng: np.random.Generator | None = None,
+) -> Individual:
     if not constraints:
         return individual
 

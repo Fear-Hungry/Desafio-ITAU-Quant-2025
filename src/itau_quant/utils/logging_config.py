@@ -23,6 +23,11 @@ def get_logger(name: str, *, level: int | None = None) -> logging.Logger:
     return logger
 
 
-def log_dict(logger: logging.Logger, message: str, payload: Mapping[str, object], level: int = logging.INFO) -> None:
+def log_dict(
+    logger: logging.Logger,
+    message: str,
+    payload: Mapping[str, object],
+    level: int = logging.INFO,
+) -> None:
     serialised = ", ".join(f"{key}={value}" for key, value in payload.items())
     logger.log(level, "%s | %s", message, serialised)

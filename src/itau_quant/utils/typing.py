@@ -43,10 +43,9 @@ A importação direta de tipos como `from pandas import DataFrame` requer:
 """
 
 import os
-from dataclasses import dataclass
-from typing import Any, Dict, Protocol, TYPE_CHECKING, Union
-
 import typing as _typing
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any, Dict, Protocol, Union
 
 _TypeAlias = getattr(_typing, "TypeAlias", None)
 if _TypeAlias is None:  # pragma: no cover - exercised via regression test
@@ -105,10 +104,12 @@ PathLike: TypeAlias = Union[str, os.PathLike[str]]
 
 # --- Protocolos (Interfaces Estruturais) ---
 
+
 class SupportsToDataFrame(Protocol):
     """
     Protocolo para objetos que podem ser convertidos para um pandas DataFrame.
     """
+
     def to_dataframe(self) -> DataFrame:
         """Retorna a representação do objeto como um DataFrame."""
         ...
@@ -121,12 +122,8 @@ class OptimizerProtocol(Protocol):
     Qualquer classe que implemente o método `solve` com a assinatura correspondente
     satisfaz este protocolo (duck typing).
     """
-    def solve(
-        self,
-        mu: Series,
-        cov: DataFrame,
-        config: Dict[str, Any]
-    ) -> Series:
+
+    def solve(self, mu: Series, cov: DataFrame, config: Dict[str, Any]) -> Series:
         """
         Executa a otimização e retorna os pesos ótimos do portfólio.
 
@@ -143,11 +140,15 @@ class OptimizerProtocol(Protocol):
 
 # --- Estruturas de Dados Tipadas ---
 
+
 @dataclass
 class StrategyResult:
     """
     Estrutura padronizada para encapsular os resultados de um backtest.
     """
+
     nav: Series  #: Série temporal do Net Asset Value (NAV) da estratégia.
     trades: DataFrame  #: DataFrame com o registro de todas as operações.
-    metrics: Dict[str, float]  #: Dicionário com métricas de performance (ex: Sharpe, Drawdown).
+    metrics: Dict[
+        str, float
+    ]  #: Dicionário com métricas de performance (ex: Sharpe, Drawdown).

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import pandas as pd
-
 from itau_quant.portfolio.rounding import rounding_pipeline
 
 

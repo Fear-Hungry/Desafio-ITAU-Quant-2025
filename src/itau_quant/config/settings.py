@@ -9,9 +9,9 @@ automático de tipos primitivos.
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass
 from pathlib import Path
-import os
 from typing import Any, Mapping, MutableMapping
 
 from .constants import DEFAULT_BASE_CURRENCY
@@ -137,7 +137,7 @@ class Settings:
         overrides: Mapping[str, Any] | None = None,
         env_file: str | Path | None = None,
         environ: Mapping[str, str] | None = None,
-    ) -> "Settings":
+    ) -> Settings:
         """Create :class:`Settings` merging defaults, env file, env vars and overrides."""
 
         overrides = dict(overrides or {})
@@ -189,7 +189,9 @@ class Settings:
 
         data_dir = pull("DATA_DIR", default="data", target=Path)
         raw_data_dir = pull("RAW_DATA_DIR", default=data_dir / "raw", target=Path)
-        processed_data_dir = pull("PROCESSED_DATA_DIR", default=data_dir / "processed", target=Path)
+        processed_data_dir = pull(
+            "PROCESSED_DATA_DIR", default=data_dir / "processed", target=Path
+        )
         notebooks_dir = pull("NOTEBOOKS_DIR", default="notebooks", target=Path)
         reports_dir = pull("REPORTS_DIR", default="reports", target=Path)
         configs_dir = pull("CONFIGS_DIR", default="configs", target=Path)

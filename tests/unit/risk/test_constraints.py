@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import cvxpy as cp
 import numpy as np
-
 from itau_quant.risk.constraints import (
     build_constraints,
     leverage_constraint,
@@ -28,9 +27,7 @@ def test_build_constraints_end_to_end():
     config = {
         "weight_sum": 1.0,
         "max_leverage": 1.2,
-        "budgets": [
-            {"name": "Group", "tickers": ["A", "B"], "max_weight": 0.7}
-        ],
+        "budgets": [{"name": "Group", "tickers": ["A", "B"], "max_weight": 0.7}],
     }
     context = {"weights_var": weights, "asset_index": ["A", "B", "C"]}
     constraints = build_constraints(config, context)

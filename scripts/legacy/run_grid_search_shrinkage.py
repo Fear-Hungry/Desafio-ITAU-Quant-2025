@@ -11,8 +11,8 @@ Testa combinações de:
 Objetivo: encontrar config que bate 1/N + 0.2 Sharpe OOS
 """
 
-import sys
 import itertools
+import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -53,7 +53,7 @@ VOL_TARGETS = [0.08, 0.10, 0.12]  # Target annual volatility
 TURNOVER_CAPS = [0.10, 0.125]  # Monthly turnover caps
 RIDGE_VALUES = [0.0, 5e-4]  # Ridge penalty
 
-print(f"📊 Grid configuration:")
+print("📊 Grid configuration:")
 print(f"   • γ (shrinkage):   {GAMMA_VALUES}")
 print(f"   • Vol targets:     {[f'{v:.0%}' for v in VOL_TARGETS]}")
 print(f"   • TO caps:         {[f'{t:.1%}' for t in TURNOVER_CAPS]}")
@@ -65,7 +65,7 @@ print()
 # [1] CARREGAR DADOS
 # ============================================================================
 
-print(f"📥 [1/4] Carregando dados históricos...")
+print("📥 [1/4] Carregando dados históricos...")
 print(f"   Período: {START_DATE.date()} a {END_DATE.date()}")
 
 data = yf.download(
@@ -96,7 +96,7 @@ print()
 # [2] CALCULAR RETORNOS
 # ============================================================================
 
-print(f"📊 [2/4] Calculando retornos...")
+print("📊 [2/4] Calculando retornos...")
 
 returns = prices.pct_change().dropna()
 returns = returns.replace([np.inf, -np.inf], np.nan).dropna(how="all")
@@ -108,12 +108,12 @@ print()
 # [3] DEFINIR FUNÇÃO DE BACKTEST
 # ============================================================================
 
-print(f"⚙️  [3/4] Preparando backtest walk-forward...")
+print("⚙️  [3/4] Preparando backtest walk-forward...")
 
+from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 from itau_quant.estimators.mu import huber_mean
 from itau_quant.estimators.mu_robust import combined_shrinkage
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
+from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 
 def run_backtest(
@@ -256,7 +256,7 @@ def run_backtest(
 # [4] RODAR GRID SEARCH
 # ============================================================================
 
-print(f"🔄 [4/4] Rodando grid search...")
+print("🔄 [4/4] Rodando grid search...")
 print()
 
 configs = list(itertools.product(GAMMA_VALUES, VOL_TARGETS, TURNOVER_CAPS, RIDGE_VALUES))
@@ -277,7 +277,7 @@ for i, (gamma, vol_target, to_cap, ridge) in enumerate(configs, 1):
     })
 
     if np.isnan(metrics["sharpe"]):
-        print(f"❌ Failed")
+        print("❌ Failed")
     else:
         print(f"Sharpe={metrics['sharpe']:.3f}")
 
@@ -316,13 +316,13 @@ print()
 # Best config
 best = df_results.iloc[0]
 
-print(f"✅ Melhor configuração:")
+print("✅ Melhor configuração:")
 print(f"   • γ (shrinkage):     {best['gamma']:.2f}")
 print(f"   • Vol target:        {best['vol_target']:.1%}")
 print(f"   • Turnover cap:      {best['turnover_cap']:.1%}")
 print(f"   • Ridge:             {best['ridge']:.1e}")
 print()
-print(f"   📈 Métricas:")
+print("   📈 Métricas:")
 print(f"   • Sharpe OOS:        {best['sharpe']:.3f}")
 print(f"   • Retorno anual:     {best['return_annual']:.2%}")
 print(f"   • Vol anual:         {best['vol_annual']:.2%}")

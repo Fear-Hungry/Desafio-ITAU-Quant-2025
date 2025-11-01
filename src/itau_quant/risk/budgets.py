@@ -63,7 +63,9 @@ def validate_budgets(budgets: Iterable[RiskBudget], universe: Sequence[str]) -> 
     for budget in budgets:
         missing = [ticker for ticker in budget.tickers if ticker not in universe_set]
         if missing:
-            raise ValueError(f"Budget '{budget.name}' references unknown tickers: {missing}")
+            raise ValueError(
+                f"Budget '{budget.name}' references unknown tickers: {missing}"
+            )
         if budget.max_weight is not None and budget.max_weight > 1.0 + 1e-6:
             raise ValueError(f"Budget '{budget.name}' has max_weight greater than 1.")
 
@@ -79,7 +81,9 @@ def budgets_to_constraints(
     constraints: list[cp.Constraint] = []
 
     for budget in budgets:
-        indices = [index_map[ticker] for ticker in budget.tickers if ticker in index_map]
+        indices = [
+            index_map[ticker] for ticker in budget.tickers if ticker in index_map
+        ]
         if not indices:
             continue
         subset_sum = cp.sum(weights_var[indices])

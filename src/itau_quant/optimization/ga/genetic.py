@@ -10,7 +10,12 @@ import numpy as np
 from .crossover import crossover_factory
 from .evaluation import EvaluationResult, evaluate_population
 from .mutation import mutation_pipeline
-from .population import Individual, diversified_population, ensure_feasible, warm_start_population
+from .population import (
+    Individual,
+    diversified_population,
+    ensure_feasible,
+    warm_start_population,
+)
 from .selection import selection_pipeline
 
 __all__ = [
@@ -52,7 +57,9 @@ def _calculate_diversity(population: Sequence[Individual]) -> float:
     return float(np.nanmean(upper))
 
 
-def _initial_population(universe: Sequence[str], config: Mapping[str, Any], rng: np.random.Generator) -> list[Individual]:
+def _initial_population(
+    universe: Sequence[str], config: Mapping[str, Any], rng: np.random.Generator
+) -> list[Individual]:
     pop_cfg = config.get("population", {})
     size = int(pop_cfg.get("size", 20))
     base_population = diversified_population(universe, pop_cfg, size, rng)
@@ -84,7 +91,9 @@ def run_genetic_algorithm(
     crossover_cfg.setdefault("constraints", config.get("constraints"))
     crossover = crossover_factory(crossover_cfg)
 
-    selection_cfg = config.get("selection", {"method": "tournament", "tournament_size": 3})
+    selection_cfg = config.get(
+        "selection", {"method": "tournament", "tournament_size": 3}
+    )
     evaluation_cfg = config.get("evaluation", {"metric": "objective"})
 
     generations = int(config.get("generations", 10))
@@ -124,7 +133,9 @@ def run_genetic_algorithm(
 
         next_population: list[Individual] = elites.copy()
         while len(next_population) < len(population):
-            parents = selection_pipeline(population, fitness_scores, selection_cfg, rng, num_parents=2)
+            parents = selection_pipeline(
+                population, fitness_scores, selection_cfg, rng, num_parents=2
+            )
             child_a, child_b = crossover(parents[0], parents[1], rng)
             child_a = mutation_pipeline(child_a, mutation_cfg, rng)
             child_b = mutation_pipeline(child_b, mutation_cfg, rng)

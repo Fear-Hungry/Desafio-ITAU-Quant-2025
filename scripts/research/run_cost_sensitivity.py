@@ -7,8 +7,11 @@ from pathlib import Path
 from typing import Iterable
 
 import pandas as pd
-
-from itau_quant.evaluation.oos import StrategySpec, compare_baselines, default_strategies
+from itau_quant.evaluation.oos import (
+    StrategySpec,
+    compare_baselines,
+    default_strategies,
+)
 
 UNIVERSE_RETURNS = Path("results/baselines/baseline_returns_oos.parquet")
 COST_GRID = [30.0, 50.0, 75.0]

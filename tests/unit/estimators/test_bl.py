@@ -1,17 +1,16 @@
 import numpy as np
 import pandas as pd
 import pytest
-from numpy.testing import assert_allclose
-from pandas.testing import assert_frame_equal, assert_series_equal
-
 from itau_quant.estimators.bl import (
+    _solve_psd,
     black_litterman,
     build_projection_matrix,
     posterior_returns,
     reverse_optimization,
     view_uncertainty,
-    _solve_psd,
 )
+from numpy.testing import assert_allclose
+from pandas.testing import assert_frame_equal, assert_series_equal
 
 
 @pytest.fixture
@@ -62,9 +61,7 @@ def test_reverse_optimization_requires_non_zero_risk_premium():
     )
     weights = pd.Series([1.0 / 3] * 3, index=assets)
 
-    with pytest.raises(
-        ValueError, match="market_return must differ from risk_free"
-    ):
+    with pytest.raises(ValueError, match="market_return must differ from risk_free"):
         reverse_optimization(
             weights=weights,
             cov=cov,
@@ -412,7 +409,9 @@ def test_posterior_mean_identity_holds(market_data):
     tau_sigma = tau * cov_mat
 
     # Forma 1
-    lhs_adjustment = _solve_psd(P @ tau_sigma @ P.T + Omega, (Q - P @ pi_vec)[:, None]).ravel()
+    lhs_adjustment = _solve_psd(
+        P @ tau_sigma @ P.T + Omega, (Q - P @ pi_vec)[:, None]
+    ).ravel()
     mu_form1 = pi_vec + tau_sigma @ P.T @ lhs_adjustment
 
     # Forma 2
@@ -454,8 +453,10 @@ def test_posterior_returns_fast_path_skips_sigma_inverse(market_data, monkeypatc
 
     def tracking_solve(A: np.ndarray, B: np.ndarray, jitter: float = 1e-10):
         call_log.append(B.shape)
-        if B.ndim == 2 and B.shape[0] == B.shape[1] and np.allclose(
-            B, np.eye(B.shape[0])
+        if (
+            B.ndim == 2
+            and B.shape[0] == B.shape[1]
+            and np.allclose(B, np.eye(B.shape[0]))
         ):
             raise AssertionError("Fast path should not solve against identity.")
         return original_solve(A, B, jitter=jitter)

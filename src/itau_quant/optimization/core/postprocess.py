@@ -17,7 +17,9 @@ __all__ = [
 ]
 
 
-def _ensure_series(weights: Sequence[float] | pd.Series, index: Sequence[str] | None = None) -> pd.Series:
+def _ensure_series(
+    weights: Sequence[float] | pd.Series, index: Sequence[str] | None = None
+) -> pd.Series:
     if isinstance(weights, pd.Series):
         series = weights.astype(float).fillna(0.0)
         if index is not None:

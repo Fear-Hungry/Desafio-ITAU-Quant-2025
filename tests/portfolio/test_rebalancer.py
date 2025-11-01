@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 from itau_quant.portfolio import MarketData, rebalance
 
 
@@ -35,7 +34,11 @@ def test_rebalance_pipeline_returns_weights():
             "min_weight": 0.0,
             "max_weight": 0.6,
         },
-        "rounding": {"lot_sizes": 1, "method": "nearest", "cost_model": {"linear_bps": 5}},
+        "rounding": {
+            "lot_sizes": 1,
+            "method": "nearest",
+            "cost_model": {"linear_bps": 5},
+        },
         "costs": {"linear_bps": 8},
         "returns_window": 60,
     }
@@ -103,4 +106,6 @@ def test_rebalance_applies_regime_detection():
 
     assert "regime_state" in result.log
     assert result.log["regime_state"]["label"] in {"stressed", "crash"}
-    assert result.log.get("lambda_adjusted", 0.0) >= config["optimizer"]["risk_aversion"]
+    assert (
+        result.log.get("lambda_adjusted", 0.0) >= config["optimizer"]["risk_aversion"]
+    )

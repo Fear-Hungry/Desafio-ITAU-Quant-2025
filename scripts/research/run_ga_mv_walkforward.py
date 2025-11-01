@@ -21,13 +21,19 @@ from typing import Sequence
 
 import numpy as np
 import pandas as pd
-
-from itau_quant.estimators.mu import huber_mean
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.evaluation.oos import StrategySpec, compare_baselines, default_strategies
+from itau_quant.estimators.mu import huber_mean
+from itau_quant.evaluation.oos import (
+    StrategySpec,
+    compare_baselines,
+    default_strategies,
+)
 from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 from itau_quant.optimization.core.risk_parity import iterative_risk_parity
-from itau_quant.optimization.heuristics.metaheuristic import MetaheuristicResult, metaheuristic_outer
+from itau_quant.optimization.heuristics.metaheuristic import (
+    MetaheuristicResult,
+    metaheuristic_outer,
+)
 
 RESULTS_DIR = Path("results") / "ga_metaheuristic"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)

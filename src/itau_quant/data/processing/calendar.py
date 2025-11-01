@@ -24,10 +24,10 @@ feriados e sessões ausentes da fonte de mercado.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional, Union, Iterable
+from typing import Iterable, Union
 
-import numpy as np
 import pandas as pd
+
 from .clean import ensure_dtindex
 
 Datelike = Union[str, pd.Timestamp, datetime]
@@ -72,13 +72,15 @@ def next_trading_day(index: Iterable, when: Datelike) -> pd.Timestamp:
     if len(idx) == 0:
         raise ValueError("Índice de negociação vazio")
 
-    ts = pd.Timestamp(when).tz_localize(
-        None) if isinstance(when, (str, datetime)) else when
+    ts = (
+        pd.Timestamp(when).tz_localize(None)
+        if isinstance(when, (str, datetime))
+        else when
+    )
     pos = idx.searchsorted(ts, side="left")
 
     if pos >= len(idx):
-        raise IndexError(
-            "Não há próximo pregão além da última data informada.")
+        raise IndexError("Não há próximo pregão além da última data informada.")
 
     return idx[pos]
 
@@ -90,8 +92,11 @@ def prev_trading_day(index: Iterable, when: Datelike) -> pd.Timestamp:
     if len(idx) == 0:
         raise ValueError("Índice de negociação vazio")
 
-    ts = pd.Timestamp(when).tz_localize(
-        None) if isinstance(when, (str, datetime)) else when
+    ts = (
+        pd.Timestamp(when).tz_localize(None)
+        if isinstance(when, (str, datetime))
+        else when
+    )
     pos = idx.searchsorted(ts, side="right") - 1
     if pos < 0:
         raise IndexError("Não há dia de negociação anterior à data informada.")
@@ -108,9 +113,9 @@ def clamp_to_index(index: Iterable, dates: Iterable[Datelike]) -> pd.DatetimeInd
 def rebalance_schedule(
     index: Iterable,
     mode: str = "BMS",
-    start: Optional[Datelike] = None,
-    end: Optional[Datelike] = None,
-    days: Optional[int] = None,
+    start: Datelike | None = None,
+    end: Datelike | None = None,
+    days: int | None = None,
     weekly_anchor: str = "W-FRI",
 ) -> pd.DatetimeIndex:
     """Gera as datas de rebalance conforme o índice de negociação.
@@ -145,7 +150,6 @@ def rebalance_schedule(
     elif mode.upper() == "WEEKLY":
         sched = weekly_last_trading_day(idx, anchor=weekly_anchor)
     else:
-        raise ValueError(
-            f"Modo invalido: {mode}. Use 'BMS', 'BME' ou 'WEEKLY'.")
+        raise ValueError(f"Modo invalido: {mode}. Use 'BMS', 'BME' ou 'WEEKLY'.")
 
     return clamp_to_index(idx, sched)

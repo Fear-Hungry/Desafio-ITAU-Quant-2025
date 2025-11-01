@@ -3,7 +3,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-
 from itau_quant.estimators import cov
 
 
@@ -31,7 +30,9 @@ def test_project_to_psd_clips_negative_eigenvalues():
     matrix = np.array([[2.0, 3.0], [3.0, 2.0]])
     matrix[1, 1] = -1.0  # induce negative eigenvalue
     projected = cov.project_to_psd(matrix, epsilon=1e-9)
-    eigvals = np.linalg.eigvalsh(projected if isinstance(projected, np.ndarray) else projected.to_numpy())
+    eigvals = np.linalg.eigvalsh(
+        projected if isinstance(projected, np.ndarray) else projected.to_numpy()
+    )
     assert np.all(eigvals >= 0)
 
 
@@ -72,5 +73,7 @@ def test_student_t_cov_scales_sample(nu):
 def test_regularize_cov_methods(method):
     matrix = cov.sample_cov(_toy_returns())
     regularized = cov.regularize_cov(matrix, method=method, floor=0.05)
-    eigvals = np.linalg.eigvalsh(regularized.to_numpy() if isinstance(regularized, pd.DataFrame) else regularized)
+    eigvals = np.linalg.eigvalsh(
+        regularized.to_numpy() if isinstance(regularized, pd.DataFrame) else regularized
+    )
     assert np.all(eigvals >= -1e-9)

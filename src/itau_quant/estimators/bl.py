@@ -39,7 +39,7 @@ Checklist de implementação
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -53,12 +53,12 @@ MatrixLike = Union[np.ndarray, pd.DataFrame]
 
 
 def reverse_optimization(
-    weights: Union[pd.Series, Sequence[float], np.ndarray],
-    cov: Union[pd.DataFrame, np.ndarray],
-    risk_aversion: Optional[float] = None,
-    market_return: Optional[float] = None,
+    weights: pd.Series | Sequence[float] | np.ndarray,
+    cov: pd.DataFrame | np.ndarray,
+    risk_aversion: float | None = None,
+    market_return: float | None = None,
     risk_free: float = 0.0,
-) -> Tuple[pd.Series, float]:
+) -> tuple[pd.Series, float]:
     """
     Obtém retornos de equilíbrio (π) via reverse optimization.
 
@@ -155,10 +155,10 @@ def reverse_optimization(
 
 
 def build_projection_matrix(
-    views: Optional[List[Dict[str, Any]]],
+    views: list[dict[str, Any]] | None,
     assets: Sequence[str],
     normalize_relative: bool = True,
-) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Constrói P, Q e vetor de confidences a partir de lista de views.
 
@@ -192,9 +192,9 @@ def build_projection_matrix(
     asset_list = list(assets)
     asset_to_idx = {asset: idx for idx, asset in enumerate(asset_list)}
 
-    P_rows: List[np.ndarray] = []
-    Q_vals: List[float] = []
-    confidences: List[float] = []
+    P_rows: list[np.ndarray] = []
+    Q_vals: list[float] = []
+    confidences: list[float] = []
 
     for view in views:
         if "type" not in view:
@@ -270,13 +270,13 @@ def build_projection_matrix(
 
 
 def view_uncertainty(
-    views: Optional[List[Dict[str, Any]]],
+    views: list[dict[str, Any]] | None,
     tau: float,
-    cov: Union[pd.DataFrame, np.ndarray],
+    cov: pd.DataFrame | np.ndarray,
     P: np.ndarray,
     confidences: np.ndarray,
     mode: str = "diagonal",
-    user_Omega: Optional[Union[pd.DataFrame, np.ndarray]] = None,
+    user_Omega: pd.DataFrame | np.ndarray | None = None,
     min_var: float = 1e-12,
 ) -> np.ndarray:
     """
@@ -366,8 +366,8 @@ def view_uncertainty(
 
 
 def posterior_returns(
-    pi: Union[pd.Series, np.ndarray],
-    cov: Union[pd.DataFrame, np.ndarray],
+    pi: pd.Series | np.ndarray,
+    cov: pd.DataFrame | np.ndarray,
     P: np.ndarray,
     Q: np.ndarray,
     Omega: np.ndarray,
@@ -376,7 +376,7 @@ def posterior_returns(
     add_mean_uncertainty: bool = False,
     return_sigma_posterior: bool = False,
     solver_jitter: float = 1e-10,
-) -> Tuple[pd.Series, pd.DataFrame, Optional[pd.DataFrame]]:
+) -> tuple[pd.Series, pd.DataFrame, pd.DataFrame | None]:
     """
     Calcula o par (μ_BL, Σ) e, opcionalmente, a matriz de covariância da
     incerteza dos retornos esperados (posterior do mean).
@@ -494,7 +494,7 @@ def posterior_returns(
     mu_vec = pi_vec + tau_sigma @ P_matrix.T @ middle
 
     cov_bl_values = cov_array.copy()
-    sigma_post_df: Optional[pd.DataFrame] = None
+    sigma_post_df: pd.DataFrame | None = None
 
     if return_sigma_posterior or add_mean_uncertainty:
         inv_tau_sigma = _solve_psd(tau_sigma, np.eye(n), jitter=solver_jitter)
@@ -573,23 +573,23 @@ def _solve_psd(lhs: np.ndarray, rhs: np.ndarray, jitter: float = 1e-10) -> np.nd
 
 
 def black_litterman(
-    cov: Union[pd.DataFrame, np.ndarray],
-    weights: Optional[Union[pd.Series, Sequence[float]]] = None,
-    pi: Optional[Union[pd.Series, Sequence[float]]] = None,
-    risk_aversion: Optional[float] = None,
-    market_return: Optional[float] = None,
+    cov: pd.DataFrame | np.ndarray,
+    weights: pd.Series | Sequence[float] | None = None,
+    pi: pd.Series | Sequence[float] | None = None,
+    risk_aversion: float | None = None,
+    market_return: float | None = None,
     risk_free: float = 0.0,
-    views: Optional[List[Dict[str, Any]]] = None,
+    views: list[dict[str, Any]] | None = None,
     tau: float = 0.025,
     omega_mode: str = "diagonal",
-    user_Omega: Optional[Union[pd.DataFrame, np.ndarray]] = None,
-    assets: Optional[Sequence[str]] = None,
+    user_Omega: pd.DataFrame | np.ndarray | None = None,
+    assets: Sequence[str] | None = None,
     ensure_psd: bool = True,
     psd_epsilon: float = 1e-9,
     return_intermediates: bool = False,
     add_mean_uncertainty: bool = False,
     solver_jitter: float = 1e-10,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Orquestra o processo Black-Litterman.
 
@@ -638,9 +638,9 @@ def black_litterman(
             raise ValueError("assets length must match covariance dimension.")
         cov_df = cov_df.loc[assets_list, assets_list]
 
-    pi_series: Optional[pd.Series] = None
-    delta_used: Optional[float] = risk_aversion
-    weights_series: Optional[pd.Series] = None
+    pi_series: pd.Series | None = None
+    delta_used: float | None = risk_aversion
+    weights_series: pd.Series | None = None
 
     if weights is not None:
         if isinstance(weights, pd.Series):
@@ -677,7 +677,7 @@ def black_litterman(
 
     P, Q, confidences = build_projection_matrix(views, assets_list)
 
-    sigma_post: Optional[pd.DataFrame] = None
+    sigma_post: pd.DataFrame | None = None
     omega_matrix: np.ndarray = np.zeros((0, 0))
 
     if P.shape[0] == 0:

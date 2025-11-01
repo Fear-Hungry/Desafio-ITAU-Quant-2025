@@ -106,4 +106,4 @@ def _parse_value(token: str) -> Any:
             return float(token)
         return int(token)
     except ValueError:
-        return token.strip('"\'')
+        return token.strip("\"'")

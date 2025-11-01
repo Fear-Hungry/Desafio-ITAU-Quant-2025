@@ -39,7 +39,9 @@ def _as_series(values: Sequence[float] | pd.Series, index: Sequence[str]) -> pd.
     return pd.Series(array, index=index, dtype=float)
 
 
-def _as_dataframe(matrix: pd.DataFrame | np.ndarray, index: Sequence[str]) -> pd.DataFrame:
+def _as_dataframe(
+    matrix: pd.DataFrame | np.ndarray, index: Sequence[str]
+) -> pd.DataFrame:
     if isinstance(matrix, pd.DataFrame):
         return matrix.reindex(index=index, columns=index).astype(float)
     array = np.asarray(matrix, dtype=float)
@@ -112,7 +114,9 @@ def add_cost_terms(
     delta = weights - prev
     penalty = 0.0
 
-    linear = costs.get("linear") or costs.get("linear_penalty") or costs.get("linear_bps")
+    linear = (
+        costs.get("linear") or costs.get("linear_penalty") or costs.get("linear_bps")
+    )
     if linear:
         penalty += float(linear) * cp.norm1(delta)
 
@@ -123,7 +127,9 @@ def add_cost_terms(
     return objective_expr - penalty
 
 
-def normalize_weights(weights: Sequence[float] | pd.Series, *, index: Sequence[str] | None = None) -> pd.Series:
+def normalize_weights(
+    weights: Sequence[float] | pd.Series, *, index: Sequence[str] | None = None
+) -> pd.Series:
     """Ensure weights sum to unity and replace NaNs with zero."""
 
     if isinstance(weights, pd.Series):
@@ -186,7 +192,9 @@ def solve_sharpe_socp(
         constraints.append(cp.norm1(weights - prev_array) <= float(turnover_limit))
 
     costs = config.get("costs")
-    objective_expr = add_cost_terms(objective_expr, weights, previous_weights, costs, asset_index=assets)
+    objective_expr = add_cost_terms(
+        objective_expr, weights, previous_weights, costs, asset_index=assets
+    )
 
     problem = cp.Problem(cp.Maximize(objective_expr), constraints)
     summary = solve_problem(
@@ -198,13 +206,19 @@ def solve_sharpe_socp(
     if weights.value is None:
         raw_weights = pd.Series(np.zeros(len(assets)), index=assets, dtype=float)
     else:
-        raw_weights = pd.Series(np.asarray(weights.value).ravel(), index=assets, dtype=float)
+        raw_weights = pd.Series(
+            np.asarray(weights.value).ravel(), index=assets, dtype=float
+        )
 
     weights_series = normalize_weights(raw_weights)
     mu_vec = mu_series.to_numpy(dtype=float)
     cov_matrix = cov_df.to_numpy(dtype=float)
     expected_return = float(mu_vec @ weights_series.to_numpy(dtype=float))
-    variance = float(weights_series.to_numpy(dtype=float) @ cov_matrix @ weights_series.to_numpy(dtype=float))
+    variance = float(
+        weights_series.to_numpy(dtype=float)
+        @ cov_matrix
+        @ weights_series.to_numpy(dtype=float)
+    )
     volatility = float(np.sqrt(max(variance, 0.0)))
     sharpe = expected_return / volatility if volatility > 0 else float("nan")
 

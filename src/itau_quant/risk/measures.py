@@ -77,16 +77,34 @@ def historical_cvar(returns: pd.Series, alpha: float = 0.95) -> float:
     return float(losses.head(cutoff).mean())
 
 
-def tracking_error(strategy_returns: pd.Series, benchmark_returns: pd.Series, periods_per_year: int = 252) -> float:
-    diff = pd.Series(strategy_returns).align(pd.Series(benchmark_returns), join="inner")[0] - pd.Series(benchmark_returns).align(pd.Series(strategy_returns), join="inner")[0]
+def tracking_error(
+    strategy_returns: pd.Series,
+    benchmark_returns: pd.Series,
+    periods_per_year: int = 252,
+) -> float:
+    diff = (
+        pd.Series(strategy_returns).align(pd.Series(benchmark_returns), join="inner")[0]
+        - pd.Series(benchmark_returns).align(pd.Series(strategy_returns), join="inner")[
+            0
+        ]
+    )
     diff = diff.dropna()
     if diff.empty:
         return float("nan")
     return float(diff.std(ddof=0) * np.sqrt(periods_per_year))
 
 
-def information_ratio(strategy_returns: pd.Series, benchmark_returns: pd.Series, periods_per_year: int = 252) -> float:
-    diff = pd.Series(strategy_returns).align(pd.Series(benchmark_returns), join="inner")[0] - pd.Series(benchmark_returns).align(pd.Series(strategy_returns), join="inner")[0]
+def information_ratio(
+    strategy_returns: pd.Series,
+    benchmark_returns: pd.Series,
+    periods_per_year: int = 252,
+) -> float:
+    diff = (
+        pd.Series(strategy_returns).align(pd.Series(benchmark_returns), join="inner")[0]
+        - pd.Series(benchmark_returns).align(pd.Series(strategy_returns), join="inner")[
+            0
+        ]
+    )
     diff = diff.dropna()
     if diff.empty:
         return float("nan")

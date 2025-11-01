@@ -3,7 +3,6 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-
 from itau_quant.utils import checks
 
 
@@ -27,7 +26,9 @@ def test_assert_psd_detects_non_psd_matrix() -> None:
 
 
 def test_validate_returns_frame_requires_datetime_index() -> None:
-    frame = pd.DataFrame({"A": [0.01, 0.02]}, index=pd.date_range("2020-01-01", periods=2))
+    frame = pd.DataFrame(
+        {"A": [0.01, 0.02]}, index=pd.date_range("2020-01-01", periods=2)
+    )
     checks.validate_returns_frame(frame)
     frame_bad = frame.copy()
     frame_bad.index = [0, 1]

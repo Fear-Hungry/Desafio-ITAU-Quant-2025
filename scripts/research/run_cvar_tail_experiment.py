@@ -13,8 +13,11 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-
-from itau_quant.evaluation.oos import StrategySpec, compare_baselines, default_strategies
+from itau_quant.evaluation.oos import (
+    StrategySpec,
+    compare_baselines,
+    default_strategies,
+)
 from itau_quant.optimization.core.cvar_lp import CvarConfig, solve_cvar_lp
 
 print("=" * 80)

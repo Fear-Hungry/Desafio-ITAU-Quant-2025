@@ -20,13 +20,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Iterable, Optional
+from typing import Iterable
 
 
 def request_hash(
     tickers: Iterable[str],
-    start: Optional[str],
-    end: Optional[str],
+    start: str | None,
+    end: str | None,
 ) -> str:
     """Build a deterministic hash for caching artefacts on disk."""
     payload = {

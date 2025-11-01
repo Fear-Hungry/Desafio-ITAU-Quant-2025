@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import numpy as np
-
 from itau_quant.risk.cvar import historical_scenarios, solve_cvar_portfolio
 
 

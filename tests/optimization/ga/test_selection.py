@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-
-from itau_quant.optimization.ga.population import Individual
 from itau_quant.optimization.ga import selection
+from itau_quant.optimization.ga.population import Individual
 
 
 def _population() -> list[Individual]:
@@ -39,5 +38,11 @@ def test_selection_pipeline_multiple_methods() -> None:
     pop = _population()
     fitness = [0.1, 0.5, 1.0]
     rng = np.random.default_rng(9)
-    parents = selection.selection_pipeline(pop, fitness, {"method": ["tournament", "roulette"], "tournament_size": 2}, rng, num_parents=2)
+    parents = selection.selection_pipeline(
+        pop,
+        fitness,
+        {"method": ["tournament", "roulette"], "tournament_size": 2},
+        rng,
+        num_parents=2,
+    )
     assert len(parents) == 2

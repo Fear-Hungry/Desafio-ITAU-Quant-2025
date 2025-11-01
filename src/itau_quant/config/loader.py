@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TypeVar, Type, Union, Optional
+from typing import TypeVar
 
 import yaml
 from pydantic import BaseModel, ValidationError
@@ -35,7 +35,9 @@ class ConfigError(Exception):
     pass
 
 
-def _resolve_config_path(file_path: Union[str, Path], project_root: Optional[Path] = None) -> Path:
+def _resolve_config_path(
+    file_path: str | Path, project_root: Path | None = None
+) -> Path:
     """Resolve configuration file path.
 
     Parameters
@@ -78,10 +80,10 @@ def _resolve_config_path(file_path: Union[str, Path], project_root: Optional[Pat
 
 
 def load_config(
-    file_path: Union[str, Path],
-    schema: Type[T],
+    file_path: str | Path,
+    schema: type[T],
     *,
-    project_root: Optional[Path] = None,
+    project_root: Path | None = None,
     strict: bool = True,
 ) -> T:
     """Load and validate YAML configuration file.
@@ -121,7 +123,7 @@ def load_config(
 
         # Load YAML
         logger.debug(f"Loading config from: {resolved_path}")
-        with open(resolved_path, "r", encoding="utf-8") as f:
+        with open(resolved_path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         if data is None:
@@ -157,7 +159,7 @@ def load_config(
 
 
 def save_config(
-    config: BaseModel, file_path: Union[str, Path], *, project_root: Optional[Path] = None
+    config: BaseModel, file_path: str | Path, *, project_root: Path | None = None
 ) -> Path:
     """Save Pydantic configuration model to YAML file.
 
@@ -210,7 +212,9 @@ def save_config(
 
 
 def load_configs_batch(
-    configs: dict[str, tuple[Union[str, Path], Type[BaseModel]]], *, project_root: Optional[Path] = None
+    configs: dict[str, tuple[str | Path, type[BaseModel]]],
+    *,
+    project_root: Path | None = None,
 ) -> dict[str, BaseModel]:
     """Load multiple configuration files at once.
 

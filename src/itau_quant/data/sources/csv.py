@@ -15,7 +15,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterable, Optional, Sequence
+from typing import Iterable, Sequence
 
 import pandas as pd
 
@@ -39,7 +39,7 @@ def load_price_panel(
     path: str | Path,
     *,
     index_col: str = "date",
-    expected_columns: Optional[Iterable[str]] = None,
+    expected_columns: Iterable[str] | None = None,
     parse_dates: bool = True,
     drop_empty_rows: bool = True,
     drop_empty_columns: bool = True,

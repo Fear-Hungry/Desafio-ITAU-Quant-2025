@@ -18,7 +18,7 @@ Tyler, D. (1987), *A Distribution-Free M-Estimator of Multivariate Scatter*. The
 from __future__ import annotations
 
 import warnings
-from typing import Optional, Sequence, Tuple, Union
+from typing import Sequence, Union
 
 import numpy as np
 import pandas as pd
@@ -96,14 +96,14 @@ def _warn_if_ill_conditioned(matrix: np.ndarray, threshold: float = 1e12) -> Non
 
     if cond_number > threshold:
         warnings.warn(
-            "Covariance matrix is poorly conditioned (cond > %.1e)." % threshold,
+            f"Covariance matrix is poorly conditioned (cond > {threshold:.1e}).",
             RuntimeWarning,
         )
 
 
 def project_to_psd(
-    matrix: Union[pd.DataFrame, np.ndarray], epsilon: float = 1e-6
-) -> Union[pd.DataFrame, np.ndarray]:
+    matrix: pd.DataFrame | np.ndarray, epsilon: float = 1e-6
+) -> pd.DataFrame | np.ndarray:
     """Project a symmetric matrix onto the positive semi-definite cone.
 
     The routine clips negative eigenvalues to ``epsilon`` and reconstructs the
@@ -155,7 +155,7 @@ def ledoit_wolf_shrinkage(
     returns: ArrayOrFrame,
     *,
     assume_centered: bool = False,
-) -> Tuple[pd.DataFrame, float]:
+) -> tuple[pd.DataFrame, float]:
     """Ledoit-Wolf linear shrinkage estimator.
 
     Parameters
@@ -301,7 +301,9 @@ def tyler_m_estimator(
         if diff <= tol * max(norm, 1.0):
             break
     else:
-        warnings.warn("Tyler estimator did not converge within max_iter.", RuntimeWarning)
+        warnings.warn(
+            "Tyler estimator did not converge within max_iter.", RuntimeWarning
+        )
 
     cov = _format_matrix(scatter, clean.columns)
     cov = project_to_psd(cov, epsilon=1e-9)
@@ -334,11 +336,11 @@ def student_t_cov(
 
 
 def regularize_cov(
-    matrix: Union[pd.DataFrame, np.ndarray],
+    matrix: pd.DataFrame | np.ndarray,
     *,
     method: str = "diag",
-    floor: Optional[float] = None,
-) -> Union[pd.DataFrame, np.ndarray]:
+    floor: float | None = None,
+) -> pd.DataFrame | np.ndarray:
     """Apply simple conditioning fixes on a covariance matrix.
 
     Parameters
@@ -384,7 +386,7 @@ def regularize_cov(
         identity = np.eye(array.shape[0]) * trace
         array = (1.0 - floor) * array + floor * identity
     else:
-        raise ValueError("Unsupported regularisation method '%s'." % method)
+        raise ValueError(f"Unsupported regularisation method '{method}'.")
 
     array = project_to_psd(array, epsilon=1e-9)
 

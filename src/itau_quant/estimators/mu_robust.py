@@ -193,8 +193,8 @@ def shrink_mu_pipeline(
     pd.Series
         Shrunk expected returns (annualized)
     """
-    from .mu import huber_mean
     from .cov import ledoit_wolf_shrinkage
+    from .mu import huber_mean
 
     # Estimate μ robustly
     if estimator is None:

@@ -4,7 +4,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
 from itau_quant.config import Settings, reset_settings_cache
 from itau_quant.optimization.solvers import run_optimizer
 

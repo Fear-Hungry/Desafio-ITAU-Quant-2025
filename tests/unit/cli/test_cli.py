@@ -6,7 +6,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-
 from itau_quant.cli import main
 from itau_quant.config import reset_settings_cache
 
@@ -19,7 +18,9 @@ def teardown_function() -> None:  # pragma: no cover - helper
     reset_settings_cache()
 
 
-def test_show_settings_json(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_show_settings_json(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     monkeypatch.setenv("ITAU_QUANT_PROJECT_ROOT", str(tmp_path))
     monkeypatch.setenv("ITAU_QUANT_LOGS_DIR", str(tmp_path / "logs"))
     monkeypatch.setenv("ITAU_QUANT_CONFIGS_DIR", str(tmp_path / "configs"))
@@ -33,7 +34,9 @@ def test_show_settings_json(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, cap
     assert payload["logs_dir"].endswith("logs")
 
 
-def test_optimize_resolves_default_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_optimize_resolves_default_config(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     configs_dir = tmp_path / "configs"
     configs_dir.mkdir(parents=True)
     (configs_dir / "optimizer_example.yaml").write_text(
@@ -55,7 +58,9 @@ def test_optimize_resolves_default_config(monkeypatch: pytest.MonkeyPatch, tmp_p
     assert payload["dry_run"] is True
 
 
-def test_backtest_alternate_config(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_backtest_alternate_config(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     configs_dir = tmp_path / "configs"
     configs_dir.mkdir(parents=True)
     custom_config = configs_dir / "custom.yaml"
@@ -93,7 +98,9 @@ estimators:
     monkeypatch.setenv("ITAU_QUANT_LOGS_DIR", str(tmp_path / "logs"))
     monkeypatch.setenv("ITAU_QUANT_DATA_DIR", str(tmp_path / "data"))
 
-    exit_code = main(["backtest", "--config", str(custom_config), "--json", "--no-dry-run"])
+    exit_code = main(
+        ["backtest", "--config", str(custom_config), "--json", "--no-dry-run"]
+    )
     assert exit_code == 0
 
     payload = json.loads(capsys.readouterr().out)

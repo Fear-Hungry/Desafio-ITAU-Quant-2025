@@ -176,7 +176,8 @@ def validate_group_caps(
         "is_valid": is_valid,
         "violations": violations,
         "group_weights": {
-            group.name: float(weights[group.get_assets(weights.index)].sum()) for group in groups
+            group.name: float(weights[group.get_assets(weights.index)].sum())
+            for group in groups
         },
     }
 

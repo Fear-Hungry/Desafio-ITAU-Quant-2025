@@ -13,17 +13,12 @@ Correções implementadas:
 
 from datetime import datetime
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
-
-from production_monitor import should_fallback_to_1N, calculate_portfolio_metrics
-from production_logger import ProductionLogger
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from erc_calibrated import (
-    calibrate_gamma_for_vol,
-    calibrate_eta_for_turnover,
-    solve_erc_with_cardinality,
-)
+from production_logger import ProductionLogger
+from production_monitor import should_fallback_to_1N
 
 print("=" * 80)
 print("  SISTEMA DE PRODUÇÃO ERC v2.0 (CALIBRADO)")
@@ -118,7 +113,7 @@ cov_annual = cov * 252
 print(f"   Σ via Ledoit-Wolf (shrinkage: {shrinkage:.4f})")
 
 if fallback_needed:
-    print(f"   ⚠️  FALLBACK ATIVADO → Usando 1/N")
+    print("   ⚠️  FALLBACK ATIVADO → Usando 1/N")
     weights = pd.Series(1.0 / len(valid_tickers), index=valid_tickers)
     strategy = "1/N"
     n_active = len(valid_tickers)
@@ -129,7 +124,7 @@ if fallback_needed:
     turnover_realized = 0.0
 
 else:
-    print(f"   ✅ Triggers OK → Usando ERC Calibrado")
+    print("   ✅ Triggers OK → Usando ERC Calibrado")
 
     # Pesos anteriores (ou equal-weight se primeiro rebalance)
     w_prev = np.ones(len(valid_tickers)) / len(valid_tickers)
@@ -233,7 +228,7 @@ else:
     turnover_realized = to_realized
 
 print()
-print(f"   ✅ Otimização concluída!")
+print("   ✅ Otimização concluída!")
 print(f"      Estratégia: {strategy}")
 print(f"      N_active: {n_active}")
 print(f"      N_effective: {n_effective:.1f}")
@@ -326,12 +321,12 @@ for ticker in top_weights.index:
     print(f"   {ticker:6s}: {weights[ticker]:6.2%} {bar}")
 
 print()
-print(f"💰 Custos:")
+print("💰 Custos:")
 print(f"   Turnover: {turnover_vs_baseline:.2%}")
 print(f"   Custo: {cost_bps:.1f} bps (@ {TRANSACTION_COST_BPS} bps one-way)")
 print()
 
-print(f"📈 Métricas de Risco (6M):")
+print("📈 Métricas de Risco (6M):")
 print(f"   Sharpe: {metrics.sharpe_6m:.2f}")
 print(f"   CVaR 95%: {metrics.cvar_95:.2%}")
 print(f"   Max DD: {metrics.max_dd:.2%}")

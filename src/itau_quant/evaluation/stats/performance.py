@@ -13,7 +13,7 @@ dependencies.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Union
 
 import numpy as np
 import pandas as pd
@@ -139,7 +139,7 @@ def annualized_volatility(
     return _column_apply(df, _vol)
 
 
-def _newey_west_variance(series: pd.Series, lags: Optional[int]) -> float:
+def _newey_west_variance(series: pd.Series, lags: int | None) -> float:
     """Heteroskedasticity and autocorrelation consistent variance estimate."""
 
     x = series.to_numpy(dtype=float)
@@ -166,7 +166,7 @@ def sharpe_ratio(
     rf: RiskFreeLike = 0.0,
     periods_per_year: float = DEFAULT_PERIODS_PER_YEAR,
     method: str = "simple",
-    lags: Optional[int] = None,
+    lags: int | None = None,
 ) -> pd.Series:
     """Compute the annualised Sharpe ratio."""
 
@@ -278,7 +278,7 @@ def _align_benchmark(
     missing = [col for col in strategy.columns if col not in bench.columns]
     if missing:
         raise ValueError(
-            "Benchmark is missing columns: %s" % ", ".join(sorted(missing))
+            "Benchmark is missing columns: {}".format(", ".join(sorted(missing)))
         )
     return bench[strategy.columns]
 
@@ -348,7 +348,7 @@ def excess_vs_benchmark(
 def aggregate_performance(
     returns: ReturnsLike,
     *,
-    benchmark: Optional[ReturnsLike] = None,
+    benchmark: ReturnsLike | None = None,
     rf: RiskFreeLike = 0.0,
     periods_per_year: float = DEFAULT_PERIODS_PER_YEAR,
 ) -> pd.DataFrame:
@@ -356,40 +356,57 @@ def aggregate_performance(
 
     strategy = _to_frame(returns)
 
-    metrics: list[Tuple[Tuple[str, str], pd.Series]] = []
+    metrics: list[tuple[tuple[str, str], pd.Series]] = []
 
     metrics.append((("performance", "cumulative_return"), cumulative_return(strategy)))
     metrics.append(
-        (("performance", "annualized_return"),
-         annualized_return(strategy, periods_per_year=periods_per_year)),
+        (
+            ("performance", "annualized_return"),
+            annualized_return(strategy, periods_per_year=periods_per_year),
+        ),
     )
     metrics.append(
-        (("performance", "annualized_volatility"),
-         annualized_volatility(strategy, periods_per_year=periods_per_year)),
+        (
+            ("performance", "annualized_volatility"),
+            annualized_volatility(strategy, periods_per_year=periods_per_year),
+        ),
     )
     metrics.append(
-        (("performance", "sharpe_ratio"),
-         sharpe_ratio(strategy, rf=rf, periods_per_year=periods_per_year)),
+        (
+            ("performance", "sharpe_ratio"),
+            sharpe_ratio(strategy, rf=rf, periods_per_year=periods_per_year),
+        ),
     )
     metrics.append(
-        (("performance", "sortino_ratio"),
-         sortino_ratio(strategy, rf=rf, periods_per_year=periods_per_year)),
+        (
+            ("performance", "sortino_ratio"),
+            sortino_ratio(strategy, rf=rf, periods_per_year=periods_per_year),
+        ),
     )
     metrics.append((("performance", "hit_rate"), hit_rate(strategy)))
     metrics.append((("risk", "max_drawdown"), max_drawdown(strategy)))
     metrics.append(
-        (("risk", "calmar_ratio"), calmar_ratio(strategy, periods_per_year=periods_per_year)),
+        (
+            ("risk", "calmar_ratio"),
+            calmar_ratio(strategy, periods_per_year=periods_per_year),
+        ),
     )
 
     if benchmark is not None:
-        excess = excess_vs_benchmark(strategy, benchmark, periods_per_year=periods_per_year)
+        excess = excess_vs_benchmark(
+            strategy, benchmark, periods_per_year=periods_per_year
+        )
         metrics.append((("relative", "active_return"), excess.active_return))
         metrics.append((("relative", "tracking_error"), excess.tracking_error))
         metrics.append((("relative", "information_ratio"), excess.information_ratio))
         metrics.append((("relative", "beta"), excess.beta))
 
-    idx = pd.MultiIndex.from_tuples([key for key, _ in metrics], names=["category", "metric"])
-    data = pd.DataFrame([series.reindex(strategy.columns) for _, series in metrics], index=idx)
+    idx = pd.MultiIndex.from_tuples(
+        [key for key, _ in metrics], names=["category", "metric"]
+    )
+    data = pd.DataFrame(
+        [series.reindex(strategy.columns) for _, series in metrics], index=idx
+    )
     return data
 
 

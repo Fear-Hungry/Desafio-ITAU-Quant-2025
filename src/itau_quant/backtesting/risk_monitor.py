@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Iterable, Literal
 
-import numpy as np
 import pandas as pd
 
 from itau_quant.costs.turnover import l1_turnover
@@ -60,7 +59,9 @@ def apply_turnover_cap(
     return adjusted, turnover_adjusted
 
 
-def evaluate_turnover_band(turnover: float, band: Iterable[float] | None) -> TurnoverBandStatus:
+def evaluate_turnover_band(
+    turnover: float, band: Iterable[float] | None
+) -> TurnoverBandStatus:
     """Classify turnover relative to a target band (low/within/high)."""
 
     if band is None:

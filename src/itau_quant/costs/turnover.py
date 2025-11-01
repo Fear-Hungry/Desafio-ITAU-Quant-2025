@@ -46,7 +46,9 @@ def _is_scalar(value: object) -> bool:
     return np.isscalar(value)
 
 
-def _as_array(value: ArrayLike | float, *, name: str, length: int | None = None) -> np.ndarray:
+def _as_array(
+    value: ArrayLike | float, *, name: str, length: int | None = None
+) -> np.ndarray:
     if _is_scalar(value):
         if length is None:
             return np.asarray([float(value)], dtype=float)
@@ -62,7 +64,9 @@ def _as_array(value: ArrayLike | float, *, name: str, length: int | None = None)
     if array.ndim != 1:
         raise ValueError(f"{name} must be 1-dimensional")
     if length is not None and array.size != length:
-        raise ValueError(f"{name} must contain {length} elements; received {array.size}")
+        raise ValueError(
+            f"{name} must contain {length} elements; received {array.size}"
+        )
     if np.isnan(array).any():
         raise ValueError(f"{name} contains NaN values")
     return array
@@ -75,7 +79,9 @@ def _template(*candidates: ArrayLike | float) -> ArrayLike | float:
     return 0.0
 
 
-def _wrap(values: np.ndarray, template: ArrayLike | float, name: str) -> np.ndarray | pd.Series:
+def _wrap(
+    values: np.ndarray, template: ArrayLike | float, name: str
+) -> np.ndarray | pd.Series:
     if isinstance(template, pd.Series):
         return pd.Series(values, index=template.index, name=name)
     return values
@@ -89,7 +95,9 @@ def trades(weights: ArrayLike, prev_weights: ArrayLike) -> np.ndarray:
     return weights_arr - prev_arr
 
 
-def l1_turnover(weights: ArrayLike, prev_weights: ArrayLike, *, aggregate: bool = True) -> float | np.ndarray | pd.Series:
+def l1_turnover(
+    weights: ArrayLike, prev_weights: ArrayLike, *, aggregate: bool = True
+) -> float | np.ndarray | pd.Series:
     r"""Compute :math:`\lVert w - w_{prev} \rVert_1`."""
 
     delta = np.abs(trades(weights, prev_weights))
@@ -166,8 +174,10 @@ def turnover_violation(
     if max_turnover < 0:
         raise ValueError("max_turnover must be non-negative")
 
-    realised = normalised_turnover(weights, prev_weights) if normalised else float(
-        l1_turnover(weights, prev_weights, aggregate=True)
+    realised = (
+        normalised_turnover(weights, prev_weights)
+        if normalised
+        else float(l1_turnover(weights, prev_weights, aggregate=True))
     )
     violation = realised - max_turnover
     if violation <= tol:
@@ -185,10 +195,13 @@ def is_within_turnover(
 ) -> bool:
     """Check if the turnover constraint is satisfied within tolerance."""
 
-    return turnover_violation(
-        weights,
-        prev_weights,
-        max_turnover,
-        normalised=normalised,
-        tol=tol,
-    ) == 0.0
+    return (
+        turnover_violation(
+            weights,
+            prev_weights,
+            max_turnover,
+            normalised=normalised,
+            tol=tol,
+        )
+        == 0.0
+    )

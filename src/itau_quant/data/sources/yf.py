@@ -11,10 +11,10 @@
 
 from __future__ import annotations
 
-from datetime import datetime
-from typing import Iterable, Optional
-
 import logging
+from datetime import datetime
+from typing import Iterable
+
 import pandas as pd
 import yfinance as yf
 
@@ -23,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 def download_prices(
     tickers: Iterable[str],
-    start: Optional[str | datetime] = None,
-    end: Optional[str | datetime] = None,
+    start: str | datetime | None = None,
+    end: str | datetime | None = None,
     progress: bool = False,
 ) -> pd.DataFrame:
     tickers_list = list(dict.fromkeys([t.strip().upper() for t in tickers]))
@@ -33,7 +33,9 @@ def download_prices(
 
     logger.info(
         "Baixando preços (yfinance): %s (start=%s, end=%s)",
-        ",".join(tickers_list), start, end,
+        ",".join(tickers_list),
+        start,
+        end,
     )
     data = yf.download(
         tickers=tickers_list,

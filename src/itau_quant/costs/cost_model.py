@@ -46,7 +46,9 @@ class CostModel:
         default_bps: Fallback cost for unknown assets
     """
 
-    costs_bps: dict[str, float] = field(default_factory=lambda: DEFAULT_COSTS_BPS.copy())
+    costs_bps: dict[str, float] = field(
+        default_factory=lambda: DEFAULT_COSTS_BPS.copy()
+    )
     asset_map: dict[str, str] = field(default_factory=dict)
     default_bps: float = 15.0
 
@@ -112,7 +114,15 @@ def classify_asset(ticker: str) -> str:
         return "us_equities_core"
 
     # Sectors/factors
-    if t.startswith("XL") or t in ["USMV", "MTUM", "QUAL", "VLUE", "SIZE", "VUG", "VTV"]:
+    if t.startswith("XL") or t in [
+        "USMV",
+        "MTUM",
+        "QUAL",
+        "VLUE",
+        "SIZE",
+        "VUG",
+        "VTV",
+    ]:
         return "us_sectors_factors"
 
     # Developed ex-US

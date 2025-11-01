@@ -2,10 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
-
 from itau_quant.reports.metadata import get_git_commit, hash_file
 
 

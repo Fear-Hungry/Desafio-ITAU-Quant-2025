@@ -3,7 +3,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-
 from itau_quant.estimators import validation
 
 
@@ -45,7 +44,9 @@ def test_purge_train_indices_removes_recent_observations():
 def test_apply_embargo_removes_future_samples():
     train_idx = np.concatenate([np.arange(0, 10), np.arange(15, 30)])
     test_idx = np.arange(10, 15)
-    embargoed = validation.apply_embargo(train_idx, test_idx, embargo_pct=0.1, total_observations=30)
+    embargoed = validation.apply_embargo(
+        train_idx, test_idx, embargo_pct=0.1, total_observations=30
+    )
 
     assert not np.isin([15, 16, 17], embargoed).any()
     assert np.isin([18, 19, 20], embargoed).all()
@@ -77,7 +78,9 @@ def test_purged_kfold_produces_non_overlapping_folds():
 def test_evaluate_estimator_pipeline_returns_scores():
     rng = np.random.default_rng(0)
     data = pd.DataFrame({"ret": rng.normal(0.0, 0.01, size=50)}, index=_build_index(50))
-    splitter = validation.PurgedKFold(n_splits=4, min_train=15, min_test=5, purge_window=2)
+    splitter = validation.PurgedKFold(
+        n_splits=4, min_train=15, min_test=5, purge_window=2
+    )
 
     def estimator(train: pd.DataFrame, test: pd.DataFrame) -> pd.Series:
         mean_ret = train["ret"].mean()

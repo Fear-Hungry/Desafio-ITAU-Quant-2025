@@ -8,7 +8,6 @@ ou se estão apenas gerando ruído overfitado.
 Decisão crítica: se IC < 0.05 e PSR < 60%, PARE de usar μ.
 """
 
-import sys
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -46,7 +45,7 @@ N_TRIALS = 10  # Conservative estimate of strategies tested
 # [1] CARREGAR DADOS
 # ============================================================================
 
-print(f"📥 [1/4] Carregando dados históricos...")
+print("📥 [1/4] Carregando dados históricos...")
 print(f"   Período: {START_DATE.date()} a {END_DATE.date()}")
 print(f"   Tickers: {len(TICKERS)} ativos")
 
@@ -78,7 +77,7 @@ print()
 # [2] CALCULAR RETORNOS
 # ============================================================================
 
-print(f"📊 [2/4] Calculando retornos...")
+print("📊 [2/4] Calculando retornos...")
 
 returns = prices.pct_change().dropna()
 returns = returns.replace([np.inf, -np.inf], np.nan).dropna(how="all")
@@ -90,10 +89,9 @@ print()
 # [3] DEFINIR ESTIMADORES A TESTAR
 # ============================================================================
 
-print(f"🔧 [3/4] Definindo estimadores de μ...")
+print("🔧 [3/4] Definindo estimadores de μ...")
 
 from itau_quant.estimators.mu import huber_mean
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 
 
 def sample_mu_estimator(rets: pd.DataFrame) -> pd.Series:
@@ -129,7 +127,7 @@ print()
 # [4] RODAR SKILL TEST
 # ============================================================================
 
-print(f"🧪 [4/4] Testando skill preditivo...")
+print("🧪 [4/4] Testando skill preditivo...")
 print()
 
 from itau_quant.diagnostics.mu_skill import skill_report
@@ -205,13 +203,13 @@ if has_any_skill:
     print(f"   ✅ RECOMENDAÇÃO: Use '{best[0]}' (PSR={best[1].psr:.2%})")
     print(f"      {best[1].recommendation}")
 else:
-    print(f"   ⚠️  NENHUM ESTIMADOR TEM SKILL DETECTÁVEL!")
+    print("   ⚠️  NENHUM ESTIMADOR TEM SKILL DETECTÁVEL!")
     print()
-    print(f"   📋 Opções:")
-    print(f"      1. Use μ=0 e otimize min-variance ou risk parity")
-    print(f"      2. Shrink μ agressivamente (γ ≥ 0.90)")
-    print(f"      3. Use Black-Litterman neutro (sem views)")
-    print(f"      4. Invista em melhores features/dados")
+    print("   📋 Opções:")
+    print("      1. Use μ=0 e otimize min-variance ou risk parity")
+    print("      2. Shrink μ agressivamente (γ ≥ 0.90)")
+    print("      3. Use Black-Litterman neutro (sem views)")
+    print("      4. Invista em melhores features/dados")
 
 print()
 

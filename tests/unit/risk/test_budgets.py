@@ -3,7 +3,6 @@ from __future__ import annotations
 import cvxpy as cp
 import pandas as pd
 import pytest
-
 from itau_quant.risk.budgets import (
     RiskBudget,
     aggregate_by_budget,

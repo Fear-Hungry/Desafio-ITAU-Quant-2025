@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 from importlib import resources
-from typing import Any, Dict, List, Mapping
+from typing import Any, Mapping
 
 __all__ = ["get_arara_universe", "get_arara_metadata"]
 
@@ -44,8 +44,8 @@ def _coerce_value(raw: str) -> Any:
         return raw
 
 
-def _parse_simple_yaml(text: str) -> Dict[str, Dict[str, Any]]:
-    data: Dict[str, Dict[str, Any]] = {}
+def _parse_simple_yaml(text: str) -> dict[str, dict[str, Any]]:
+    data: dict[str, dict[str, Any]] = {}
     current_key: str | None = None
     for line_no, raw_line in enumerate(text.splitlines(), start=1):
         line = raw_line.split("#", 1)[0].rstrip()
@@ -85,7 +85,7 @@ def get_arara_metadata() -> Mapping[str, Mapping[str, Any]]:
     return _parse_simple_yaml(content)
 
 
-def get_arara_universe() -> List[str]:
+def get_arara_universe() -> list[str]:
     """Return the canonical ARARA tickers list preserving YAML order."""
     metadata = get_arara_metadata()
     return list(metadata.keys())

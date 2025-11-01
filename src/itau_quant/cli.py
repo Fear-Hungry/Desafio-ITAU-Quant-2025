@@ -58,89 +58,103 @@ def build_parser() -> argparse.ArgumentParser:
 
     opt = subparsers.add_parser("optimize", help="Executa (ou simula) o otimizador")
     opt.add_argument("--config", type=str, help="Arquivo de configuração YAML")
-    opt.add_argument("--no-dry-run", action="store_false", dest="dry_run", help="Executa otimização real")
+    opt.add_argument(
+        "--no-dry-run",
+        action="store_false",
+        dest="dry_run",
+        help="Executa otimização real",
+    )
     opt.add_argument("--json", action="store_true", help="Mostra resultado em JSON")
     opt.set_defaults(dry_run=True)
 
     back = subparsers.add_parser("backtest", help="Executa (ou simula) o backtest")
     back.add_argument("--config", type=str, help="Arquivo de configuração YAML")
-    back.add_argument("--no-dry-run", action="store_false", dest="dry_run", help="Executa backtest real")
+    back.add_argument(
+        "--no-dry-run",
+        action="store_false",
+        dest="dry_run",
+        help="Executa backtest real",
+    )
     back.add_argument("--json", action="store_true", help="Mostra resultado em JSON")
-    back.add_argument("--wf-report", action="store_true", help="Gera relatório walk-forward completo (figuras + tabelas)")
+    back.add_argument(
+        "--wf-report",
+        action="store_true",
+        help="Gera relatório walk-forward completo (figuras + tabelas)",
+    )
     back.set_defaults(dry_run=True)
 
     # Pipeline orchestration
     pipeline = subparsers.add_parser(
         "run-full-pipeline",
-        help="Executa pipeline completo: dados → estimação → otimização → backtest"
+        help="Executa pipeline completo: dados → estimação → otimização → backtest",
     )
     pipeline.add_argument(
-        "--config",
-        required=True,
-        help="Arquivo YAML de configuração"
+        "--config", required=True, help="Arquivo YAML de configuração"
     )
-    pipeline.add_argument(
-        "--start",
-        help="Data inicial (YYYY-MM-DD)"
-    )
-    pipeline.add_argument(
-        "--end",
-        help="Data final (YYYY-MM-DD)"
-    )
+    pipeline.add_argument("--start", help="Data inicial (YYYY-MM-DD)")
+    pipeline.add_argument("--end", help="Data final (YYYY-MM-DD)")
     pipeline.add_argument(
         "--skip-download",
         action="store_true",
-        help="Usa dados cached (mais rápido para testes)"
+        help="Usa dados cached (mais rápido para testes)",
     )
     pipeline.add_argument(
         "--skip-backtest",
         action="store_true",
-        help="Não executa backtest (apenas otimização)"
+        help="Não executa backtest (apenas otimização)",
     )
     pipeline.add_argument(
-        "--output-dir",
-        default="reports",
-        help="Diretório para salvar resultados"
+        "--output-dir", default="reports", help="Diretório para salvar resultados"
     )
-    pipeline.add_argument(
-        "--json",
-        action="store_true",
-        help="Output em formato JSON"
-    )
+    pipeline.add_argument("--json", action="store_true", help="Output em formato JSON")
 
     # Examples category
-    example = subparsers.add_parser("run-example", help="Executa portfolio de exemplo (ARARA)")
+    example = subparsers.add_parser(
+        "run-example", help="Executa portfolio de exemplo (ARARA)"
+    )
     example.add_argument(
         "variant",
         choices=["arara", "robust"],
-        help="Variante: 'arara' (básico) ou 'robust' (robusto)"
+        help="Variante: 'arara' (básico) ou 'robust' (robusto)",
     )
 
     # Research category
-    baselines = subparsers.add_parser("compare-baselines", help="Compara estratégias baseline (1/N, MV, RP)")
+    subparsers.add_parser(
+        "compare-baselines", help="Compara estratégias baseline (1/N, MV, RP)"
+    )
 
-    estimators = subparsers.add_parser("compare-estimators", help="Compara estimadores de μ e Σ")
+    subparsers.add_parser("compare-estimators", help="Compara estimadores de μ e Σ")
 
-    grid = subparsers.add_parser("grid-search", help="Grid search de hiperparâmetros (shrinkage)")
+    subparsers.add_parser(
+        "grid-search", help="Grid search de hiperparâmetros (shrinkage)"
+    )
 
-    skill = subparsers.add_parser("test-skill", help="Testa skill de forecast de μ")
+    subparsers.add_parser("test-skill", help="Testa skill de forecast de μ")
 
-    walkforward = subparsers.add_parser("walkforward", help="Backtest walk-forward com validação temporal")
+    subparsers.add_parser(
+        "walkforward", help="Backtest walk-forward com validação temporal"
+    )
 
     # Production category
-    production = subparsers.add_parser("production-deploy", help="Deploy sistema de produção (ERC)")
+    production = subparsers.add_parser(
+        "production-deploy", help="Deploy sistema de produção (ERC)"
+    )
     production.add_argument(
         "--version",
         choices=["v1", "v2"],
         default="v2",
-        help="Versão: 'v1' (básico) ou 'v2' (calibrado, recomendado)"
+        help="Versão: 'v1' (básico) ou 'v2' (calibrado, recomendado)",
     )
 
     return parser
 
 
-def _configure_logging(structured: bool | None, settings: Settings, command: str) -> None:
-    configure_logging(settings=settings, structured=structured, context={"command": command})
+def _configure_logging(
+    structured: bool | None, settings: Settings, command: str
+) -> None:
+    configure_logging(
+        settings=settings, structured=structured, context={"command": command}
+    )
 
 
 def _print_payload(payload: dict[str, Any], *, as_json: bool) -> None:
@@ -159,9 +173,7 @@ def _run_script(script_path: Path) -> int:
 
     try:
         result = subprocess.run(
-            [sys.executable, str(script_path)],
-            cwd=PROJECT_ROOT,
-            check=False
+            [sys.executable, str(script_path)], cwd=PROJECT_ROOT, check=False
         )
         return result.returncode
     except Exception as e:
@@ -169,7 +181,9 @@ def _run_script(script_path: Path) -> int:
         return 1
 
 
-def _generate_wf_report(result: BacktestResult, output_dir: str = "reports/walkforward") -> None:
+def _generate_wf_report(
+    result: BacktestResult, output_dir: str = "reports/walkforward"
+) -> None:
     """Generate comprehensive walk-forward report with visualizations and tables.
 
     Parameters
@@ -180,13 +194,15 @@ def _generate_wf_report(result: BacktestResult, output_dir: str = "reports/walkf
         Directory to save report files
     """
     if result.split_metrics is None or result.split_metrics.empty:
-        print("No split_metrics available. Skipping walk-forward report.", file=sys.stderr)
+        print(
+            "No split_metrics available. Skipping walk-forward report.", file=sys.stderr
+        )
         return
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
-    print(f"\n=== Generating Walk-Forward Report ===")
+    print("\n=== Generating Walk-Forward Report ===")
 
     # 1. Generate summary statistics markdown
     if result.walkforward_summary is not None:
@@ -204,7 +220,9 @@ def _generate_wf_report(result: BacktestResult, output_dir: str = "reports/walkf
     print(f"✓ Per-window results: {csv_file}")
 
     # Also save markdown version
-    per_window_table_md = build_per_window_table(result.split_metrics, format="markdown")
+    per_window_table_md = build_per_window_table(
+        result.split_metrics, format="markdown"
+    )
     md_file = output_path / "per_window_results.md"
     with open(md_file, "w", encoding="utf-8") as f:
         f.write(per_window_table_md)
@@ -258,7 +276,9 @@ def main(argv: Iterable[str] | None = None) -> int:
             payload = settings.to_dict()
             _print_payload(payload, as_json=args.json)
         elif args.command == "optimize":
-            opt_result = run_optimizer(args.config, dry_run=args.dry_run, settings=settings)
+            opt_result = run_optimizer(
+                args.config, dry_run=args.dry_run, settings=settings
+            )
             payload = opt_result.to_dict(include_weights=args.json)
             _print_payload(payload, as_json=args.json)
         elif args.command == "backtest":

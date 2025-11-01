@@ -7,10 +7,8 @@ expected function signatures without executing the full logic.
 from __future__ import annotations
 
 import inspect
-from pathlib import Path
 
 import pytest
-
 from itau_quant.pipeline import (
     download_and_prepare_data,
     estimate_parameters,
@@ -129,9 +127,7 @@ class TestOptimizationModule:
 
         from itau_quant.config import Settings
 
-        settings = Settings.from_env(
-            overrides={"PROCESSED_DATA_DIR": str(tmp_path)}
-        )
+        settings = Settings.from_env(overrides={"PROCESSED_DATA_DIR": str(tmp_path)})
 
         with pytest.raises(FileNotFoundError, match="Σ file not found"):
             optimize_portfolio(

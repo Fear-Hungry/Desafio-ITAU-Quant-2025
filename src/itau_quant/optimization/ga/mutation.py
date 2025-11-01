@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
 import numpy as np
 
@@ -39,7 +39,9 @@ def flip_asset_selection(
     meta = dict(individual.metadata)
     meta["last_mutation"] = "flip"
     mutated = individual.copy(assets_mask=mask, metadata=meta)
-    return ensure_feasible(mutated, {"cardinality": {"min": min_assets, "max": max_assets}}, rng)
+    return ensure_feasible(
+        mutated, {"cardinality": {"min": min_assets, "max": max_assets}}, rng
+    )
 
 
 def gaussian_jitter_params(
@@ -127,7 +129,9 @@ def mutation_pipeline(
 
     flip_prob = float(cfg.get("flip_prob", 0.0))
     if flip_prob > 0:
-        mutated = flip_asset_selection(mutated, flip_prob, rng, min_assets=min_assets, max_assets=max_assets)
+        mutated = flip_asset_selection(
+            mutated, flip_prob, rng, min_assets=min_assets, max_assets=max_assets
+        )
 
     gaussian_cfg = cfg.get("gaussian")
     if gaussian_cfg:
@@ -148,7 +152,9 @@ def mutation_pipeline(
         universe = cfg.get("universe")
         if universe is None:
             raise ValueError("swap mutation requires 'universe' in config")
-        mutated = swap_assets(mutated, universe, rng, num_swaps=int(cfg.get("swap_count", 1)))
+        mutated = swap_assets(
+            mutated, universe, rng, num_swaps=int(cfg.get("swap_count", 1))
+        )
 
     constraints = cfg.get("constraints")
     if constraints:

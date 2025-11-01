@@ -40,7 +40,7 @@ REBALANCE_FREQ = 21  # rebalancear mensalmente
 RISK_AVERSION = 8.0
 MAX_POSITION = 0.20
 
-print(f"📊 Configuração Backtest:")
+print("📊 Configuração Backtest:")
 print(f"   • Universo: {len(TICKERS)} ativos")
 print(f"   • Período: {START_DATE.date()} a {END_DATE.date()}")
 print(f"   • Train window: {TRAIN_WINDOW} dias")
@@ -143,9 +143,9 @@ except Exception as e:
 # ============================================================================
 print("🔄 [3/4] Rodando backtest walk-forward...")
 
-from itau_quant.estimators.mu import mean_return
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
+from itau_quant.estimators.mu import mean_return
+from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 DEFENSIVE_BLEND = 1.0
 DEFENSIVE_TEMPLATE = {
@@ -313,7 +313,7 @@ for i, split in enumerate(splits):
         print(f"      Erro no período {i + 1}: {e}")
         continue
 
-print(f"   ✅ Backtest concluído!")
+print("   ✅ Backtest concluído!")
 print(f"   ✅ {len(portfolio_returns)} retornos diários calculados")
 print()
 
@@ -353,7 +353,7 @@ sortino = annualized_return / downside_vol if downside_vol > 0 else 0
 # Win rate
 win_rate = (portfolio_returns_series > 0).sum() / len(portfolio_returns_series)
 
-print(f"   📈 Métricas Out-of-Sample:")
+print("   📈 Métricas Out-of-Sample:")
 print(f"      • Período:               {dates[0].date()} a {dates[-1].date()}")
 print(f"      • Dias de trading:       {len(portfolio_returns_series)}")
 print(f"      • Retorno total:         {total_return:+.2%}")
@@ -375,7 +375,7 @@ if "SPY" in returns.columns:
     spy_annual_vol = spy_returns.std() * np.sqrt(252)
     spy_sharpe = spy_annual_return / spy_annual_vol if spy_annual_vol > 0 else 0
 
-    print(f"   📊 Comparação com SPY (Buy & Hold):")
+    print("   📊 Comparação com SPY (Buy & Hold):")
     print(f"      • SPY Retorno total:     {spy_total_return:+.2%}")
     print(f"      • SPY Retorno anual:     {spy_annual_return:+.2%}")
     print(f"      • SPY Volatilidade:      {spy_annual_vol:.2%}")
@@ -432,12 +432,12 @@ print("=" * 80)
 print("  ✅ BACKTEST WALK-FORWARD CONCLUÍDO!")
 print("=" * 80)
 print()
-print(f"🎯 Resultado final:")
+print("🎯 Resultado final:")
 print(f"   • Retorno anualizado: {annualized_return:+.2%}")
 print(f"   • Sharpe Ratio: {sharpe:.2f}")
 print(f"   • Max Drawdown: {max_drawdown:.2%}")
 print()
-print(f"📁 Arquivos gerados:")
+print("📁 Arquivos gerados:")
 print(f"   • {returns_file}")
 print(f"   • {metrics_file}")
 print()

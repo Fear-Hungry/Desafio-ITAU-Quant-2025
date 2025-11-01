@@ -5,7 +5,6 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-
 from itau_quant.optimization.core.mv_qp import MeanVarianceConfig
 from itau_quant.portfolio.cardinality_pipeline import apply_cardinality_constraint
 from itau_quant.portfolio.rebalancer import MarketData, rebalance

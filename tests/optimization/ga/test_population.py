@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 from itau_quant.optimization.ga import population as pop
 
 
@@ -20,7 +19,10 @@ def test_encode_decode_roundtrip() -> None:
 
 def test_random_individual_respects_cardinality() -> None:
     universe = ["A", "B", "C", "D", "E"]
-    config = {"cardinality": {"min": 2, "max": 3}, "hyperparams": {"eta": {"min": 0.1, "max": 0.5}}}
+    config = {
+        "cardinality": {"min": 2, "max": 3},
+        "hyperparams": {"eta": {"min": 0.1, "max": 0.5}},
+    }
     rng = np.random.default_rng(42)
 
     individual = pop.random_individual(universe, config, rng)
@@ -54,7 +56,6 @@ def test_warm_start_population_creates_expected_masks() -> None:
 
 
 def test_ensure_feasible_enforces_bounds() -> None:
-    universe = ["A", "B", "C", "D"]
     mask = np.array([True, True, True, True])
     individual = pop.Individual(mask, {"lambda": 5.0})
     rng = np.random.default_rng(7)

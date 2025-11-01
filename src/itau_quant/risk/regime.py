@@ -112,7 +112,9 @@ def detect_regime(
     else:
         label = "neutral"
 
-    return RegimeSnapshot(label=label, volatility=volatility, drawdown=drawdown, window=window)
+    return RegimeSnapshot(
+        label=label, volatility=volatility, drawdown=drawdown, window=window
+    )
 
 
 def regime_multiplier(

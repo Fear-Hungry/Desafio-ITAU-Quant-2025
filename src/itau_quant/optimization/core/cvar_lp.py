@@ -41,7 +41,9 @@ class CvarResult:
     summary: SolverSummary
 
 
-def _align_series(series: pd.Series | None, index: pd.Index, fill_value: float) -> pd.Series:
+def _align_series(
+    series: pd.Series | None, index: pd.Index, fill_value: float
+) -> pd.Series:
     if series is None:
         return pd.Series(fill_value, index=index, dtype=float)
     return series.reindex(index).fillna(fill_value).astype(float)
@@ -75,9 +77,13 @@ def solve_cvar_lp(
         prev_series = pd.Series(0.0, index=assets, dtype=float)
     prev_vector = prev_series.to_numpy(dtype=float)
 
-    objective_terms: list[cp.Expression] = [expected_expr - config.risk_aversion * cvar_expr]
+    objective_terms: list[cp.Expression] = [
+        expected_expr - config.risk_aversion * cvar_expr
+    ]
     if config.turnover_penalty > 0:
-        objective_terms.append(-config.turnover_penalty * cp.norm1(weights_var - prev_vector))
+        objective_terms.append(
+            -config.turnover_penalty * cp.norm1(weights_var - prev_vector)
+        )
 
     constraints.append(cp.sum(weights_var) == 1.0)
     if config.long_only:
@@ -85,24 +91,36 @@ def solve_cvar_lp(
 
     lower = _align_series(config.lower_bounds, assets, 0.0)
     upper = _align_series(config.upper_bounds, assets, 1.0)
-    constraints.extend([weights_var >= lower.to_numpy(), weights_var <= upper.to_numpy()])
+    constraints.extend(
+        [weights_var >= lower.to_numpy(), weights_var <= upper.to_numpy()]
+    )
 
     if config.target_return is not None:
         constraints.append(expected_expr >= float(config.target_return))
     if config.max_cvar is not None:
         constraints.append(cvar_expr <= float(config.max_cvar))
     if config.turnover_cap is not None:
-        constraints.append(cp.norm1(weights_var - prev_vector) <= float(config.turnover_cap))
+        constraints.append(
+            cp.norm1(weights_var - prev_vector) <= float(config.turnover_cap)
+        )
 
     problem = cp.Problem(cp.Maximize(cp.sum(objective_terms)), constraints)
-    summary = solve_problem(problem, solver=config.solver, solver_kwargs=config.solver_kwargs)
+    summary = solve_problem(
+        problem, solver=config.solver, solver_kwargs=config.solver_kwargs
+    )
 
-    solution = pd.Series(np.asarray(weights_var.value).ravel(), index=assets, dtype=float).fillna(0.0)
+    solution = pd.Series(
+        np.asarray(weights_var.value).ravel(), index=assets, dtype=float
+    ).fillna(0.0)
     turnover = float(np.abs(solution - prev_series).sum())
 
     return CvarResult(
         weights=solution,
-        expected_return=float(expected_expr.value) if expected_expr.value is not None else float("nan"),
+        expected_return=(
+            float(expected_expr.value)
+            if expected_expr.value is not None
+            else float("nan")
+        ),
         cvar=float(cvar_expr.value) if cvar_expr.value is not None else float("nan"),
         var=float(var.value) if var.value is not None else float("nan"),
         turnover=turnover,

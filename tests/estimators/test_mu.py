@@ -2,8 +2,6 @@
 
 import numpy as np
 import pandas as pd
-import pytest
-
 from itau_quant.estimators import mu as mu_estimators
 
 
@@ -85,7 +83,9 @@ def test_confidence_intervals_contains_sample_mean():
 
 def test_blend_with_black_litterman_passthrough():
     mu_prior = pd.Series({"A": 0.01, "B": 0.015})
-    cov = pd.DataFrame([[0.04, 0.01], [0.01, 0.05]], index=["A", "B"], columns=["A", "B"])
+    cov = pd.DataFrame(
+        [[0.04, 0.01], [0.01, 0.05]], index=["A", "B"], columns=["A", "B"]
+    )
     blended = mu_estimators.blend_with_black_litterman(mu_prior, cov, views=None)
     pd.testing.assert_series_equal(blended, mu_prior.astype(float))
 

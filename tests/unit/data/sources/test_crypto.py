@@ -1,10 +1,5 @@
 from __future__ import annotations
 
-import json
-
-import pandas as pd
-import pytest
-
 from itau_quant.data.sources import crypto
 
 
@@ -41,7 +36,13 @@ def test_download_crypto_prices_with_mocked_provider(monkeypatch):
 
     monkeypatch.setattr(crypto, "_request_json", fake_request)
 
-    frame = crypto.download_crypto_prices(["BTCUSD"], start="2020-01-01", end="2020-01-02", fields=("Close",), provider="tiingo")
+    frame = crypto.download_crypto_prices(
+        ["BTCUSD"],
+        start="2020-01-01",
+        end="2020-01-02",
+        fields=("Close",),
+        provider="tiingo",
+    )
     close = frame["close"]
     assert list(close.columns) == ["BTCUSD"]
     assert close.iloc[0, 0] == 10200

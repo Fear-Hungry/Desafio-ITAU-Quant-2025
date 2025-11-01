@@ -2,14 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Optional, Sequence
+from typing import Sequence
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 
 
-def _prepare_axis(ax: Optional[plt.Axes] = None, *, title: Optional[str] = None) -> plt.Axes:
+def _prepare_axis(ax: plt.Axes | None = None, *, title: str | None = None) -> plt.Axes:
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 4))
     if title:
@@ -34,7 +33,7 @@ def plot_weight_stability(
     weights: pd.DataFrame | pd.Series,
     *,
     rolling_window: int = 20,
-    ax: Optional[plt.Axes] = None,
+    ax: plt.Axes | None = None,
     title: str = "Weight Stability",
 ) -> plt.Axes:
     """Plot rolling standard deviation of weights to highlight stability."""
@@ -60,7 +59,7 @@ def plot_signal_distribution(
     signals: pd.DataFrame | pd.Series,
     *,
     bins: int = 30,
-    ax: Optional[plt.Axes] = None,
+    ax: plt.Axes | None = None,
     title: str = "Signal Distribution",
 ) -> plt.Axes:
     """Plot histogram(s) of signal values."""
@@ -85,7 +84,7 @@ def plot_parameter_sensitivity(
     *,
     param_columns: Sequence[str],
     metric_column: str,
-    ax: Optional[plt.Axes] = None,
+    ax: plt.Axes | None = None,
     title: str = "Parameter Sensitivity",
 ) -> plt.Axes:
     """Scatter plot showing how a metric changes with one or two parameters."""
@@ -104,7 +103,9 @@ def plot_parameter_sensitivity(
 
     if len(param_columns) == 1:
         param = df[param_columns[0]]
-        scatter = ax.scatter(param, metric, c=metric, cmap="viridis", edgecolor="k", alpha=0.8)
+        scatter = ax.scatter(
+            param, metric, c=metric, cmap="viridis", edgecolor="k", alpha=0.8
+        )
         ax.set_xlabel(param_columns[0])
         ax.set_ylabel(metric_column)
         plt.colorbar(scatter, ax=ax, label=metric_column)
@@ -124,7 +125,7 @@ def plot_turnover_vs_cost(
     turnover: pd.Series | pd.DataFrame,
     costs: pd.Series | pd.DataFrame,
     *,
-    ax: Optional[plt.Axes] = None,
+    ax: plt.Axes | None = None,
     title: str = "Turnover vs Costs",
 ) -> plt.Axes:
     """Scatter plot comparing realised turnover and costs."""
@@ -132,7 +133,9 @@ def plot_turnover_vs_cost(
     turnover_frame = _to_frame(turnover, name="turnover")
     costs_frame = _to_frame(costs, name="costs")
 
-    combined = turnover_frame.join(costs_frame, how="inner", lsuffix="_turnover", rsuffix="_cost")
+    combined = turnover_frame.join(
+        costs_frame, how="inner", lsuffix="_turnover", rsuffix="_cost"
+    )
     if combined.empty:
         raise ValueError("turnover and costs do not share common index")
 
@@ -140,7 +143,9 @@ def plot_turnover_vs_cost(
 
     for column in turnover_frame.columns:
         cost_col = column if column in costs_frame.columns else costs_frame.columns[0]
-        ax.scatter(combined[f"{column}_turnover"], combined[f"{cost_col}_cost"], label=column)
+        ax.scatter(
+            combined[f"{column}_turnover"], combined[f"{cost_col}_cost"], label=column
+        )
 
     ax.set_xlabel("Turnover")
     ax.set_ylabel("Cost")
@@ -153,7 +158,7 @@ def plot_drawdown_contributors(
     drawdowns: pd.Series | pd.DataFrame,
     weight_history: pd.DataFrame,
     *,
-    ax: Optional[plt.Axes] = None,
+    ax: plt.Axes | None = None,
     title: str = "Drawdown Contributors",
 ) -> plt.Axes:
     """Plot approximate contribution of each asset during drawdowns."""
@@ -165,7 +170,9 @@ def plot_drawdown_contributors(
     contributions = weights_frame.mul(aligned_dd.iloc[:, 0], axis=0)
 
     ax = _prepare_axis(ax, title=title)
-    ax.stackplot(contributions.index, contributions.T, labels=contributions.columns, alpha=0.7)
+    ax.stackplot(
+        contributions.index, contributions.T, labels=contributions.columns, alpha=0.7
+    )
 
     ax.set_ylabel("Contribution")
     ax.set_xlabel("Date")

@@ -11,8 +11,8 @@ Este script valida:
 5. Turnover caps
 """
 
-import sys
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import yaml
@@ -38,7 +38,7 @@ latest_weights_file = sorted(WEIGHTS_DIR.glob("weights_*.csv"))[-1]
 weights_df = pd.read_csv(latest_weights_file)
 weights = pd.Series(weights_df["weight"].values, index=weights_df["ticker"].values)
 
-print(f"📊 Configuração:")
+print("📊 Configuração:")
 print(f"   • Config: {CONFIG_PATH}")
 print(f"   • Weights: {latest_weights_file.name}")
 print(f"   • N ativos: {len(weights)}")
@@ -187,7 +187,7 @@ print()
 
 total_weight = weights.sum()
 
-print(f"   Target: Σw = 1.0")
+print("   Target: Σw = 1.0")
 print(f"   Atual: Σw = {total_weight:.6f}")
 print()
 
@@ -208,7 +208,7 @@ print()
 
 negative_weights = (weights < -1e-6).sum()
 
-print(f"   Target: w_i ≥ 0 ∀i")
+print("   Target: w_i ≥ 0 ∀i")
 print(f"   Violações: {negative_weights}")
 print()
 

@@ -1,22 +1,20 @@
 from __future__ import annotations
 
-import pytest
-import pandas as pd
-import numpy as np
-from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import patch
 
+import numpy as np
+import pandas as pd
+import pytest
 from itau_quant.data.loader import (
-    load_asset_prices,
+    DataBundle,
+    DataLoader,
     calculate_returns,
     download_and_cache_arara_prices,
-    preprocess_data,
     download_and_preprocess_arara,
     download_fred_dtb3,
-    DataLoader,
-    DataBundle,
+    load_asset_prices,
+    preprocess_data,
 )
-
 
 # =============================================================================
 # load_asset_prices tests
@@ -68,10 +66,10 @@ def test_load_asset_prices_preserves_datetime_index(tmp_path, monkeypatch):
 
 
 def test_calculate_returns_delegates_to_processing_module():
-    prices = pd.DataFrame({
-        "AAPL": [100, 110, 105],
-        "MSFT": [200, 210, 215]
-    }, index=pd.date_range("2020-01-01", periods=3, freq="D"))
+    prices = pd.DataFrame(
+        {"AAPL": [100, 110, 105], "MSFT": [200, 210, 215]},
+        index=pd.date_range("2020-01-01", periods=3, freq="D"),
+    )
 
     result = calculate_returns(prices, method="log")
     assert isinstance(result, pd.DataFrame)
@@ -80,13 +78,14 @@ def test_calculate_returns_delegates_to_processing_module():
 
 
 def test_calculate_returns_default_method_is_log():
-    prices = pd.DataFrame({
-        "AAPL": [100, 110, 121]
-    }, index=pd.date_range("2020-01-01", periods=3, freq="D"))
+    prices = pd.DataFrame(
+        {"AAPL": [100, 110, 121]},
+        index=pd.date_range("2020-01-01", periods=3, freq="D"),
+    )
 
     result = calculate_returns(prices)
-    assert result.iloc[0, 0] == pytest.approx(np.log(110/100), abs=1e-6)
-    assert result.iloc[1, 0] == pytest.approx(np.log(121/110), abs=1e-6)
+    assert result.iloc[0, 0] == pytest.approx(np.log(110 / 100), abs=1e-6)
+    assert result.iloc[1, 0] == pytest.approx(np.log(121 / 110), abs=1e-6)
 
 
 # =============================================================================
@@ -105,16 +104,13 @@ def test_download_and_cache_arara_prices_creates_csv(
 
     mock_universe.return_value = ["AAPL", "MSFT"]
     index = pd.date_range("2020-01-01", periods=3, freq="D")
-    mock_prices = pd.DataFrame({
-        "AAPL": [100, 110, 105],
-        "MSFT": [200, 210, 215]
-    }, index=index)
+    mock_prices = pd.DataFrame(
+        {"AAPL": [100, 110, 105], "MSFT": [200, 210, 215]}, index=index
+    )
     mock_yf_download.return_value = mock_prices
 
     result_path = download_and_cache_arara_prices(
-        start="2020-01-01",
-        end="2020-01-03",
-        raw_file_name="test_arara.csv"
+        start="2020-01-01", end="2020-01-03", raw_file_name="test_arara.csv"
     )
 
     assert result_path.exists()
@@ -176,8 +172,8 @@ def test_preprocess_data_returns_dataframe_with_returns(tmp_path, monkeypatch):
 
     result = preprocess_data("raw_prices.csv", "returns_test.parquet")
 
-    assert result.iloc[0, 0] == pytest.approx(np.log(110/100), abs=1e-6)
-    assert result.iloc[1, 0] == pytest.approx(np.log(121/110), abs=1e-6)
+    assert result.iloc[0, 0] == pytest.approx(np.log(110 / 100), abs=1e-6)
+    assert result.iloc[1, 0] == pytest.approx(np.log(121 / 110), abs=1e-6)
 
 
 # =============================================================================
@@ -197,9 +193,7 @@ def test_download_and_preprocess_arara_chains_functions(
     mock_preprocess.return_value = expected_returns
 
     result = download_and_preprocess_arara(
-        start="2020-01-01",
-        end="2020-01-03",
-        processed_file_name="returns_test.parquet"
+        start="2020-01-01", end="2020-01-03", processed_file_name="returns_test.parquet"
     )
 
     mock_download.assert_called_once_with(start="2020-01-01", end="2020-01-03")
@@ -214,7 +208,9 @@ def test_download_and_preprocess_arara_chains_functions(
 
 @patch("itau_quant.data.loader.fred_download_dtb3")
 def test_download_fred_dtb3_delegates_to_sources_module(mock_fred):
-    expected_series = pd.Series([0.01, 0.02, 0.015], index=pd.date_range("2020-01-01", periods=3))
+    expected_series = pd.Series(
+        [0.01, 0.02, 0.015], index=pd.date_range("2020-01-01", periods=3)
+    )
     mock_fred.return_value = expected_series
 
     result = download_fred_dtb3(start="2020-01-01", end="2020-01-03")
@@ -243,7 +239,7 @@ def test_databundle_is_frozen():
         rf_daily=rf,
         excess_returns=excess,
         bms=bms,
-        inception_mask=inception
+        inception_mask=inception,
     )
 
     with pytest.raises(AttributeError):
@@ -265,7 +261,7 @@ def test_databundle_fields():
         rf_daily=rf,
         excess_returns=excess,
         bms=bms,
-        inception_mask=inception
+        inception_mask=inception,
     )
 
     assert bundle.prices.equals(prices)
@@ -295,10 +291,7 @@ def test_dataloader_init_custom_tickers():
 
 def test_dataloader_init_parameters():
     loader = DataLoader(
-        tickers=["AAPL"],
-        start="2020-01-01",
-        end="2020-12-31",
-        mode="BMS"
+        tickers=["AAPL"], start="2020-01-01", end="2020-12-31", mode="BMS"
     )
     assert loader.start == "2020-01-01"
     assert loader.end == "2020-12-31"
@@ -339,7 +332,7 @@ def test_dataloader_load_without_corporate_actions(
     mock_validate,
     mock_filter,
     mock_normalize,
-    mock_yf
+    mock_yf,
 ):
     index = pd.date_range("2020-01-01", periods=5, freq="D")
     prices = pd.DataFrame({"AAPL": [100, 110, 105, 115, 120]}, index=index)
@@ -410,7 +403,7 @@ def test_dataloader_load_with_corporate_actions(
     mock_factors,
     mock_load_actions,
     mock_normalize,
-    mock_yf
+    mock_yf,
 ):
     index = pd.date_range("2020-01-01", periods=5, freq="D")
     raw_prices = pd.DataFrame({"AAPL": [100, 50, 50, 55, 60]}, index=index)
@@ -451,7 +444,9 @@ def test_dataloader_load_with_corporate_actions(
     mock_rebalance.return_value = bms
     mock_hash.return_value = "test_hash"
 
-    loader = DataLoader(tickers=["AAPL"], start="2020-01-01", end="2020-01-05", actions=actions_list)
+    loader = DataLoader(
+        tickers=["AAPL"], start="2020-01-01", end="2020-01-05", actions=actions_list
+    )
     bundle = loader.load()
 
     assert isinstance(bundle, DataBundle)
@@ -465,10 +460,10 @@ def test_dataloader_load_with_corporate_actions(
 @patch("itau_quant.data.loader.filter_liquid_assets")
 def test_dataloader_load_filters_illiquid_assets(mock_filter, mock_normalize, mock_yf):
     index = pd.date_range("2020-01-01", periods=5, freq="D")
-    prices = pd.DataFrame({
-        "AAPL": [100, 110, 105, 115, 120],
-        "ILLIQUID": [None, None, 50, None, None]
-    }, index=index)
+    prices = pd.DataFrame(
+        {"AAPL": [100, 110, 105, 115, 120], "ILLIQUID": [None, None, 50, None, None]},
+        index=index,
+    )
 
     filtered_prices = pd.DataFrame({"AAPL": [100, 110, 105, 115, 120]}, index=index)
     stats = pd.DataFrame(
@@ -504,7 +499,9 @@ def test_dataloader_load_filters_illiquid_assets(mock_filter, mock_normalize, mo
 @patch("itau_quant.data.loader.yf_download")
 @patch("itau_quant.data.loader.normalize_index")
 @patch("itau_quant.data.loader.filter_liquid_assets")
-def test_dataloader_load_raises_when_no_liquid_assets(mock_filter, mock_normalize, mock_yf):
+def test_dataloader_load_raises_when_no_liquid_assets(
+    mock_filter, mock_normalize, mock_yf
+):
     index = pd.date_range("2020-01-01", periods=5, freq="D")
     prices = pd.DataFrame({"ILLIQUID": [None, None, 50, None, None]}, index=index)
 
@@ -527,7 +524,9 @@ def test_dataloader_load_raises_when_no_liquid_assets(mock_filter, mock_normaliz
 
     loader = DataLoader(tickers=["ILLIQUID"])
 
-    with pytest.raises(ValueError, match="Nenhum ativo restante após filtros de liquidez"):
+    with pytest.raises(
+        ValueError, match="Nenhum ativo restante após filtros de liquidez"
+    ):
         loader.load()
 
 
@@ -551,7 +550,7 @@ def test_dataloader_load_saves_parquet_files(
     mock_validate,
     mock_filter,
     mock_normalize,
-    mock_yf
+    mock_yf,
 ):
     index = pd.date_range("2020-01-01", periods=3, freq="D")
     prices = pd.DataFrame({"AAPL": [100, 110, 120]}, index=index)
@@ -619,8 +618,12 @@ def test_dataloader_uses_crypto_connector(
 ):
     index = pd.date_range("2024-01-01", periods=3, freq="D")
 
-    multi_cols = pd.MultiIndex.from_product([["close"], ["IBIT"]], names=["field", "symbol"])
-    crypto_panel = pd.DataFrame([[100.0], [101.0], [103.0]], index=index, columns=multi_cols)
+    multi_cols = pd.MultiIndex.from_product(
+        [["close"], ["IBIT"]], names=["field", "symbol"]
+    )
+    crypto_panel = pd.DataFrame(
+        [[100.0], [101.0], [103.0]], index=index, columns=multi_cols
+    )
     normalized_crypto = pd.DataFrame({"IBIT": [100.0, 101.0, 103.0]}, index=index)
     returns = pd.DataFrame({"IBIT": [0.0, 0.0099, 0.0197]}, index=index)
     rf = pd.Series([0.0001] * len(index), index=index)
@@ -628,10 +631,14 @@ def test_dataloader_uses_crypto_connector(
 
     from itau_quant.data import loader as dl
 
-    monkeypatch.setattr(dl, "get_arara_metadata", lambda: {"IBIT": {"asset_class": "Crypto"}})
+    monkeypatch.setattr(
+        dl, "get_arara_metadata", lambda: {"IBIT": {"asset_class": "Crypto"}}
+    )
 
     mock_crypto.return_value = crypto_panel
-    mock_yf.side_effect = AssertionError("yf_download should not be called for crypto tickers")
+    mock_yf.side_effect = AssertionError(
+        "yf_download should not be called for crypto tickers"
+    )
     mock_normalize.side_effect = lambda df: df
     mock_filter.return_value = (
         normalized_crypto,
@@ -664,6 +671,7 @@ def test_dataloader_uses_crypto_connector(
     artefacts = loader.artifacts
     assert artefacts["metadata"]["liquidity"]["liquid"] == 1
 
+
 def test_dataloader_load_reuses_cache(tmp_path, monkeypatch):
     from itau_quant.data import loader as dl
 
@@ -679,6 +687,7 @@ def test_dataloader_load_reuses_cache(tmp_path, monkeypatch):
     monkeypatch.setattr(dl, "RAW_DATA_DIR", raw_dir)
     monkeypatch.setattr(dl, "PROCESSED_DATA_DIR", processed_dir)
     monkeypatch.setattr(dl, "normalize_index", lambda df: df)
+
     def fake_filter(df, **_):
         index_local = df.index
         stats = pd.DataFrame(
@@ -696,9 +705,13 @@ def test_dataloader_load_reuses_cache(tmp_path, monkeypatch):
 
     monkeypatch.setattr(dl, "filter_liquid_assets", fake_filter)
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
-    monkeypatch.setattr(dl, "_calculate_returns", lambda df, method="log": returns.copy())
+    monkeypatch.setattr(
+        dl, "_calculate_returns", lambda df, method="log": returns.copy()
+    )
     monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: rf.copy())
-    monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf_series: excess.copy())
+    monkeypatch.setattr(
+        dl, "compute_excess_returns", lambda ret, rf_series: excess.copy()
+    )
     monkeypatch.setattr(dl, "rebalance_schedule", lambda idx, mode: idx)
     monkeypatch.setattr(dl, "request_hash", lambda tickers, start, end: "cachehash")
 

@@ -33,12 +33,12 @@ Testes recomendados
     * (opcional) memory profiler fornecendo dados positivos.
 """
 
-import time
-import logging
 import functools
+import logging
+import time
 import tracemalloc
 from contextlib import contextmanager
-from typing import Callable, Optional, List, Dict, Any
+from typing import Any, Callable, Dict, Optional
 
 import numpy as np
 
@@ -50,16 +50,20 @@ TIMING_ENABLED = True
 # Em um projeto real, isso seria configurado por um módulo central de logging.
 # Para este exemplo, vamos configurar um logger básico.
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 default_logger = logging.getLogger("TimingUtils")
 
 
 # --- Componentes Principais ---
 
+
 @contextmanager
-def time_block(name: str, logger: Optional[logging.Logger] = None, collect_metrics: Optional[Dict] = None):
+def time_block(
+    name: str,
+    logger: Optional[logging.Logger] = None,
+    collect_metrics: Optional[Dict] = None,
+):
     """
     Context manager para medir e registrar o tempo de execução de um bloco de código.
 
@@ -75,7 +79,7 @@ def time_block(name: str, logger: Optional[logging.Logger] = None, collect_metri
 
     log = logger or default_logger
     start_time = time.perf_counter()
-    
+
     try:
         yield
     finally:
@@ -84,6 +88,7 @@ def time_block(name: str, logger: Optional[logging.Logger] = None, collect_metri
         if collect_metrics is not None:
             metric_name = f"timing.{name.replace(' ', '_').lower()}"
             collect_metrics[metric_name] = duration
+
 
 def time_function(logger: Optional[logging.Logger] = None):
     """
@@ -94,22 +99,27 @@ def time_function(logger: Optional[logging.Logger] = None):
     Args:
         logger (Optional[logging.Logger]): O logger a ser usado. Se None, usa o padrão.
     """
+
     def decorator(func: Callable):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             if not TIMING_ENABLED:
                 return func(*args, **kwargs)
-            
+
             func_name = func.__name__
             with time_block(name=f"Function <{func_name}>", logger=logger):
                 return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
+
 
 class Timer:
     """
     Um objeto Timer reutilizável para medir intervalos de tempo, útil dentro de loops.
     """
+
     def __init__(self):
         self._start_time: Optional[float] = None
         self._stop_time: Optional[float] = None
@@ -128,7 +138,7 @@ class Timer:
     @property
     def elapsed(self) -> float:
         """Retorna o tempo decorrido em segundos.
-        
+
         Se o timer estiver parado, retorna o intervalo (stop - start).
         Se o timer estiver rodando, retorna o intervalo desde o start até agora.
         """
@@ -139,17 +149,14 @@ class Timer:
             return time.perf_counter() - self._start_time
         # Timer está parado
         return self._stop_time - self._start_time
-        
+
     def __repr__(self) -> str:
         status = "running" if self._stop_time is None else "stopped"
         return f"<Timer status={status} elapsed={self.elapsed:.4f}s>"
 
+
 def benchmark(
-    fn: Callable,
-    *args,
-    repeat: int = 3,
-    number: int = 1,
-    **kwargs
+    fn: Callable, *args, repeat: int = 3, number: int = 1, **kwargs
 ) -> Dict[str, Any]:
     """
     Mede a execução de uma função repetidamente e retorna estatísticas.
@@ -167,8 +174,8 @@ def benchmark(
         Dict[str, Any]: Um dicionário com 'mean', 'std' e a lista de 'runs'.
     """
     if not TIMING_ENABLED:
-        return {'mean': 0.0, 'std': 0.0, 'runs': []}
-        
+        return {"mean": 0.0, "std": 0.0, "runs": []}
+
     timings = []
     for _ in range(repeat):
         start_time = time.perf_counter()
@@ -176,23 +183,21 @@ def benchmark(
             fn(*args, **kwargs)
         end_time = time.perf_counter()
         timings.append(end_time - start_time)
-    
+
     timings_arr = np.array(timings)
-    return {
-        'mean': np.mean(timings_arr),
-        'std': np.std(timings_arr),
-        'runs': timings
-    }
+    return {"mean": np.mean(timings_arr), "std": np.std(timings_arr), "runs": timings}
+
 
 def _format_bytes(size: int) -> str:
     """Formata bytes em uma string legível (KiB, MiB, etc.)."""
     if size < 1024:
         return f"{size} bytes"
-    for unit in ['KiB', 'MiB', 'GiB']:
+    for unit in ["KiB", "MiB", "GiB"]:
         size /= 1024
         if size < 1024:
             return f"{size:.2f} {unit}"
     return f"{size:.2f} TiB"
+
 
 def profile_memory(fn: Callable, *args, **kwargs) -> Dict[str, Any]:
     """
@@ -207,15 +212,15 @@ def profile_memory(fn: Callable, *args, **kwargs) -> Dict[str, Any]:
         Dict[str, Any]: Dicionário com o resultado da função e o pico de memória.
     """
     tracemalloc.start()
-    
+
     try:
         result = fn(*args, **kwargs)
         current, peak = tracemalloc.get_traced_memory()
     finally:
         tracemalloc.stop()
-        
+
     return {
-        'result': result,
-        'memory_peak': peak,
-        'memory_peak_human': _format_bytes(peak)
+        "result": result,
+        "memory_peak": peak,
+        "memory_peak_human": _format_bytes(peak),
     }

@@ -117,7 +117,7 @@ def predictive_r2(
         r2_adj = 1 - (1 - r2) * (n - 1) / (n - k) if n > k else np.nan
 
         # t-stat for beta
-        residuals = y - y_pred
+        y - y_pred
         mse = ss_res / (n - k) if n > k else np.nan
         var_beta = mse * np.linalg.inv(X_ols.T @ X_ols)
         se_beta = np.sqrt(np.diag(var_beta))[1]
@@ -250,9 +250,9 @@ def deflated_sharpe_ratio(
         var_sharpes = var_sr  # Conservative assumption
 
     euler_gamma = 0.5772156649
-    expected_max_sr = (
-        sharpe_benchmark + np.sqrt(var_sharpes) *
-        ((1 - euler_gamma) * stats.norm.ppf(1 - 1 / n_trials) + euler_gamma * stats.norm.ppf(1 - 1 / (n_trials * np.e)))
+    expected_max_sr = sharpe_benchmark + np.sqrt(var_sharpes) * (
+        (1 - euler_gamma) * stats.norm.ppf(1 - 1 / n_trials)
+        + euler_gamma * stats.norm.ppf(1 - 1 / (n_trials * np.e))
     )
 
     # Deflated statistic
@@ -343,11 +343,22 @@ def skill_report(
 
     if len(mu_forecasts) < 2:
         return SkillReport(
-            ic_mean=np.nan, ic_std=np.nan, ic_tstat=np.nan, ic_pval=np.nan,
-            ic_hit_rate=np.nan, r2=np.nan, r2_adj=np.nan, beta=np.nan,
-            beta_pval=np.nan, sharpe_forecast=np.nan, psr=np.nan, dsr=np.nan,
-            n_periods=0, n_obs=0, has_skill=False,
-            recommendation="Insufficient data for skill test"
+            ic_mean=np.nan,
+            ic_std=np.nan,
+            ic_tstat=np.nan,
+            ic_pval=np.nan,
+            ic_hit_rate=np.nan,
+            r2=np.nan,
+            r2_adj=np.nan,
+            beta=np.nan,
+            beta_pval=np.nan,
+            sharpe_forecast=np.nan,
+            psr=np.nan,
+            dsr=np.nan,
+            n_periods=0,
+            n_obs=0,
+            has_skill=False,
+            recommendation="Insufficient data for skill test",
         )
 
     mu_df = pd.DataFrame(mu_forecasts)
@@ -383,20 +394,20 @@ def skill_report(
 
     if len(portfolio_rets) > 0:
         port_series = pd.Series(portfolio_rets)
-        sharpe_forecast = port_series.mean() / (port_series.std() + 1e-12) * np.sqrt(252 / step)
+        sharpe_forecast = (
+            port_series.mean() / (port_series.std() + 1e-12) * np.sqrt(252 / step)
+        )
         psr = probabilistic_sharpe_ratio(port_series, sharpe_benchmark=0.0)
-        dsr = deflated_sharpe_ratio(port_series, n_trials=n_trials, sharpe_benchmark=0.0)
+        dsr = deflated_sharpe_ratio(
+            port_series, n_trials=n_trials, sharpe_benchmark=0.0
+        )
     else:
         sharpe_forecast = np.nan
         psr = np.nan
         dsr = np.nan
 
     # Decision logic
-    has_skill = (
-        abs(ic_mean) >= ic_threshold and
-        ic_pval < 0.05 and
-        psr >= psr_threshold
-    )
+    has_skill = abs(ic_mean) >= ic_threshold and ic_pval < 0.05 and psr >= psr_threshold
 
     if has_skill:
         recommendation = f"μ estimator shows skill (IC={ic_mean:.3f}, PSR={psr:.2f}). Safe to use in optimization."

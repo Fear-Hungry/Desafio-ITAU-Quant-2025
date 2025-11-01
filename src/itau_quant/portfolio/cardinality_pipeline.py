@@ -13,8 +13,8 @@ from typing import Any
 
 import pandas as pd
 
-from itau_quant.estimators import cov as covariance_estimators
 from itau_quant.costs.cost_model import CostModel, estimate_costs_by_class
+from itau_quant.estimators import cov as covariance_estimators
 from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 from itau_quant.optimization.heuristics.cardinality import (
     compute_effective_number,
@@ -111,18 +111,17 @@ def apply_cardinality_constraint(
 
         k = suggest_k_from_neff(neff, k_min, k_max, neff_multiplier)
         k_info = {"k_suggested": k, "k_from_neff": k, "neff": neff}
-    else:  # dynamic_neff_cost
-        if costs_bps is None:
-            # Fallback to N_eff only
-            from itau_quant.optimization.heuristics.cardinality import (
-                suggest_k_from_neff,
-            )
+    elif costs_bps is None:
+        # Fallback to N_eff only
+        from itau_quant.optimization.heuristics.cardinality import (
+            suggest_k_from_neff,
+        )
 
-            k = suggest_k_from_neff(neff, k_min, k_max, neff_multiplier)
-            k_info = {"k_suggested": k, "k_from_neff": k, "neff": neff}
-        else:
-            k_info = suggest_k_dynamic(neff, costs_bps, k_min, k_max, neff_multiplier)
-            k = k_info["k_suggested"]
+        k = suggest_k_from_neff(neff, k_min, k_max, neff_multiplier)
+        k_info = {"k_suggested": k, "k_from_neff": k, "neff": neff}
+    else:
+        k_info = suggest_k_dynamic(neff, costs_bps, k_min, k_max, neff_multiplier)
+        k = k_info["k_suggested"]
 
     # Step 4: Select support
     significance_threshold = min_active_weight
@@ -134,9 +133,11 @@ def apply_cardinality_constraint(
     selected = select_support_topk(
         weights=weights,
         k=k,
-        weights_prev=mv_config.previous_weights
-        if hasattr(mv_config, "previous_weights")
-        else None,
+        weights_prev=(
+            mv_config.previous_weights
+            if hasattr(mv_config, "previous_weights")
+            else None
+        ),
         mu=mu,
         costs_bps=costs_bps,
         alpha_weight=alpha_weight,
@@ -190,9 +191,11 @@ def apply_cardinality_constraint(
 
     config_k = MeanVarianceConfig(
         risk_aversion=mv_config.risk_aversion,
-        turnover_penalty=mv_config.turnover_penalty
-        if hasattr(mv_config, "turnover_penalty")
-        else 0.0,
+        turnover_penalty=(
+            mv_config.turnover_penalty
+            if hasattr(mv_config, "turnover_penalty")
+            else 0.0
+        ),
         turnover_cap=None,
         lower_bounds=lower_k,
         upper_bounds=upper_k,
@@ -200,9 +203,9 @@ def apply_cardinality_constraint(
         cost_vector=mv_config.cost_vector,
         solver=mv_config.solver,
         solver_kwargs=mv_config.solver_kwargs,
-        risk_config=mv_config.risk_config
-        if hasattr(mv_config, "risk_config")
-        else None,
+        risk_config=(
+            mv_config.risk_config if hasattr(mv_config, "risk_config") else None
+        ),
         budgets=mv_config.budgets if hasattr(mv_config, "budgets") else None,
     )
 

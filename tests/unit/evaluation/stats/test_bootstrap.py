@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-
 from itau_quant.evaluation.stats import (
     block_bootstrap,
     bootstrap_metric,
@@ -27,9 +26,13 @@ def test_block_bootstrap_preserves_shape():
 def test_bootstrap_metric_mean_estimator_closely_matches_sample_mean():
     data = _toy_df()
     observed_mean = data.mean()
-    bootstrap_results = bootstrap_metric(lambda df: df.mean(), data, n_samples=200, block_size=4, random_state=7)
+    bootstrap_results = bootstrap_metric(
+        lambda df: df.mean(), data, n_samples=200, block_size=4, random_state=7
+    )
     assert bootstrap_results.shape[0] == 200
-    assert bootstrap_results.mean().iloc[0] == pytest.approx(observed_mean.iloc[0], rel=0.2)
+    assert bootstrap_results.mean().iloc[0] == pytest.approx(
+        observed_mean.iloc[0], rel=0.2
+    )
 
 
 def test_confidence_interval_percentile():

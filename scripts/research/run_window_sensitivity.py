@@ -12,7 +12,6 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
-
 from itau_quant.evaluation.oos import compare_baselines, default_strategies
 
 OUTPUT_DIR = Path("results") / "window_sensitivity"

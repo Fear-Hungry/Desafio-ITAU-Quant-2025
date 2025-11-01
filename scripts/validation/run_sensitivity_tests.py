@@ -13,10 +13,10 @@ Este script testa:
 import sys
 from datetime import datetime, timedelta
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import yaml
-from itertools import product
 
 print("=" * 80)
 print("  PRISM-R - SENSITIVITY ANALYSIS")
@@ -48,7 +48,7 @@ VOL_TARGETS = [0.08, 0.10, 0.12, 0.14]
 CASH_FLOORS = [0.05, 0.10, 0.15, 0.20, 0.25]
 CARDINALITIES = [15, 18, 22, 25, 28]
 
-print(f"📊 Configuração:")
+print("📊 Configuração:")
 print(f"   • Universo: {len(TICKERS)} ativos ARARA")
 print(f"   • Período: {START_DATE.date()} a {END_DATE.date()}")
 print(f"   • Vol Targets: {[f'{v:.0%}' for v in VOL_TARGETS]}")
@@ -224,7 +224,7 @@ for vol_target in VOL_TARGETS:
             portfolio_returns.extend(test_portfolio_returns.tolist())
             dates.extend(test_returns.index.tolist())
 
-        except Exception as e:
+        except Exception:
             continue
 
     # Calcular métricas
@@ -307,7 +307,7 @@ for cash_floor in CASH_FLOORS:
             portfolio_returns.extend(test_portfolio_returns.tolist())
             dates.extend(test_returns.index.tolist())
 
-        except Exception as e:
+        except Exception:
             continue
 
     # Calcular métricas
@@ -391,7 +391,7 @@ for cardinality in CARDINALITIES:
             portfolio_returns.extend(test_portfolio_returns.tolist())
             dates.extend(test_returns.index.tolist())
 
-        except Exception as e:
+        except Exception:
             continue
 
     # Calcular métricas
@@ -458,19 +458,19 @@ print()
 
 # Melhor Vol Target
 best_vol = max(results_vol.items(), key=lambda x: x[1]["sharpe"])
-print(f"   Melhor Vol Target:")
+print("   Melhor Vol Target:")
 print(f"      • {best_vol[0]:.0%} → Sharpe {best_vol[1]['sharpe']:.2f}")
 print()
 
 # Melhor CASH Floor
 best_cash = max(results_cash.items(), key=lambda x: x[1]["sharpe"])
-print(f"   Melhor CASH Floor:")
+print("   Melhor CASH Floor:")
 print(f"      • {best_cash[0]:.0%} → Sharpe {best_cash[1]['sharpe']:.2f}")
 print()
 
 # Melhor Cardinality
 best_card = max(results_card.items(), key=lambda x: x[1]["sharpe"])
-print(f"   Melhor Cardinality:")
+print("   Melhor Cardinality:")
 print(f"      • K={best_card[0]} → Sharpe {best_card[1]['sharpe']:.2f}")
 print()
 

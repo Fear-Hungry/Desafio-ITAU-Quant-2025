@@ -8,9 +8,10 @@ Este script testa o fluxo end-to-end:
 4. Validar resultado
 """
 
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
-from datetime import datetime, timedelta
 
 print("=" * 70)
 print("  TESTE DE VALIDAÇÃO - PIPELINE COMPLETO DE PORTFOLIO")
@@ -63,8 +64,8 @@ print()
 # ============================================================================
 print("📈 [2/5] Estimando parâmetros de risco/retorno...")
 
+from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 from itau_quant.estimators.mu import mean_return
-from itau_quant.estimators.cov import sample_cov, ledoit_wolf_shrinkage
 
 # Retornos esperados (usar últimos 252 dias)
 recent_returns = returns.tail(252)
@@ -77,11 +78,11 @@ mu = mu * 252
 sigma, shrinkage_param = ledoit_wolf_shrinkage(recent_returns)
 sigma = sigma * 252  # anualizar
 
-print(f"  ✅ Retornos anualizados estimados:")
+print("  ✅ Retornos anualizados estimados:")
 for ticker in tickers:
     print(f"     {ticker}: {mu[ticker]:.2%}")
 print()
-print(f"  ✅ Covariância estimada com Ledoit-Wolf")
+print("  ✅ Covariância estimada com Ledoit-Wolf")
 print(f"     Dimensão: {sigma.shape}")
 print(f"     Shrinkage: {shrinkage_param:.4f}")
 print()
@@ -91,7 +92,7 @@ print()
 # ============================================================================
 print("⚙️  [3/5] Otimizando portfolio (Mean-Variance)...")
 
-from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
+from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 # Configuração
 config = MeanVarianceConfig(
@@ -111,7 +112,7 @@ config = MeanVarianceConfig(
 try:
     result = solve_mean_variance(mu, sigma, config)
 
-    print(f"  ✅ Otimização concluída!")
+    print("  ✅ Otimização concluída!")
     print(f"     Status: {result.summary.status}")
     print(f"     Solver: {result.summary.solver}")
     print(f"     Tempo: {result.summary.runtime:.3f}s")
@@ -125,22 +126,22 @@ try:
     weights = result.weights
 
     # Verificações básicas
-    print(f"  Verificação 1 - Soma dos pesos:")
+    print("  Verificação 1 - Soma dos pesos:")
     weights_sum = weights.sum()
     print(
         f"     Soma = {weights_sum:.6f} {'✅' if abs(weights_sum - 1.0) < 1e-4 else '❌'}"
     )
 
-    print(f"  Verificação 2 - Long-only:")
+    print("  Verificação 2 - Long-only:")
     all_positive = (weights >= -1e-6).all()
     print(f"     Todos >= 0: {'✅' if all_positive else '❌'}")
 
-    print(f"  Verificação 3 - Limites superiores:")
+    print("  Verificação 3 - Limites superiores:")
     within_bounds = (weights <= 0.40 + 1e-6).all()
     print(f"     Todos <= 40%: {'✅' if within_bounds else '❌'}")
 
     print()
-    print(f"  📊 Alocação otimizada:")
+    print("  📊 Alocação otimizada:")
     for ticker in tickers:
         w = weights[ticker]
         bar = "█" * int(w * 100)
@@ -153,7 +154,7 @@ try:
     portfolio_vol = float(np.sqrt(weights @ sigma @ weights))
     sharpe = portfolio_return / portfolio_vol if portfolio_vol > 0 else 0
 
-    print(f"  📈 Métricas de Portfolio:")
+    print("  📈 Métricas de Portfolio:")
     print(f"     Retorno esperado: {portfolio_return:.2%} a.a.")
     print(f"     Volatilidade:     {portfolio_vol:.2%} a.a.")
     print(f"     Sharpe Ratio:     {sharpe:.2f}")
@@ -174,7 +175,7 @@ try:
     print(f"  ✅ Turnover calculado: {turnover:.2%}")
     print()
 
-    print(f"  📊 Mudanças de alocação:")
+    print("  📊 Mudanças de alocação:")
     for ticker in tickers:
         w_old = prev_weights[ticker]
         w_new = weights[ticker]

@@ -9,14 +9,15 @@ import cvxpy as cp
 import numpy as np
 import pandas as pd
 
-from .solver_utils import SolverSummary, solve_problem
-from itau_quant.risk.constraints import build_constraints
 from itau_quant.risk.budgets import (
     RiskBudget,
     budgets_to_constraints,
     load_budgets,
     validate_budgets,
 )
+from itau_quant.risk.constraints import build_constraints
+
+from .solver_utils import SolverSummary, solve_problem
 
 __all__ = [
     "MeanVarianceConfig",
@@ -238,9 +239,7 @@ def solve_mean_variance(
     slack_var: cp.Variable | None = None
     if config.turnover_cap is not None and config.turnover_cap > 0:
         slack_var = cp.Variable(nonneg=True, name="turnover_slack")
-        constraints.append(
-            total_turnover <= float(config.turnover_cap) + slack_var
-        )
+        constraints.append(total_turnover <= float(config.turnover_cap) + slack_var)
         base_weight = max(config.risk_aversion, 1.0) * 10_000.0
         penalty_weight = max(config.turnover_penalty, base_weight)
         objective_terms.append(-penalty_weight * slack_var)
@@ -306,7 +305,10 @@ def solve_mean_variance(
         cap = float(config.turnover_cap)
         if cap >= 0.0:
             turnover_before_projection = float(np.abs(weights - prev).sum())
-            if turnover_before_projection > cap + 1e-6 and turnover_before_projection > 0:
+            if (
+                turnover_before_projection > cap + 1e-6
+                and turnover_before_projection > 0
+            ):
                 scale = cap / turnover_before_projection
                 weights = prev + (weights - prev) * scale
                 weights_sum = weights.sum()
@@ -354,9 +356,9 @@ def solve_mean_variance(
 
     return MeanVarianceResult(
         weights=weights,
-        objective_value=float(problem.value)
-        if problem.value is not None
-        else float("nan"),
+        objective_value=(
+            float(problem.value) if problem.value is not None else float("nan")
+        ),
         expected_return=expected_return,
         variance=variance,
         turnover=turnover,

@@ -6,10 +6,13 @@ from __future__ import annotations
 from pathlib import Path
 
 import pandas as pd
-
-from itau_quant.evaluation.oos import StrategySpec, compare_baselines, default_strategies
 from itau_quant.estimators.cov import ledoit_wolf_shrinkage
 from itau_quant.estimators.mu import shrunk_mean
+from itau_quant.evaluation.oos import (
+    StrategySpec,
+    compare_baselines,
+    default_strategies,
+)
 from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 from itau_quant.risk.regime import detect_regime, regime_multiplier
 

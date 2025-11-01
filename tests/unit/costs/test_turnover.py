@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 import pytest
-
 from itau_quant.costs import turnover as turnover_mod
 
 

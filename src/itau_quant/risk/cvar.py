@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Mapping, Sequence
+from typing import Mapping
 
 import cvxpy as cp
 import numpy as np
@@ -86,12 +86,16 @@ def solve_cvar_portfolio(
     return {
         "weights": np.asarray(weights.value).ravel(),
         "cvar": float(cvar.value) if cvar.value is not None else np.nan,
-        "expected_return": float(expected.value) if expected.value is not None else np.nan,
+        "expected_return": (
+            float(expected.value) if expected.value is not None else np.nan
+        ),
         "status": problem.status,
     }
 
 
-def historical_scenarios(returns: pd.DataFrame, window: int | None = None) -> np.ndarray:
+def historical_scenarios(
+    returns: pd.DataFrame, window: int | None = None
+) -> np.ndarray:
     """Return matrix of historical scenarios (each row a scenario)."""
 
     data = returns.tail(window) if window else returns

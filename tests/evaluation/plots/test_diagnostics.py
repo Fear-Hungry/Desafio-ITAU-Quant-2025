@@ -4,7 +4,6 @@ matplotlib.use("Agg")
 
 import numpy as np
 import pandas as pd
-
 from itau_quant.evaluation.plots import (
     plot_drawdown_contributors,
     plot_parameter_sensitivity,
@@ -42,7 +41,9 @@ def test_plot_parameter_sensitivity_two_params():
             "sharpe": [0.5, 0.6, 0.55, 0.7],
         }
     )
-    ax = plot_parameter_sensitivity(df, param_columns=["lambda", "eta"], metric_column="sharpe")
+    ax = plot_parameter_sensitivity(
+        df, param_columns=["lambda", "eta"], metric_column="sharpe"
+    )
     assert len(ax.collections) == 1
 
 
@@ -56,6 +57,8 @@ def test_plot_turnover_vs_cost_scatter():
 
 def test_plot_drawdown_contributors_stackplot():
     weights = _weight_history()
-    drawdowns = pd.Series(np.linspace(0, -0.1, len(weights.index)), index=weights.index, name="dd")
+    drawdowns = pd.Series(
+        np.linspace(0, -0.1, len(weights.index)), index=weights.index, name="dd"
+    )
     ax = plot_drawdown_contributors(drawdowns, weights)
     assert len(ax.collections) >= 1  # stackplot returns PolyCollection(s)

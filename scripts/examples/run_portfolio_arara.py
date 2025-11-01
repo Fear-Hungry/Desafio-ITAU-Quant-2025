@@ -14,8 +14,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-
-from itau_quant.config import load_config, UniverseConfig, PortfolioConfig
+from itau_quant.config import PortfolioConfig, UniverseConfig, load_config
 
 print("=" * 80)
 print("  PRISM-R - Portfolio Risk Intelligence System")
@@ -72,13 +71,13 @@ else:
 END_DATE = datetime.today()
 START_DATE = END_DATE - timedelta(days=365 * lookback_years)
 
-print(f"📊 Configuração:")
+print("📊 Configuração:")
 print(f"   • Universe: {universe_config.name} ({len(TICKERS)} ativos)")
 print(f"   • Período: {START_DATE.date()} a {END_DATE.date()}")
 print(f"   • Risk Aversion: {RISK_AVERSION}")
 print(f"   • Max Position: {MAX_POSITION:.1%}")
 print(f"   • Window: {ESTIMATION_WINDOW} dias")
-print(f"   • Config files:")
+print("   • Config files:")
 print(f"      - Universe: {args.universe}")
 print(f"      - Portfolio: {args.portfolio}")
 print()
@@ -151,7 +150,7 @@ print("📊 [2/5] Calculando retornos...")
 returns = prices.pct_change().dropna()
 
 print(f"   ✅ Retornos calculados: {len(returns)} observações")
-print(f"   ✅ Estatísticas:")
+print("   ✅ Estatísticas:")
 print(f"      • Média diária: {returns.mean().mean():.4%}")
 print(f"      • Vol diária:   {returns.std().mean():.4%}")
 print()
@@ -161,12 +160,12 @@ print()
 # ============================================================================
 print("📈 [3/5] Estimando parâmetros de risco/retorno...")
 
-from itau_quant.estimators.mu import mean_return
 from itau_quant.estimators.cov import (
     ledoit_wolf_shrinkage,
     nonlinear_shrinkage,
     tyler_m_estimator,
 )
+from itau_quant.estimators.mu import mean_return
 
 # Usar janela recente
 recent_returns = returns.tail(ESTIMATION_WINDOW)
@@ -183,19 +182,19 @@ if SHRINKAGE_METHOD == "ledoit_wolf":
     print(f"   Shrinkage parameter: {shrinkage:.4f}")
 elif SHRINKAGE_METHOD == "nonlinear":
     sigma = nonlinear_shrinkage(recent_returns)
-    print(f"   Nonlinear shrinkage aplicado")
+    print("   Nonlinear shrinkage aplicado")
 elif SHRINKAGE_METHOD == "tyler":
     sigma = tyler_m_estimator(recent_returns)
-    print(f"   Tyler M-estimator aplicado")
+    print("   Tyler M-estimator aplicado")
 else:
     from itau_quant.estimators.cov import sample_cov
 
     sigma = sample_cov(recent_returns)
-    print(f"   Sample covariance (sem shrinkage)")
+    print("   Sample covariance (sem shrinkage)")
 
 sigma_annual = sigma * 252  # anualizar
 
-print(f"   ✅ Retornos esperados (anualizados):")
+print("   ✅ Retornos esperados (anualizados):")
 top5 = mu_annual.nlargest(5)
 for ticker in top5.index:
     print(f"      {ticker}: {mu_annual[ticker]:+.2%}")
@@ -208,7 +207,7 @@ print()
 # ============================================================================
 print("⚙️  [4/5] Otimizando portfolio (Mean-Variance)...")
 
-from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
+from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 # Configuração do otimizador
 config = MeanVarianceConfig(
@@ -228,7 +227,7 @@ config = MeanVarianceConfig(
 try:
     result = solve_mean_variance(mu_annual, sigma_annual, config)
 
-    print(f"   ✅ Otimização concluída!")
+    print("   ✅ Otimização concluída!")
     print(f"      Status: {result.summary.status}")
     print(f"      Solver: {result.summary.solver}")
     print(f"      Tempo: {result.summary.runtime:.3f}s")
@@ -256,12 +255,12 @@ weights = result.weights
 active_weights = weights[weights > 0.001].sort_values(ascending=False)
 n_active = len(active_weights)
 
-print(f"   ✅ Portfolio final:")
+print("   ✅ Portfolio final:")
 print(f"      • {n_active} ativos ativos (peso > 0.1%)")
 print(f"      • Soma dos pesos: {weights.sum():.6f}")
 print()
 
-print(f"   📊 Alocação (top 10):")
+print("   📊 Alocação (top 10):")
 for ticker in active_weights.head(10).index:
     w = weights[ticker]
     bar_length = int(w * 200)
@@ -275,7 +274,7 @@ portfolio_return = float(mu_annual @ weights)
 portfolio_vol = float(np.sqrt(weights @ sigma_annual @ weights))
 sharpe = portfolio_return / portfolio_vol if portfolio_vol > 0 else 0
 
-print(f"   📈 Métricas Ex-Ante (anualizadas):")
+print("   📈 Métricas Ex-Ante (anualizadas):")
 print(f"      • Retorno esperado:  {portfolio_return:+.2%}")
 print(f"      • Volatilidade:      {portfolio_vol:.2%}")
 print(f"      • Sharpe Ratio:      {sharpe:.2f}")
@@ -294,7 +293,7 @@ effective_n = 1.0 / herfindahl if herfindahl > 0 else 0
 weights_positive = weights[weights > 1e-6]
 shannon = entropy(weights_positive) if len(weights_positive) > 0 else 0
 
-print(f"   📊 Diversificação:")
+print("   📊 Diversificação:")
 print(f"      • Herfindahl Index:  {herfindahl:.4f}")
 print(f"      • Effective N:       {effective_n:.1f} ativos")
 print(f"      • Shannon Entropy:   {shannon:.2f}")
@@ -311,7 +310,7 @@ asset_classes = {
     "Crypto": ["IBIT", "ETHA"],
 }
 
-print(f"   🎯 Exposição por classe de ativo:")
+print("   🎯 Exposição por classe de ativo:")
 for asset_class, tickers_in_class in asset_classes.items():
     exposure = sum(weights.get(t, 0.0) for t in tickers_in_class)
     if exposure > 0.001:
@@ -368,11 +367,11 @@ print("=" * 80)
 print("  ✅ OTIMIZAÇÃO CONCLUÍDA COM SUCESSO!")
 print("=" * 80)
 print()
-print(f"🎯 Próximos passos:")
+print("🎯 Próximos passos:")
 print(f"   1. Revisar alocação em: {weights_file}")
 print(f"   2. Validar métricas em: {metrics_file}")
-print(f"   3. Rodar backtest walk-forward para validação OOS")
-print(f"   4. Comparar com benchmarks (SPY, 60/40, Risk Parity)")
+print("   3. Rodar backtest walk-forward para validação OOS")
+print("   4. Comparar com benchmarks (SPY, 60/40, Risk Parity)")
 print()
 print("💡 Dicas:")
 print("   • Ajuste RISK_AVERSION para controlar risco (2=agressivo, 5=conservador)")

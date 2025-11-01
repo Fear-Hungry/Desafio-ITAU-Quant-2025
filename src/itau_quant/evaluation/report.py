@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
 from string import Template
-from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
+from typing import Any, Iterable, Mapping, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -16,7 +16,6 @@ from itau_quant.risk.budgets import RiskBudget
 
 from .plots import TearsheetFigure, plot_cumulative_returns, plot_drawdown
 from .stats import RiskContributionResult, RiskSummary
-
 
 FigureLike = Union[plt.Figure, TearsheetFigure, Tuple[str, plt.Figure]]
 
@@ -27,14 +26,14 @@ class ReportBundle:
 
     performance: pd.DataFrame
     risk: pd.DataFrame
-    drawdowns: Optional[pd.DataFrame]
-    figures: List[Tuple[str, plt.Figure]]
-    metadata: Dict[str, Any]
-    returns: Optional[pd.DataFrame] = None
-    benchmark: Optional[pd.DataFrame] = None
-    risk_contribution: Optional[RiskContributionResult] = None
-    risk_budgets: Optional[Dict[str, List[str]]] = None
-    cost_breakdown: Optional[pd.DataFrame] = None
+    drawdowns: pd.DataFrame | None
+    figures: list[tuple[str, plt.Figure]]
+    metadata: dict[str, Any]
+    returns: pd.DataFrame | None = None
+    benchmark: pd.DataFrame | None = None
+    risk_contribution: RiskContributionResult | None = None
+    risk_budgets: dict[str, list[str]] | None = None
+    cost_breakdown: pd.DataFrame | None = None
 
 
 @dataclass(frozen=True)
@@ -44,18 +43,18 @@ class ReportArtifacts:
     bundle: ReportBundle
     html_path: Path
     pdf_path: Path
-    table_paths: Dict[str, Path] = field(default_factory=dict)
+    table_paths: dict[str, Path] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class AdvancedTearsheetData:
     """Inputs required to build the advanced tear sheet figures."""
 
-    returns: Optional[Union[pd.Series, pd.DataFrame]] = None
-    benchmark: Optional[Union[pd.Series, pd.DataFrame]] = None
-    nav: Optional[Union[pd.Series, pd.DataFrame]] = None
-    risk_budgets: Optional[Sequence[RiskBudget]] = None
-    cost_breakdown: Optional[Union[pd.Series, pd.DataFrame, Mapping[str, float]]] = None
+    returns: pd.Series | pd.DataFrame | None = None
+    benchmark: pd.Series | pd.DataFrame | None = None
+    nav: pd.Series | pd.DataFrame | None = None
+    risk_budgets: Sequence[RiskBudget] | None = None
+    cost_breakdown: pd.Series | pd.DataFrame | Mapping[str, float] | None = None
     nav_title: str = "Cumulative NAV"
     drawdown_title: str = "Drawdown"
     risk_budget_title: str = "Risk Contribution by Budget"
@@ -63,8 +62,8 @@ class AdvancedTearsheetData:
     cost_label: str = "Cost"
 
 
-def _normalise_figures(figures: Iterable[FigureLike]) -> List[Tuple[str, plt.Figure]]:
-    normalised: List[Tuple[str, plt.Figure]] = []
+def _normalise_figures(figures: Iterable[FigureLike]) -> list[tuple[str, plt.Figure]]:
+    normalised: list[tuple[str, plt.Figure]] = []
 
     for item in figures:
         if isinstance(item, TearsheetFigure):
@@ -77,15 +76,15 @@ def _normalise_figures(figures: Iterable[FigureLike]) -> List[Tuple[str, plt.Fig
         elif isinstance(item, plt.Figure):
             normalised.append(("Figure", item))
         else:
-            raise TypeError("Unsupported figure format: %r" % (item,))
+            raise TypeError(f"Unsupported figure format: {item!r}")
     return normalised
 
 
 def _coerce_frame(
-    data: Union[pd.Series, pd.DataFrame, None],
+    data: pd.Series | pd.DataFrame | None,
     *,
     name: str,
-) -> Optional[pd.DataFrame]:
+) -> pd.DataFrame | None:
     """Convert optional series/frames into a clean DataFrame."""
 
     if data is None:
@@ -104,8 +103,8 @@ def _coerce_frame(
 
 
 def _normalise_risk_budgets(
-    budgets: Union[Mapping[str, Sequence[str]], Sequence[Any], None]
-) -> Optional[Dict[str, List[str]]]:
+    budgets: Mapping[str, Sequence[str]] | Sequence[Any] | None
+) -> dict[str, list[str]] | None:
     """Convert different budget specifications into a {name: [tickers]} mapping."""
 
     if budgets is None:
@@ -117,7 +116,7 @@ def _normalise_risk_budgets(
             for name, sequence in budgets.items()
         }
 
-    mapping: Dict[str, List[str]] = {}
+    mapping: dict[str, list[str]] = {}
     for item in budgets:
         if isinstance(item, RiskBudget):
             mapping[item.name] = [str(ticker) for ticker in item.tickers if str(ticker)]
@@ -141,7 +140,7 @@ def _risk_by_budget(
 ) -> pd.Series:
     """Aggregate asset-level risk contributions into budget buckets."""
 
-    totals: Dict[str, float] = {}
+    totals: dict[str, float] = {}
     assigned_assets: set[str] = set()
 
     for name, tickers in budgets.items():
@@ -163,16 +162,16 @@ def _risk_by_budget(
 
 def _build_auto_tearsheet_figures(
     *,
-    returns: Optional[pd.DataFrame],
-    drawdowns: Optional[pd.DataFrame],
-    risk_contribution: Optional[RiskContributionResult],
-    risk_budgets: Optional[Mapping[str, Sequence[str]]],
-    cost_breakdown: Optional[Union[pd.Series, pd.DataFrame]],
-    existing_titles: Optional[set[str]] = None,
-) -> List[Tuple[str, plt.Figure]]:
+    returns: pd.DataFrame | None,
+    drawdowns: pd.DataFrame | None,
+    risk_contribution: RiskContributionResult | None,
+    risk_budgets: Mapping[str, Sequence[str]] | None,
+    cost_breakdown: pd.Series | pd.DataFrame | None,
+    existing_titles: set[str] | None = None,
+) -> list[tuple[str, plt.Figure]]:
     """Create standard tear sheet figures when the required data is available."""
 
-    figures: List[Tuple[str, plt.Figure]] = []
+    figures: list[tuple[str, plt.Figure]] = []
     titles = existing_titles or set()
 
     if returns is not None and "Cumulative NAV" not in titles:
@@ -183,7 +182,7 @@ def _build_auto_tearsheet_figures(
         except Exception:
             pass
 
-    dd_frame: Optional[pd.DataFrame] = None
+    dd_frame: pd.DataFrame | None = None
     if drawdowns is not None:
         dd_frame = drawdowns.copy()
     elif returns is not None:
@@ -195,7 +194,9 @@ def _build_auto_tearsheet_figures(
         try:
             ax_dd = plt.subplots(figsize=(8, 4))[1]
             for column in dd_frame.columns:
-                ax_dd.fill_between(dd_frame.index, dd_frame[column], 0, alpha=0.3, label=column)
+                ax_dd.fill_between(
+                    dd_frame.index, dd_frame[column], 0, alpha=0.3, label=column
+                )
             ax_dd.set_title("Drawdown")
             ax_dd.set_ylabel("Drawdown")
             ax_dd.set_xlabel("Date")
@@ -236,7 +237,11 @@ def _build_auto_tearsheet_figures(
 
     if cost_breakdown is not None and "Cost Decomposition" not in titles:
         if isinstance(cost_breakdown, pd.DataFrame):
-            series = cost_breakdown.apply(pd.to_numeric, errors="coerce").sum(axis=1).dropna()
+            series = (
+                cost_breakdown.apply(pd.to_numeric, errors="coerce")
+                .sum(axis=1)
+                .dropna()
+            )
         elif isinstance(cost_breakdown, pd.Series):
             series = cost_breakdown.apply(pd.to_numeric, errors="coerce").dropna()
         else:
@@ -245,7 +250,9 @@ def _build_auto_tearsheet_figures(
             try:
                 series = series.sort_values(ascending=True)
                 fig_cost, ax_cost = plt.subplots(figsize=(8, 4))
-                ax_cost.barh(series.index.astype(str), series.values, color="tab:orange")
+                ax_cost.barh(
+                    series.index.astype(str), series.values, color="tab:orange"
+                )
                 ax_cost.set_title("Cost Decomposition")
                 ax_cost.set_xlabel("Cost impact")
                 ax_cost.grid(True, axis="x", alpha=0.3)
@@ -255,7 +262,8 @@ def _build_auto_tearsheet_figures(
 
     return figures
 
-def _ensure_frame(data: Union[pd.Series, pd.DataFrame], name: str) -> pd.DataFrame:
+
+def _ensure_frame(data: pd.Series | pd.DataFrame, name: str) -> pd.DataFrame:
     if isinstance(data, pd.DataFrame):
         frame = data.copy()
     elif isinstance(data, pd.Series):
@@ -268,7 +276,7 @@ def _ensure_frame(data: Union[pd.Series, pd.DataFrame], name: str) -> pd.DataFra
     return frame
 
 
-def _build_nav_figure(data: AdvancedTearsheetData) -> Optional[Tuple[str, plt.Figure]]:
+def _build_nav_figure(data: AdvancedTearsheetData) -> tuple[str, plt.Figure] | None:
     if data.nav is not None:
         frame = _ensure_frame(data.nav, "nav")
         fig, ax = plt.subplots(figsize=(8, 4))
@@ -292,8 +300,10 @@ def _build_nav_figure(data: AdvancedTearsheetData) -> Optional[Tuple[str, plt.Fi
     return data.nav_title, ax.figure
 
 
-def _build_drawdown_figure(data: AdvancedTearsheetData) -> Optional[Tuple[str, plt.Figure]]:
-    returns: Optional[Union[pd.Series, pd.DataFrame]] = data.returns
+def _build_drawdown_figure(
+    data: AdvancedTearsheetData,
+) -> tuple[str, plt.Figure] | None:
+    returns: pd.Series | pd.DataFrame | None = data.returns
 
     if returns is None and data.nav is not None:
         nav_frame = _ensure_frame(data.nav, "nav")
@@ -310,7 +320,7 @@ def _aggregate_budget_contributions(
     percentage: pd.Series,
     budgets: Sequence[RiskBudget],
 ) -> pd.Series:
-    contributions: Dict[str, float] = {}
+    contributions: dict[str, float] = {}
     accounted: set[str] = set()
 
     for budget in budgets:
@@ -318,7 +328,9 @@ def _aggregate_budget_contributions(
             continue
         values = percentage.reindex(budget.tickers).fillna(0.0)
         contributions[budget.name] = float(values.sum())
-        accounted.update(ticker for ticker in budget.tickers if ticker in percentage.index)
+        accounted.update(
+            ticker for ticker in budget.tickers if ticker in percentage.index
+        )
 
     residual = float(percentage.drop(labels=list(accounted), errors="ignore").sum())
     if abs(residual) > 1e-8:
@@ -333,8 +345,8 @@ def _aggregate_budget_contributions(
 
 def _build_budget_figure(
     data: AdvancedTearsheetData,
-    risk_summary: Optional[RiskSummary],
-) -> Optional[Tuple[str, plt.Figure]]:
+    risk_summary: RiskSummary | None,
+) -> tuple[str, plt.Figure] | None:
     if not data.risk_budgets:
         return None
     if risk_summary is None or risk_summary.risk_contribution is None:
@@ -363,7 +375,9 @@ def _build_budget_figure(
     return data.risk_budget_title, fig
 
 
-def _normalise_cost_series(cost_breakdown: Optional[Union[pd.Series, pd.DataFrame, Mapping[str, float]]]) -> Optional[pd.Series]:
+def _normalise_cost_series(
+    cost_breakdown: pd.Series | pd.DataFrame | Mapping[str, float] | None
+) -> pd.Series | None:
     if cost_breakdown is None:
         return None
 
@@ -394,7 +408,7 @@ def _normalise_cost_series(cost_breakdown: Optional[Union[pd.Series, pd.DataFram
 
 def _build_cost_figure(
     data: AdvancedTearsheetData,
-) -> Optional[Tuple[str, plt.Figure]]:
+) -> tuple[str, plt.Figure] | None:
     series = _normalise_cost_series(data.cost_breakdown)
     if series is None:
         return None
@@ -420,11 +434,11 @@ def _build_cost_figure(
 
 def build_advanced_tearsheet_figures(
     data: AdvancedTearsheetData,
-    risk_summary: Optional[RiskSummary],
-) -> List[Tuple[str, plt.Figure]]:
+    risk_summary: RiskSummary | None,
+) -> list[tuple[str, plt.Figure]]:
     """Generate standardised figures for the advanced tear sheet."""
 
-    figures: List[Tuple[str, plt.Figure]] = []
+    figures: list[tuple[str, plt.Figure]] = []
 
     nav_fig = _build_nav_figure(data)
     if nav_fig is not None:
@@ -447,14 +461,14 @@ def build_advanced_tearsheet_figures(
 
 def build_report_bundle(
     performance: pd.DataFrame,
-    risk: Union[RiskSummary, pd.DataFrame],
+    risk: RiskSummary | pd.DataFrame,
     figures: Iterable[FigureLike],
-    metadata: Optional[Dict[str, Any]] = None,
+    metadata: dict[str, Any] | None = None,
     *,
-    returns: Optional[Union[pd.Series, pd.DataFrame]] = None,
-    benchmark: Optional[Union[pd.Series, pd.DataFrame]] = None,
-    risk_budgets: Optional[Union[Mapping[str, Sequence[str]], Sequence[Any]]] = None,
-    cost_breakdown: Optional[Union[pd.Series, pd.DataFrame]] = None,
+    returns: pd.Series | pd.DataFrame | None = None,
+    benchmark: pd.Series | pd.DataFrame | None = None,
+    risk_budgets: Mapping[str, Sequence[str]] | Sequence[Any] | None = None,
+    cost_breakdown: pd.Series | pd.DataFrame | None = None,
     auto_tearsheet: bool = True,
 ) -> ReportBundle:
     """Aggregate raw pieces into a :class:`ReportBundle`."""
@@ -462,7 +476,7 @@ def build_report_bundle(
     if not isinstance(performance, pd.DataFrame):
         raise TypeError("performance must be a DataFrame")
 
-    risk_contribution_result: Optional[RiskContributionResult] = None
+    risk_contribution_result: RiskContributionResult | None = None
 
     if isinstance(risk, RiskSummary):
         risk_table = risk.metrics
@@ -491,10 +505,12 @@ def build_report_bundle(
         if isinstance(maybe_benchmark, (pd.Series, pd.DataFrame)):
             benchmark_frame = _coerce_frame(maybe_benchmark, name="benchmark")
 
-    risk_budgets_source = risk_budgets if risk_budgets is not None else meta_copy.get("risk_budgets")
+    risk_budgets_source = (
+        risk_budgets if risk_budgets is not None else meta_copy.get("risk_budgets")
+    )
     risk_budgets_mapping = _normalise_risk_budgets(risk_budgets_source)
 
-    cost_input: Optional[Union[pd.Series, pd.DataFrame]] = cost_breakdown
+    cost_input: pd.Series | pd.DataFrame | None = cost_breakdown
     if cost_input is None:
         maybe_cost = meta_copy.get("cost_breakdown")
         if isinstance(maybe_cost, (pd.Series, pd.DataFrame)):
@@ -523,14 +539,24 @@ def build_report_bundle(
     return ReportBundle(
         performance=performance.copy(),
         risk=risk_table.copy(),
-        drawdowns=drawdowns.copy() if isinstance(drawdowns, pd.DataFrame) else drawdowns,
+        drawdowns=(
+            drawdowns.copy() if isinstance(drawdowns, pd.DataFrame) else drawdowns
+        ),
         figures=figure_list,
         metadata=meta_copy,
-        returns=returns_frame.copy() if isinstance(returns_frame, pd.DataFrame) else None,
-        benchmark=benchmark_frame.copy() if isinstance(benchmark_frame, pd.DataFrame) else None,
+        returns=(
+            returns_frame.copy() if isinstance(returns_frame, pd.DataFrame) else None
+        ),
+        benchmark=(
+            benchmark_frame.copy()
+            if isinstance(benchmark_frame, pd.DataFrame)
+            else None
+        ),
         risk_contribution=risk_contribution_result,
         risk_budgets=risk_budgets_mapping,
-        cost_breakdown=cost_frame.copy() if isinstance(cost_frame, pd.DataFrame) else None,
+        cost_breakdown=(
+            cost_frame.copy() if isinstance(cost_frame, pd.DataFrame) else None
+        ),
     )
 
 
@@ -542,11 +568,12 @@ def _figure_to_base64(figure: plt.Figure) -> str:
     return f"data:image/png;base64,{encoded}"
 
 
-def render_html(bundle: ReportBundle, template_path: Optional[Union[str, Path]] = None) -> str:
+def render_html(bundle: ReportBundle, template_path: str | Path | None = None) -> str:
     """Render a minimal HTML report for the provided bundle."""
 
     meta_rows = "".join(
-        f"<tr><th>{key}</th><td>{value}</td></tr>" for key, value in sorted(bundle.metadata.items())
+        f"<tr><th>{key}</th><td>{value}</td></tr>"
+        for key, value in sorted(bundle.metadata.items())
     )
     metadata_html = f"<table class='meta'>{meta_rows}</table>" if meta_rows else ""
 
@@ -603,13 +630,13 @@ def render_html(bundle: ReportBundle, template_path: Optional[Union[str, Path]] 
     return template_text.replace("{{content}}", body)
 
 
-def export_pdf(html: str, output_path: Union[str, Path], *, engine: str = "auto") -> Path:
+def export_pdf(html: str, output_path: str | Path, *, engine: str = "auto") -> Path:
     """Export HTML to PDF when possible, otherwise fall back to HTML."""
 
     output_path = Path(output_path)
     engine = engine.lower()
 
-    def _try_weasyprint() -> Optional[Path]:
+    def _try_weasyprint() -> Path | None:
         try:
             from weasyprint import HTML  # type: ignore
         except ImportError:
@@ -631,20 +658,22 @@ def export_pdf(html: str, output_path: Union[str, Path], *, engine: str = "auto"
     return fallback_path
 
 
-def _export_tables(bundle: ReportBundle, output_dir: Path, filename: str) -> Dict[str, Path]:
+def _export_tables(
+    bundle: ReportBundle, output_dir: Path, filename: str
+) -> dict[str, Path]:
     """Persist key DataFrames to LaTeX and Markdown formats."""
 
     def _float_format(value: float) -> str:
         return "" if pd.isna(value) else f"{value:.4f}"
 
-    tables: Dict[str, pd.DataFrame] = {
+    tables: dict[str, pd.DataFrame] = {
         "performance": bundle.performance,
         "risk": bundle.risk,
     }
     if isinstance(bundle.drawdowns, pd.DataFrame):
         tables["drawdowns"] = bundle.drawdowns
 
-    paths: Dict[str, Path] = {}
+    paths: dict[str, Path] = {}
     output_dir.mkdir(parents=True, exist_ok=True)
 
     for name, df in tables.items():
@@ -683,18 +712,18 @@ def _export_tables(bundle: ReportBundle, output_dir: Path, filename: str) -> Dic
 
 def build_and_export_report(
     performance: pd.DataFrame,
-    risk: Union[RiskSummary, pd.DataFrame],
+    risk: RiskSummary | pd.DataFrame,
     figures: Iterable[FigureLike],
-    metadata: Optional[Dict[str, Any]],
-    output_dir: Union[str, Path],
+    metadata: dict[str, Any] | None,
+    output_dir: str | Path,
     *,
     filename: str = "evaluation_report",
-    template_path: Optional[Union[str, Path]] = None,
-    advanced_tearsheet: Optional[AdvancedTearsheetData] = None,
-    returns: Optional[Union[pd.Series, pd.DataFrame]] = None,
-    benchmark: Optional[Union[pd.Series, pd.DataFrame]] = None,
-    risk_budgets: Optional[Union[Mapping[str, Sequence[str]], Sequence[Any]]] = None,
-    cost_breakdown: Optional[Union[pd.Series, pd.DataFrame]] = None,
+    template_path: str | Path | None = None,
+    advanced_tearsheet: AdvancedTearsheetData | None = None,
+    returns: pd.Series | pd.DataFrame | None = None,
+    benchmark: pd.Series | pd.DataFrame | None = None,
+    risk_budgets: Mapping[str, Sequence[str]] | Sequence[Any] | None = None,
+    cost_breakdown: pd.Series | pd.DataFrame | None = None,
     auto_tearsheet: bool = True,
 ) -> ReportArtifacts:
     """Create a :class:`ReportBundle`, write HTML, and attempt PDF export."""
@@ -703,7 +732,9 @@ def build_and_export_report(
 
     risk_summary = risk if isinstance(risk, RiskSummary) else None
     if advanced_tearsheet is not None:
-        advanced_figures = build_advanced_tearsheet_figures(advanced_tearsheet, risk_summary)
+        advanced_figures = build_advanced_tearsheet_figures(
+            advanced_tearsheet, risk_summary
+        )
         figure_list.extend(advanced_figures)
 
     bundle = build_report_bundle(

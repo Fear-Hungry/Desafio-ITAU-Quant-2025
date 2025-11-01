@@ -5,11 +5,13 @@ Teste completo do sistema de produção usando dados locais
 
 from datetime import datetime
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
-
-from itau_quant.utils.production_monitor import should_fallback_to_1N, calculate_portfolio_metrics
 from itau_quant.utils.production_logger import ProductionLogger
+from itau_quant.utils.production_monitor import (
+    should_fallback_to_1N,
+)
 
 print("=" * 80)
 print("  TESTE COMPLETO DO SISTEMA DE PRODUÇÃO")
@@ -32,7 +34,7 @@ TRANSACTION_COST_BPS = 30
 recent_returns = returns.tail(ESTIMATION_WINDOW)
 valid_tickers = list(recent_returns.columns)
 
-print(f"📊 Configuração:")
+print("📊 Configuração:")
 print(f"   Ativos: {len(valid_tickers)}")
 print(f"   Janela: {ESTIMATION_WINDOW} dias")
 print(f"   Max pos: {MAX_POSITION:.0%}")
@@ -66,11 +68,11 @@ cov_annual = cov * 252
 print(f"   Σ estimada via Ledoit-Wolf (shrinkage: {shrinkage:.4f})")
 
 if fallback_needed:
-    print(f"   ⚠️  FALLBACK ATIVADO → Usando 1/N")
+    print("   ⚠️  FALLBACK ATIVADO → Usando 1/N")
     weights = pd.Series(1.0 / len(valid_tickers), index=valid_tickers)
     strategy = "1/N"
 else:
-    print(f"   ✅ Triggers OK → Usando ERC (Risk Parity)")
+    print("   ✅ Triggers OK → Usando ERC (Risk Parity)")
     weights = iterative_risk_parity(cov_annual)
     weights = weights.clip(0, MAX_POSITION)
     weights = weights / weights.sum()
@@ -78,11 +80,11 @@ else:
 
 # Métricas
 n_active = (weights > 0.001).sum()
-herfindahl = (weights ** 2).sum()
+herfindahl = (weights**2).sum()
 n_effective = 1.0 / herfindahl
 portfolio_vol = np.sqrt(weights.values @ cov_annual.values @ weights.values)
 
-print(f"   ✅ Otimização concluída!")
+print("   ✅ Otimização concluída!")
 print(f"      Estratégia: {strategy}")
 print(f"      N_active: {n_active}")
 print(f"      N_effective: {n_effective:.1f}")
@@ -127,12 +129,12 @@ for ticker in top_weights.index:
     print(f"   {ticker:6s}: {weights[ticker]:6.2%} {bar}")
 
 print()
-print(f"💰 Custos de Rebalance:")
+print("💰 Custos de Rebalance:")
 print(f"   Turnover: {turnover_realized:.2%}")
 print(f"   Custo: {cost_bps:.1f} bps")
 print()
 
-print(f"📈 Métricas de Risco (6M):")
+print("📈 Métricas de Risco (6M):")
 print(f"   Sharpe: {metrics.sharpe_6m:.2f}")
 print(f"   CVaR 95%: {metrics.cvar_95:.2%}")
 print(f"   Max DD: {metrics.max_dd:.2%}")

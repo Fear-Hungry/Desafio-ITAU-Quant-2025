@@ -14,7 +14,6 @@ from itau_quant.estimators import mu as mean_estimators
 from itau_quant.optimization.core.cvar_lp import CvarConfig, solve_cvar_lp
 from itau_quant.optimization.core.mv_qp import (
     MeanVarianceConfig,
-    MeanVarianceResult,
     solve_mean_variance,
 )
 from itau_quant.optimization.core.solver_utils import SolverSummary
@@ -120,7 +119,9 @@ def resolve_config_path(
         candidate = Path(config_path)
         if not candidate.is_absolute():
             in_configs = settings.configs_dir / candidate
-            candidate = in_configs if in_configs.exists() else settings.project_root / candidate
+            candidate = (
+                in_configs if in_configs.exists() else settings.project_root / candidate
+            )
 
     candidate = candidate.expanduser().resolve()
     if not candidate.exists():
@@ -158,7 +159,9 @@ def run_optimizer(
     if previous_weights is None:
         previous_weights = pd.Series(0.0, index=mu_series.index, dtype=float)
     else:
-        previous_weights = previous_weights.reindex(mu_series.index, fill_value=0.0).astype(float)
+        previous_weights = previous_weights.reindex(
+            mu_series.index, fill_value=0.0
+        ).astype(float)
 
     cost_vector = _build_cost_vector(optimizer_config.linear_costs_bps, mu_series.index)
 
@@ -192,10 +195,15 @@ def run_optimizer(
         result.summary = cvar_result.summary
         result.dry_run = False
 
-        if optimizer_config.max_cvar is not None and cvar_result.cvar > optimizer_config.max_cvar + 1e-9:
+        if (
+            optimizer_config.max_cvar is not None
+            and cvar_result.cvar > optimizer_config.max_cvar + 1e-9
+        ):
             result.notes.append("CVaR limit reported above configured threshold")
         if optimizer_config.budgets:
-            result.notes.append("Group budgets are not yet supported in mean-CVaR solver; skipped.")
+            result.notes.append(
+                "Group budgets are not yet supported in mean-CVaR solver; skipped."
+            )
 
         return result
 
@@ -234,7 +242,11 @@ def run_optimizer(
     if mv_result.summary.status == "infeasible":
         result.notes.append("Solver reported infeasible problem")
 
-    if optimizer_config.turnover_cap is not None and optimizer_config.turnover_cap > 0 and result.turnover is not None:
+    if (
+        optimizer_config.turnover_cap is not None
+        and optimizer_config.turnover_cap > 0
+        and result.turnover is not None
+    ):
         target = float(optimizer_config.turnover_cap)
         if result.turnover > target + 1e-6:
             result.notes.append(
@@ -275,6 +287,7 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
 
     mu_config = raw.get("estimators", {}).get("mu", {})
     sigma_config = raw.get("estimators", {}).get("sigma", {})
+
     def _collect_budgets(raw_budgets: Any) -> list[RiskBudget]:
         collected: list[RiskBudget] = []
         if not raw_budgets:
@@ -282,8 +295,14 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
         if isinstance(raw_budgets, RiskBudget):
             return [raw_budgets]
         if not isinstance(raw_budgets, (list, tuple, set, Mapping)):
-            raise TypeError("Budgets must be mappings, iterables, or RiskBudget objects.")
-        iterable = raw_budgets if isinstance(raw_budgets, (list, tuple, set)) else [raw_budgets]
+            raise TypeError(
+                "Budgets must be mappings, iterables, or RiskBudget objects."
+            )
+        iterable = (
+            raw_budgets
+            if isinstance(raw_budgets, (list, tuple, set))
+            else [raw_budgets]
+        )
         direct: list[RiskBudget] = []
         loadable: list[Mapping[str, Any]] = []
         for item in iterable:
@@ -298,7 +317,9 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
             collected.extend(load_budgets(loadable))
         return collected
 
-    risk_section = optimizer_section.get("risk") or optimizer_section.get("risk_constraints")
+    risk_section = optimizer_section.get("risk") or optimizer_section.get(
+        "risk_constraints"
+    )
     risk_config = None
     budgets_accum: list[RiskBudget] = []
     if isinstance(risk_section, Mapping):
@@ -317,17 +338,23 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
     if returns_path_raw is None:
         returns_path = settings.data_dir / "processed" / "returns_arara.parquet"
     else:
-        returns_path = _resolve_relative_path(returns_path_raw, base=path.parent, settings=settings, must_exist=False)
+        returns_path = _resolve_relative_path(
+            returns_path_raw, base=path.parent, settings=settings, must_exist=False
+        )
 
     previous_weights: pd.Series | None = None
     state_section = raw.get("state", {})
     prev_data = state_section.get("previous_weights")
     if isinstance(prev_data, str):
-        prev_path = _resolve_relative_path(prev_data, base=path.parent, settings=settings, must_exist=False)
+        prev_path = _resolve_relative_path(
+            prev_data, base=path.parent, settings=settings, must_exist=False
+        )
         if prev_path.exists():
             previous_weights = read_vector(prev_path)
     elif isinstance(prev_data, Mapping):
-        previous_weights = pd.Series({k: float(v) for k, v in prev_data.items()}, dtype=float)
+        previous_weights = pd.Series(
+            {k: float(v) for k, v in prev_data.items()}, dtype=float
+        )
 
     solver = optimizer_section.get("solver")
     solver_kwargs = optimizer_section.get("solver_kwargs", {})
@@ -372,7 +399,9 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
     )
 
 
-def _resolve_relative_path(value: str | Path, *, base: Path, settings: Settings, must_exist: bool = True) -> Path:
+def _resolve_relative_path(
+    value: str | Path, *, base: Path, settings: Settings, must_exist: bool = True
+) -> Path:
     candidate = Path(value)
     if not candidate.is_absolute():
         candidate = (base / candidate).resolve()
@@ -395,7 +424,9 @@ def _load_returns(config: OptimizerConfig) -> pd.DataFrame:
     return data.astype(float)
 
 
-def _estimate_inputs(returns: pd.DataFrame, config: OptimizerConfig) -> tuple[pd.Series, pd.DataFrame]:
+def _estimate_inputs(
+    returns: pd.DataFrame, config: OptimizerConfig
+) -> tuple[pd.Series, pd.DataFrame]:
     mu_config = config.mu_config
     sigma_config = config.sigma_config
 
@@ -414,7 +445,9 @@ def _estimate_inputs(returns: pd.DataFrame, config: OptimizerConfig) -> tuple[pd
         delta = float(mu_config.get("delta", 1.5))
         mu_series, _ = mean_estimators.huber_mean(data_for_mu, c=delta)
     elif mu_method in {"shrunk", "shrunk_50", "shrinkage"}:
-        strength = float(mu_config.get("strength", mu_config.get("shrink_strength", 0.5)))
+        strength = float(
+            mu_config.get("strength", mu_config.get("shrink_strength", 0.5))
+        )
         if not 0.0 <= strength <= 1.0:
             raise ValueError("Shrinkage strength must lie in [0, 1].")
         prior_value = mu_config.get("prior")
@@ -424,10 +457,14 @@ def _estimate_inputs(returns: pd.DataFrame, config: OptimizerConfig) -> tuple[pd
         elif isinstance(prior_value, pd.Series):
             prior = prior_value
         elif isinstance(prior_value, Mapping):
-            prior = pd.Series({str(k): float(v) for k, v in prior_value.items()}, dtype=float)
+            prior = pd.Series(
+                {str(k): float(v) for k, v in prior_value.items()}, dtype=float
+            )
         else:
             prior = prior_value
-        mu_series = mean_estimators.shrunk_mean(data_for_mu, strength=strength, prior=prior)
+        mu_series = mean_estimators.shrunk_mean(
+            data_for_mu, strength=strength, prior=prior
+        )
     elif mu_method == "student_t":
         nu = float(mu_config.get("nu", 5.0))
         mu_series = mean_estimators.student_t_mean(data_for_mu, nu=nu)
@@ -450,16 +487,23 @@ def _estimate_inputs(returns: pd.DataFrame, config: OptimizerConfig) -> tuple[pd
 
     mu_series = mu_series.astype(float)
     cov_matrix = cov_matrix.astype(float)
-    cov_matrix = cov_matrix.reindex(index=mu_series.index, columns=mu_series.index).fillna(0.0)
+    cov_matrix = cov_matrix.reindex(
+        index=mu_series.index, columns=mu_series.index
+    ).fillna(0.0)
     cov_matrix = covariance_estimators.project_to_psd(cov_matrix, epsilon=1e-9)
 
     return mu_series, cov_matrix
 
 
-def _build_cost_vector(costs: float | Mapping[str, float], index: pd.Index) -> pd.Series | None:
+def _build_cost_vector(
+    costs: float | Mapping[str, float], index: pd.Index
+) -> pd.Series | None:
     if isinstance(costs, Mapping):
         series = pd.Series({str(k): float(v) for k, v in costs.items()}, dtype=float)
-        return series.reindex(index).fillna(series.mean() if not series.empty else 0.0) / 10_000.0
+        return (
+            series.reindex(index).fillna(series.mean() if not series.empty else 0.0)
+            / 10_000.0
+        )
     scalar = float(costs)
     if scalar == 0:
         return None

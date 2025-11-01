@@ -69,13 +69,14 @@ def set_solver_seed(seed: int) -> None:
             "solver_utils.set_solver_seed não implementado; sem configuração adicional."
         )
 
+
 def set_global_seeds(
     seed: int,
     *,
     numpy: bool = True,
     python: bool = True,
     pandas: bool = True,
-    cvxpy: bool = True
+    cvxpy: bool = True,
 ):
     """
     Configura seeds globais para as principais bibliotecas para garantir reprodutibilidade.
@@ -96,25 +97,28 @@ def set_global_seeds(
     """
     # Normaliza a seed para o intervalo [0, 2**32 - 1]
     seed = abs(seed) % MAX_SEED_VALUE
-    
+
     if python:
         random.seed(seed)
         logging.debug(f"Seed do módulo 'random' configurada para {seed}.")
-    
+
     if numpy:
         np.random.seed(seed)
         logging.debug(f"Seed global do 'numpy.random' configurada para {seed}.")
-        
+
     if pandas:
         # O pandas utiliza o gerador de números aleatórios do NumPy, então
         # configurar a seed do NumPy já é suficiente para operações como df.sample().
         # Esta flag serve mais para clareza e documentação.
         logging.debug("Ambiente do pandas semeado via NumPy.")
-        
+
     if cvxpy:
         # Delega a configuração específica do solver para um módulo dedicado
         set_solver_seed(seed)
-        logging.debug(f"Tentativa de configurar seed de solvers via solver_utils com {seed}.")
+        logging.debug(
+            f"Tentativa de configurar seed de solvers via solver_utils com {seed}."
+        )
+
 
 @contextmanager
 def seed_context(seed: int):
@@ -131,7 +135,7 @@ def seed_context(seed: int):
     original_python_state = random.getstate()
     original_numpy_state = np.random.get_state()
     logging.debug(f"Entrando no contexto com seed {seed}. Estado original salvo.")
-    
+
     try:
         set_global_seeds(seed)
         yield
@@ -139,7 +143,10 @@ def seed_context(seed: int):
         # Restaura o estado original ao sair do contexto
         random.setstate(original_python_state)
         np.random.set_state(original_numpy_state)
-        logging.debug("Saindo do contexto. Estado original de aleatoriedade restaurado.")
+        logging.debug(
+            "Saindo do contexto. Estado original de aleatoriedade restaurado."
+        )
+
 
 def rng_factory(seed: Optional[int] = None) -> np.random.Generator:
     """
@@ -156,6 +163,7 @@ def rng_factory(seed: Optional[int] = None) -> np.random.Generator:
         np.random.Generator: Uma instância do gerador de números aleatórios.
     """
     return np.random.default_rng(seed)
+
 
 def hash_seed_from_config(config: Dict[str, Any]) -> int:
     """
@@ -174,15 +182,16 @@ def hash_seed_from_config(config: Dict[str, Any]) -> int:
     # Serializa o dicionário para uma string JSON, com chaves ordenadas para garantir
     # que a representação seja sempre a mesma para a mesma config.
     config_str = json.dumps(config, sort_keys=True)
-    
+
     # Cria um hash SHA-256 da string codificada em bytes
-    hasher = hashlib.sha256(config_str.encode('utf-8'))
-    
+    hasher = hashlib.sha256(config_str.encode("utf-8"))
+
     # Converte o digest hexadecimal do hash para um inteiro
     hash_int = int(hasher.hexdigest(), 16)
-    
+
     # Normaliza o inteiro para o intervalo de seed de 32 bits
     return hash_int % MAX_SEED_VALUE
+
 
 def register_seed_logging(logger: logging.Logger, seed: int):
     """

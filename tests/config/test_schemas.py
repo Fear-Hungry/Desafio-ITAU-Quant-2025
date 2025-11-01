@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import pytest
-from pydantic import ValidationError
-
 from itau_quant.config.schemas import (
     AssetGroupConstraints,
     DataConfig,
@@ -13,7 +11,7 @@ from itau_quant.config.schemas import (
     ProductionConfig,
     UniverseConfig,
 )
-
+from pydantic import ValidationError
 
 # Tests for AssetGroupConstraints
 

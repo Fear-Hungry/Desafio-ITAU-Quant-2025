@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
-
 from itau_quant.portfolio.scheduler import (
-    apply_overrides,
     generate_schedule,
     next_rebalance_date,
     scheduler,
@@ -41,6 +39,10 @@ def test_scheduler_with_overrides_and_halts():
 
 
 def test_next_rebalance_date():
-    schedule = pd.DatetimeIndex([pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-31")])
-    assert next_rebalance_date(pd.Timestamp("2024-01-15"), schedule) == pd.Timestamp("2024-01-31")
+    schedule = pd.DatetimeIndex(
+        [pd.Timestamp("2024-01-01"), pd.Timestamp("2024-01-31")]
+    )
+    assert next_rebalance_date(pd.Timestamp("2024-01-15"), schedule) == pd.Timestamp(
+        "2024-01-31"
+    )
     assert next_rebalance_date(pd.Timestamp("2024-02-01"), schedule) is None

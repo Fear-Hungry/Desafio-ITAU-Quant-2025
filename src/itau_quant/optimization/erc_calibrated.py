@@ -12,16 +12,14 @@ Implementa:
 Todas as violações anteriores corrigidas.
 """
 
-import numpy as np
-import pandas as pd
-import cvxpy as cp
 from typing import Dict, List, Optional, Tuple
+
+import cvxpy as cp
+import numpy as np
 
 
 def build_group_constraints(
-    w: cp.Variable,
-    groups: Dict[str, Dict],
-    asset_names: List[str]
+    w: cp.Variable, groups: Dict[str, Dict], asset_names: List[str]
 ) -> List[cp.Constraint]:
     """
     Constrói constraints de grupo.
@@ -50,24 +48,24 @@ def build_group_constraints(
 
     for group_name, spec in groups.items():
         # Encontrar índices dos ativos no grupo
-        group_assets = spec.get('assets', [])
+        group_assets = spec.get("assets", [])
         indices = [i for i, a in enumerate(asset_names) if a in group_assets]
 
         if not indices:
             continue
 
         # Max do grupo
-        if 'max' in spec:
-            constraints.append(cp.sum(w[indices]) <= spec['max'])
+        if "max" in spec:
+            constraints.append(cp.sum(w[indices]) <= spec["max"])
 
         # Min do grupo
-        if 'min' in spec:
-            constraints.append(cp.sum(w[indices]) >= spec['min'])
+        if "min" in spec:
+            constraints.append(cp.sum(w[indices]) >= spec["min"])
 
         # Max por ativo dentro do grupo
-        if 'per_asset_max' in spec:
+        if "per_asset_max" in spec:
             for idx in indices:
-                constraints.append(w[idx] <= spec['per_asset_max'])
+                constraints.append(w[idx] <= spec["per_asset_max"])
 
     return constraints
 
@@ -166,12 +164,14 @@ def solve_erc_core(
     }
 
     if solver == "CLARABEL":
-        solver_kwargs.update({
-            "tol_gap_abs": 1e-8,
-            "tol_gap_rel": 1e-8,
-            "tol_feas": 1e-8,
-            "max_iter": 10000,
-        })
+        solver_kwargs.update(
+            {
+                "tol_gap_abs": 1e-8,
+                "tol_gap_rel": 1e-8,
+                "tol_feas": 1e-8,
+                "max_iter": 10000,
+            }
+        )
 
     problem.solve(solver=solver, **solver_kwargs)
 
@@ -226,7 +226,17 @@ def calibrate_gamma_for_vol(
         gamma = np.sqrt(lo * hi)  # geometric mean (mais estável que aritmética)
 
         try:
-            w, status = solve_erc_core(cov, w_prev, gamma, eta, costs, w_max, groups, asset_names, verbose=False)
+            w, status = solve_erc_core(
+                cov,
+                w_prev,
+                gamma,
+                eta,
+                costs,
+                w_max,
+                groups,
+                asset_names,
+                verbose=False,
+            )
         except RuntimeError:
             # Solver failed, try to adjust
             hi = gamma
@@ -235,7 +245,9 @@ def calibrate_gamma_for_vol(
         vol = np.sqrt(w @ cov @ w)
 
         if verbose:
-            print(f"  Iter {i+1:2d}: γ={gamma:.6f}, vol={vol:.4f} (target={vol_target:.4f})")
+            print(
+                f"  Iter {i+1:2d}: γ={gamma:.6f}, vol={vol:.4f} (target={vol_target:.4f})"
+            )
 
         if abs(vol - vol_target) < vol_tolerance:
             return w, gamma, vol
@@ -297,7 +309,17 @@ def calibrate_eta_for_turnover(
         eta = (lo + hi) / 2
 
         try:
-            w, status = solve_erc_core(cov, w_prev, gamma, eta, costs, w_max, groups, asset_names, verbose=False)
+            w, status = solve_erc_core(
+                cov,
+                w_prev,
+                gamma,
+                eta,
+                costs,
+                w_max,
+                groups,
+                asset_names,
+                verbose=False,
+            )
         except RuntimeError:
             hi = eta
             continue
@@ -305,7 +327,9 @@ def calibrate_eta_for_turnover(
         turnover = np.sum(np.abs(w - w_prev))
 
         if verbose:
-            print(f"  Iter {i+1:2d}: η={eta:.6f}, turnover={turnover:.4f} (target={target_turnover:.4f})")
+            print(
+                f"  Iter {i+1:2d}: η={eta:.6f}, turnover={turnover:.4f} (target={target_turnover:.4f})"
+            )
 
         if abs(turnover - target_turnover) < tolerance:
             return w, eta, turnover
@@ -360,10 +384,12 @@ def solve_erc_with_cardinality(
         Número de ativos ativos (≈K)
     """
     if verbose:
-        print(f"  Step 1/2: Solving unconstrained ERC...")
+        print("  Step 1/2: Solving unconstrained ERC...")
 
     # Step 1: Solve unconstrained
-    w_full, status = solve_erc_core(cov, w_prev, gamma, eta, costs, w_max, groups, asset_names, verbose=False)
+    w_full, status = solve_erc_core(
+        cov, w_prev, gamma, eta, costs, w_max, groups, asset_names, verbose=False
+    )
 
     if verbose:
         print(f"  Step 2/2: Selecting top {K} and re-optimizing...")
@@ -375,9 +401,16 @@ def solve_erc_with_cardinality(
 
     # Step 3: Re-optimize on fixed support
     w_sparse, status = solve_erc_core(
-        cov, w_prev, gamma, eta, costs, w_max, groups, asset_names,
+        cov,
+        w_prev,
+        gamma,
+        eta,
+        costs,
+        w_max,
+        groups,
+        asset_names,
         support_mask=support_mask,
-        verbose=False
+        verbose=False,
     )
 
     n_active = int((w_sparse > 1e-4).sum())
@@ -412,8 +445,7 @@ if __name__ == "__main__":
     # Test 1: Calibrate vol
     print("Test 1: Calibrating γ for vol target 10%...")
     w, gamma, vol = calibrate_gamma_for_vol(
-        cov, w_prev, eta=0.01, costs=costs, w_max=w_max,
-        vol_target=0.10, verbose=True
+        cov, w_prev, eta=0.01, costs=costs, w_max=w_max, vol_target=0.10, verbose=True
     )
     print(f"  ✅ γ* = {gamma:.6f}, vol = {vol:.4f}")
     print()
@@ -421,8 +453,13 @@ if __name__ == "__main__":
     # Test 2: Calibrate turnover
     print("Test 2: Calibrating η for turnover target 12%...")
     w, eta, to = calibrate_eta_for_turnover(
-        cov, w_prev, gamma=gamma, costs=costs, w_max=w_max,
-        target_turnover=0.12, verbose=True
+        cov,
+        w_prev,
+        gamma=gamma,
+        costs=costs,
+        w_max=w_max,
+        target_turnover=0.12,
+        verbose=True,
     )
     print(f"  ✅ η* = {eta:.6f}, turnover = {to:.4f}")
     print()
@@ -430,8 +467,14 @@ if __name__ == "__main__":
     # Test 3: Cardinality
     print("Test 3: Enforcing cardinality K=7...")
     w_sparse, n_active = solve_erc_with_cardinality(
-        cov, w_prev, gamma=gamma, eta=eta, costs=costs, w_max=0.25,  # Aumenta w_max para feasibility
-        K=7, verbose=True
+        cov,
+        w_prev,
+        gamma=gamma,
+        eta=eta,
+        costs=costs,
+        w_max=0.25,  # Aumenta w_max para feasibility
+        K=7,
+        verbose=True,
     )
     print(f"  ✅ N_active = {n_active} (target: 5)")
     print(f"  Top 5 weights: {np.sort(w_sparse[w_sparse > 0])[::-1]}")

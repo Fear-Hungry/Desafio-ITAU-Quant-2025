@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 
 from itau_quant.costs.transaction_costs import transaction_cost_vector
-from itau_quant.risk.regime import detect_regime, regime_multiplier
 from itau_quant.estimators import cov as covariance_estimators
 from itau_quant.optimization.core.mv_qp import (
     MeanVarianceConfig,
@@ -20,6 +19,7 @@ from itau_quant.optimization.heuristics.hrp import heuristic_allocation
 from itau_quant.portfolio.cardinality_pipeline import apply_cardinality_constraint
 from itau_quant.portfolio.rounding import RoundingResult, rounding_pipeline
 from itau_quant.risk.budgets import RiskBudget, load_budgets, validate_budgets
+from itau_quant.risk.regime import detect_regime, regime_multiplier
 
 __all__ = [
     "MarketData",
@@ -128,7 +128,9 @@ def run_estimators(
     valid_mask = returns.count() >= min_history
     returns_filtered = returns.loc[:, valid_mask]
     if returns_filtered.empty:
-        raise ValueError("No assets meet the minimum history requirement for estimation.")
+        raise ValueError(
+            "No assets meet the minimum history requirement for estimation."
+        )
 
     clean_returns = returns_filtered.dropna(axis=0, how="any")
     if clean_returns.shape[0] < 2:
@@ -546,6 +548,7 @@ def rebalance(
         target_weights = opt_weights.reindex(mu.index, fill_value=0.0).astype(float)
         if mv_config.turnover_cap is not None and mv_config.turnover_cap > 0:
             from itau_quant.backtesting.risk_monitor import apply_turnover_cap
+
             adjusted, adjusted_turnover = apply_turnover_cap(
                 previous_weights,
                 target_weights,

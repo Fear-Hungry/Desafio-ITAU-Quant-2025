@@ -79,7 +79,9 @@ def turnover_constraint(
     previous_weights: Sequence[float],
     max_turnover: float,
 ) -> cp.Constraint:
-    return cp.norm1(weights - np.asarray(previous_weights, dtype=float)) <= float(max_turnover)
+    return cp.norm1(weights - np.asarray(previous_weights, dtype=float)) <= float(
+        max_turnover
+    )
 
 
 def build_constraints(
@@ -92,15 +94,21 @@ def build_constraints(
     weights_var: cp.Variable = context["weights_var"]
 
     if config.get("weight_sum"):
-        constraints.append(weight_sum_constraint(weights_var, target=float(config["weight_sum"])))
+        constraints.append(
+            weight_sum_constraint(weights_var, target=float(config["weight_sum"]))
+        )
 
     if "box" in config:
         box_cfg = config["box"]
-        constraints.extend(box_constraints(weights_var, box_cfg["lower"], box_cfg["upper"]))
+        constraints.extend(
+            box_constraints(weights_var, box_cfg["lower"], box_cfg["upper"])
+        )
 
     if "budgets" in config:
         budgets_cfg = load_budget_objects(config["budgets"])
-        constraints.extend(group_constraints(weights_var, budgets_cfg, context["asset_index"]))
+        constraints.extend(
+            group_constraints(weights_var, budgets_cfg, context["asset_index"])
+        )
 
     if "factor_exposure" in config:
         fe_cfg = config["factor_exposure"]
@@ -113,7 +121,9 @@ def build_constraints(
         )
 
     if "max_leverage" in config:
-        constraints.append(leverage_constraint(weights_var, float(config["max_leverage"])))
+        constraints.append(
+            leverage_constraint(weights_var, float(config["max_leverage"]))
+        )
 
     if "tracking_error" in config:
         te_cfg = config["tracking_error"]
@@ -129,13 +139,17 @@ def build_constraints(
     if "turnover" in config:
         turnover_cfg = config["turnover"]
         constraints.append(
-            turnover_constraint(weights_var, turnover_cfg["previous"], turnover_cfg["max_turnover"])
+            turnover_constraint(
+                weights_var, turnover_cfg["previous"], turnover_cfg["max_turnover"]
+            )
         )
 
     return constraints
 
 
-def load_budget_objects(raw_budgets: Iterable[Mapping[str, object]]) -> list[RiskBudget]:
+def load_budget_objects(
+    raw_budgets: Iterable[Mapping[str, object]]
+) -> list[RiskBudget]:
     budgets: list[RiskBudget] = []
     for entry in raw_budgets:
         budgets.append(

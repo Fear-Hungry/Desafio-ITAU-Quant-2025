@@ -4,7 +4,6 @@ matplotlib.use("Agg")
 
 import numpy as np
 import pandas as pd
-
 from itau_quant.evaluation.plots import (
     TearsheetFigure,
     generate_tearsheet,
@@ -55,7 +54,9 @@ def test_plot_turnover_with_band():
 
 def test_plot_risk_contribution_bars():
     weights = pd.Series([0.6, 0.4], index=["A", "B"], name="latest")
-    cov = pd.DataFrame([[0.05, 0.01], [0.01, 0.04]], index=["A", "B"], columns=["A", "B"])
+    cov = pd.DataFrame(
+        [[0.05, 0.01], [0.01, 0.04]], index=["A", "B"], columns=["A", "B"]
+    )
     ax = plot_risk_contribution(weights, cov)
     assert len(ax.patches) == len(weights)
 

@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-
-from itau_quant.optimization.ga.population import Individual
 from itau_quant.optimization.ga import mutation
+from itau_quant.optimization.ga.population import Individual
 
 
 def test_flip_asset_selection_changes_mask() -> None:
@@ -17,7 +16,9 @@ def test_flip_asset_selection_changes_mask() -> None:
 def test_gaussian_jitter_respects_bounds() -> None:
     individual = Individual(np.array([1, 1, 0], dtype=bool), {"lambda": 1.0})
     rng = np.random.default_rng(3)
-    mutated = mutation.gaussian_jitter_params(individual, sigma=0.5, bounds={"lambda": (0.5, 2.0)}, rng=rng)
+    mutated = mutation.gaussian_jitter_params(
+        individual, sigma=0.5, bounds={"lambda": (0.5, 2.0)}, rng=rng
+    )
     assert 0.5 <= mutated.params["lambda"] <= 2.0
 
 

@@ -3,8 +3,10 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-
-from itau_quant.backtesting.risk_monitor import apply_turnover_cap, evaluate_turnover_band
+from itau_quant.backtesting.risk_monitor import (
+    apply_turnover_cap,
+    evaluate_turnover_band,
+)
 
 
 def test_apply_turnover_cap_returns_target_when_within_limit() -> None:

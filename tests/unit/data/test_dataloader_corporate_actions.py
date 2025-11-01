@@ -1,9 +1,7 @@
 from __future__ import annotations
 
-import numpy as np
 import pandas as pd
-
-from itau_quant.data.loader import DataLoader, DataBundle
+from itau_quant.data.loader import DataBundle, DataLoader
 
 
 def _mock_prices() -> pd.DataFrame:
@@ -18,14 +16,22 @@ def test_dataloader_applies_corporate_actions(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df, **_: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)))
+    monkeypatch.setattr(
+        dl,
+        "filter_liquid_assets",
+        lambda df, **_: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)),
+    )
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
-    monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
+    monkeypatch.setattr(
+        dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index)
+    )
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
     monkeypatch.setattr(dl, "rebalance_schedule", lambda index, mode: index)
     monkeypatch.setattr(dl, "request_hash", lambda *args, **kwargs: "hash")
     monkeypatch.setattr(dl, "save_parquet", lambda *args, **kwargs: None)
-    monkeypatch.setattr(dl, "_calculate_returns", lambda df, method="log": returns.copy())
+    monkeypatch.setattr(
+        dl, "_calculate_returns", lambda df, method="log": returns.copy()
+    )
 
     actions = [
         {

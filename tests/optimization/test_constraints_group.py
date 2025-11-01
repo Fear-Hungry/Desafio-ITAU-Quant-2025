@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-
 from itau_quant.optimization.constraints_group import (
     GroupConstraint,
     parse_group_config,
@@ -23,7 +22,9 @@ class TestGroupConstraint:
 
     def test_matches_regex(self):
         """Regex pattern matching."""
-        group = GroupConstraint(name="sectors", max_weight=0.5, assets_regex=r"XL[A-Z]+")
+        group = GroupConstraint(
+            name="sectors", max_weight=0.5, assets_regex=r"XL[A-Z]+"
+        )
         assert group.matches("XLK") is True
         assert group.matches("XLF") is True
         assert group.matches("SPY") is False
@@ -31,7 +32,9 @@ class TestGroupConstraint:
     def test_get_assets_filters_universe(self):
         """get_assets returns only assets in universe."""
         universe = pd.Index(["SPY", "QQQ", "GLD", "TLT"])
-        group = GroupConstraint(name="equity", max_weight=0.4, assets=["SPY", "QQQ", "IWM"])
+        group = GroupConstraint(
+            name="equity", max_weight=0.4, assets=["SPY", "QQQ", "IWM"]
+        )
         assets = group.get_assets(universe)
 
         assert set(assets) == {"SPY", "QQQ"}  # IWM not in universe
@@ -39,7 +42,9 @@ class TestGroupConstraint:
     def test_get_assets_with_regex(self):
         """get_assets with regex matches correctly."""
         universe = pd.Index(["XLK", "XLF", "SPY", "QQQ"])
-        group = GroupConstraint(name="sectors", max_weight=0.5, assets_regex=r"XL[A-Z]+")
+        group = GroupConstraint(
+            name="sectors", max_weight=0.5, assets_regex=r"XL[A-Z]+"
+        )
         assets = group.get_assets(universe)
 
         assert set(assets) == {"XLK", "XLF"}
@@ -71,7 +76,9 @@ class TestValidateGroupCaps:
     def test_detects_min_violation(self):
         """Detects when group below min."""
         weights = pd.Series({"SPY": 0.1, "QQQ": 0.1, "GLD": 0.8})
-        group = GroupConstraint(name="equity", min_weight=0.3, max_weight=1.0, assets=["SPY", "QQQ"])
+        group = GroupConstraint(
+            name="equity", min_weight=0.3, max_weight=1.0, assets=["SPY", "QQQ"]
+        )
         is_valid, info = validate_group_caps(weights, [group])
 
         assert is_valid is False

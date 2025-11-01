@@ -9,7 +9,7 @@ plots into reports.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Sequence, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -35,7 +35,7 @@ def _to_frame(data: ReturnsLike) -> pd.DataFrame:
     return df.astype(float)
 
 
-def _prepare_axis(ax: Optional[plt.Axes] = None, *, title: Optional[str] = None) -> plt.Axes:
+def _prepare_axis(ax: plt.Axes | None = None, *, title: str | None = None) -> plt.Axes:
     if ax is None:
         _, ax = plt.subplots(figsize=(8, 4))
     if title:
@@ -46,8 +46,8 @@ def _prepare_axis(ax: Optional[plt.Axes] = None, *, title: Optional[str] = None)
 def plot_cumulative_returns(
     returns: ReturnsLike,
     *,
-    benchmark: Optional[ReturnsLike] = None,
-    ax: Optional[plt.Axes] = None,
+    benchmark: ReturnsLike | None = None,
+    ax: plt.Axes | None = None,
     title: str = "Cumulative Returns",
 ) -> plt.Axes:
     """Plot cumulative growth of each strategy column versus an optional benchmark."""
@@ -63,7 +63,11 @@ def plot_cumulative_returns(
         bench = _to_frame(benchmark).reindex(frame.index)
         bench_cum = (1.0 + bench).cumprod()
         for column in bench_cum.columns:
-            label = f"Benchmark - {column}" if column not in cumulative.columns else f"Benchmark"
+            label = (
+                f"Benchmark - {column}"
+                if column not in cumulative.columns
+                else "Benchmark"
+            )
             ax.plot(bench_cum.index, bench_cum[column], linestyle="--", label=label)
 
     ax.set_ylabel("Growth (1 = start)")
@@ -76,7 +80,7 @@ def plot_cumulative_returns(
 def plot_drawdown(
     returns: ReturnsLike,
     *,
-    ax: Optional[plt.Axes] = None,
+    ax: plt.Axes | None = None,
     title: str = "Drawdown",
 ) -> plt.Axes:
     """Plot the drawdown series for each column."""
@@ -100,7 +104,7 @@ def plot_rolling_sharpe(
     *,
     window: int = 126,
     periods_per_year: float = 252.0,
-    ax: Optional[plt.Axes] = None,
+    ax: plt.Axes | None = None,
     title: str = "Rolling Sharpe",
 ) -> plt.Axes:
     """Plot the rolling Sharpe ratio with a simple estimator (no HAC)."""
@@ -132,7 +136,7 @@ def plot_rolling_volatility(
     returns: ReturnsLike,
     *,
     window: int = 126,
-    ax: Optional[plt.Axes] = None,
+    ax: plt.Axes | None = None,
     title: str = "Rolling Volatility",
 ) -> plt.Axes:
     """Plot rolling realisations of standard deviation."""
@@ -155,10 +159,10 @@ def plot_rolling_volatility(
 
 
 def plot_turnover(
-    turnover: Union[pd.Series, pd.DataFrame],
+    turnover: pd.Series | pd.DataFrame,
     *,
-    target_band: Optional[Tuple[float, float]] = None,
-    ax: Optional[plt.Axes] = None,
+    target_band: tuple[float, float] | None = None,
+    ax: plt.Axes | None = None,
     title: str = "Turnover",
 ) -> plt.Axes:
     """Plot turnover history with optional target band."""
@@ -194,7 +198,7 @@ def plot_risk_contribution(
     weights: WeightsLike,
     cov: MatrixLike,
     *,
-    ax: Optional[plt.Axes] = None,
+    ax: plt.Axes | None = None,
     title: str = "Risk Contribution",
 ) -> plt.Axes:
     """Plot stacked percentage risk contributions of the latest weights."""
@@ -216,10 +220,12 @@ class TearsheetFigure:
     figure: plt.Figure
 
 
-def generate_tearsheet(figures: Sequence[Tuple[str, plt.Axes]]) -> List[TearsheetFigure]:
+def generate_tearsheet(
+    figures: Sequence[tuple[str, plt.Axes]]
+) -> list[TearsheetFigure]:
     """Wrap axes in a serialisable structure for downstream reporting."""
 
-    wrapped: List[TearsheetFigure] = []
+    wrapped: list[TearsheetFigure] = []
     for title, ax in figures:
         if not isinstance(ax, plt.Axes):
             raise TypeError("generate_tearsheet expects (title, Axes) tuples")

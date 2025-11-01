@@ -2,19 +2,17 @@
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 import pytest
 import yaml
-from pydantic import BaseModel, Field
-
 from itau_quant.config.loader import (
     ConfigError,
     _resolve_config_path,
     load_config,
     save_config,
 )
+from pydantic import BaseModel, Field
 
 
 # Test schemas
@@ -192,7 +190,7 @@ def test_save_config_creates_file(tmp_path: Path):
     assert saved_path == output_file
 
     # Verify content
-    with open(saved_path, "r") as f:
+    with open(saved_path) as f:
         data = yaml.safe_load(f)
     assert data["name"] == "saved_config"
     assert data["value"] == 99
@@ -207,7 +205,7 @@ def test_save_config_overwrites_existing(tmp_path: Path):
     config = SimpleConfig(name="new_config", value=123)
     save_config(config, output_file)
 
-    with open(output_file, "r") as f:
+    with open(output_file) as f:
         data = yaml.safe_load(f)
     assert "old" not in data
     assert data["name"] == "new_config"

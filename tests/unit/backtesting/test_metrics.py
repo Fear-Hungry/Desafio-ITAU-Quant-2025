@@ -3,7 +3,6 @@ from __future__ import annotations
 import math
 
 import pandas as pd
-
 from itau_quant.backtesting import metrics
 
 
@@ -13,10 +12,14 @@ def test_cumulative_nav_handles_empty_series() -> None:
 
 
 def test_compute_performance_metrics_with_risk_free_float() -> None:
-    returns = pd.Series([0.01, -0.005, 0.02], index=pd.date_range("2020-01-01", periods=3, freq="D"))
+    returns = pd.Series(
+        [0.01, -0.005, 0.02], index=pd.date_range("2020-01-01", periods=3, freq="D")
+    )
     rf = 0.02
 
-    result = metrics.compute_performance_metrics(returns, risk_free=rf, periods_in_year=252)
+    result = metrics.compute_performance_metrics(
+        returns, risk_free=rf, periods_in_year=252
+    )
 
     nav = metrics.cumulative_nav(returns)
     expected_total_return = float(nav.iloc[-1] - 1.0)

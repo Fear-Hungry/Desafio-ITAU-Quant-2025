@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -62,7 +62,9 @@ def max_drawdown(returns: ReturnsLike, *, return_details: bool = False):
             continue
         trough_idx = series.idxmin()
         peak_mask = series.loc[:trough_idx] == 0
-        start = peak_mask.loc[:trough_idx].index[-1] if peak_mask.any() else series.index[0]
+        start = (
+            peak_mask.loc[:trough_idx].index[-1] if peak_mask.any() else series.index[0]
+        )
         details[column] = (depth, start, trough_idx)
     return min_drawdown, details
 
@@ -119,7 +121,9 @@ def tracking_error(
             return np.nan
         return float(series.std(ddof=ddof) * np.sqrt(periods_per_year))
 
-    return pd.Series({col: _te(active[col].dropna()) for col in active.columns}, dtype=float)
+    return pd.Series(
+        {col: _te(active[col].dropna()) for col in active.columns}, dtype=float
+    )
 
 
 def beta_to_benchmark(returns: ReturnsLike, benchmark: ReturnsLike) -> pd.Series:
@@ -182,7 +186,9 @@ def risk_contribution(weights: WeightsLike, cov: MatrixLike) -> RiskContribution
         cov_arr = np.asarray(cov, dtype=float)
         if cov_arr.ndim != 2 or cov_arr.shape[0] != cov_arr.shape[1]:
             raise ValueError("cov must be a square matrix")
-        cov_df = pd.DataFrame(cov_arr, index=weights_df.columns, columns=weights_df.columns)
+        cov_df = pd.DataFrame(
+            cov_arr, index=weights_df.columns, columns=weights_df.columns
+        )
 
     missing = [col for col in weights_df.columns if col not in cov_df.columns]
     if missing:
@@ -198,12 +204,22 @@ def risk_contribution(weights: WeightsLike, cov: MatrixLike) -> RiskContribution
     portfolio_vol = np.sqrt(np.clip(portfolio_var, 0.0, None))
 
     with np.errstate(divide="ignore", invalid="ignore"):
-        percentage = np.where(portfolio_var[:, None] != 0, component / portfolio_var[:, None], np.nan)
+        percentage = np.where(
+            portfolio_var[:, None] != 0, component / portfolio_var[:, None], np.nan
+        )
 
-    component_df = pd.DataFrame(component, index=weights_df.index, columns=weights_df.columns)
-    marginal_df = pd.DataFrame(sigma_w, index=weights_df.index, columns=weights_df.columns)
-    percentage_df = pd.DataFrame(percentage, index=weights_df.index, columns=weights_df.columns)
-    portfolio_vol_series = pd.Series(portfolio_vol, index=weights_df.index, name="portfolio_volatility")
+    component_df = pd.DataFrame(
+        component, index=weights_df.index, columns=weights_df.columns
+    )
+    marginal_df = pd.DataFrame(
+        sigma_w, index=weights_df.index, columns=weights_df.columns
+    )
+    percentage_df = pd.DataFrame(
+        percentage, index=weights_df.index, columns=weights_df.columns
+    )
+    portfolio_vol_series = pd.Series(
+        portfolio_vol, index=weights_df.index, name="portfolio_volatility"
+    )
 
     return RiskContributionResult(
         component=component_df,
@@ -217,7 +233,7 @@ def risk_contribution(weights: WeightsLike, cov: MatrixLike) -> RiskContribution
 class RiskSummary:
     metrics: pd.DataFrame
     drawdowns: pd.DataFrame
-    risk_contribution: Optional[RiskContributionResult]
+    risk_contribution: RiskContributionResult | None
 
 
 def _align_benchmark(strategy: pd.DataFrame, benchmark: ReturnsLike) -> pd.DataFrame:
@@ -247,9 +263,9 @@ def _weights_to_frame(weights: WeightsLike) -> pd.DataFrame:
 def aggregate_risk_metrics(
     returns: ReturnsLike,
     *,
-    benchmark: Optional[ReturnsLike] = None,
-    weights: Optional[WeightsLike] = None,
-    covariance: Optional[MatrixLike] = None,
+    benchmark: ReturnsLike | None = None,
+    weights: WeightsLike | None = None,
+    covariance: MatrixLike | None = None,
     alpha: float = 0.95,
     periods_per_year: float = DEFAULT_PERIODS_PER_YEAR,
 ) -> RiskSummary:
@@ -265,7 +281,10 @@ def aggregate_risk_metrics(
             return np.nan
         return float(s.std(ddof=1) * np.sqrt(periods_per_year))
 
-    volatility = pd.Series({col: _annualised_vol(strategy[col].dropna()) for col in strategy.columns}, dtype=float)
+    volatility = pd.Series(
+        {col: _annualised_vol(strategy[col].dropna()) for col in strategy.columns},
+        dtype=float,
+    )
 
     metrics = [
         (("risk", "max_drawdown"), max_dd),
@@ -273,7 +292,7 @@ def aggregate_risk_metrics(
         (("risk", "volatility"), volatility),
     ]
 
-    contribution_result: Optional[RiskContributionResult] = None
+    contribution_result: RiskContributionResult | None = None
 
     if benchmark is not None:
         bench_aligned = _align_benchmark(strategy, benchmark)
@@ -282,9 +301,11 @@ def aggregate_risk_metrics(
         metrics.append((("relative", "tracking_error"), te))
         metrics.append((("relative", "beta"), beta))
 
-    weights_frame: Optional[pd.DataFrame] = None
+    weights_frame: pd.DataFrame | None = None
     if weights is not None:
-        weights_frame = _weights_to_frame(weights).apply(pd.to_numeric, errors="coerce").fillna(0.0)
+        weights_frame = (
+            _weights_to_frame(weights).apply(pd.to_numeric, errors="coerce").fillna(0.0)
+        )
         lev_series = realized_leverage(weights_frame)
         leverage_value = float(lev_series.iloc[-1])
         leverage_row = pd.Series(leverage_value, index=strategy.columns, dtype=float)
@@ -294,10 +315,16 @@ def aggregate_risk_metrics(
         latest_weights = weights_frame.iloc[[-1]]
         contribution_result = risk_contribution(latest_weights, covariance)
 
-    index = pd.MultiIndex.from_tuples([key for key, _ in metrics], names=["category", "metric"])
-    metrics_df = pd.DataFrame([series.reindex(strategy.columns) for _, series in metrics], index=index)
+    index = pd.MultiIndex.from_tuples(
+        [key for key, _ in metrics], names=["category", "metric"]
+    )
+    metrics_df = pd.DataFrame(
+        [series.reindex(strategy.columns) for _, series in metrics], index=index
+    )
 
-    return RiskSummary(metrics=metrics_df, drawdowns=drawdowns, risk_contribution=contribution_result)
+    return RiskSummary(
+        metrics=metrics_df, drawdowns=drawdowns, risk_contribution=contribution_result
+    )
 
 
 __all__ = [

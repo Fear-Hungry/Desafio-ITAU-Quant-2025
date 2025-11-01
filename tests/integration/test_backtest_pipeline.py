@@ -5,7 +5,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-
 from itau_quant.backtesting import run_backtest
 from itau_quant.config import Settings, reset_settings_cache
 
@@ -40,7 +39,9 @@ def _write_returns(tmp_path: Path, file_name: str = "returns.csv") -> Path:
     return path
 
 
-def _write_config(tmp_path: Path, returns_path: Path, file_name: str = "backtest.yaml") -> Path:
+def _write_config(
+    tmp_path: Path, returns_path: Path, file_name: str = "backtest.yaml"
+) -> Path:
     template = f"""
 base_currency: USD
 data:

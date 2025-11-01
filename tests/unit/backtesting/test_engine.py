@@ -4,8 +4,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import pytest
-
 from itau_quant.backtesting import run_backtest
 from itau_quant.config import Settings, reset_settings_cache
 
