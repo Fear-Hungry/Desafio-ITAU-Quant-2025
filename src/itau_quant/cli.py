@@ -19,8 +19,14 @@ import sys
 from pathlib import Path
 from typing import Any, Iterable
 
-from itau_quant.backtesting import run_backtest
+from itau_quant.backtesting import BacktestResult, run_backtest
 from itau_quant.config import Settings, configure_logging, get_settings
+from itau_quant.evaluation.plots.walkforward import plot_walkforward_summary
+from itau_quant.evaluation.walkforward_report import (
+    build_per_window_table,
+    format_wf_summary_markdown,
+    identify_stress_periods,
+)
 from itau_quant.optimization.solvers import run_optimizer
 
 __all__ = ["build_parser", "main"]
@@ -60,6 +66,7 @@ def build_parser() -> argparse.ArgumentParser:
     back.add_argument("--config", type=str, help="Arquivo de configuração YAML")
     back.add_argument("--no-dry-run", action="store_false", dest="dry_run", help="Executa backtest real")
     back.add_argument("--json", action="store_true", help="Mostra resultado em JSON")
+    back.add_argument("--wf-report", action="store_true", help="Gera relatório walk-forward completo (figuras + tabelas)")
     back.set_defaults(dry_run=True)
 
     # Pipeline orchestration
@@ -162,6 +169,82 @@ def _run_script(script_path: Path) -> int:
         return 1
 
 
+def _generate_wf_report(result: BacktestResult, output_dir: str = "reports/walkforward") -> None:
+    """Generate comprehensive walk-forward report with visualizations and tables.
+
+    Parameters
+    ----------
+    result : BacktestResult
+        Backtest result containing split_metrics
+    output_dir : str
+        Directory to save report files
+    """
+    if result.split_metrics is None or result.split_metrics.empty:
+        print("No split_metrics available. Skipping walk-forward report.", file=sys.stderr)
+        return
+
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    print(f"\n=== Generating Walk-Forward Report ===")
+
+    # 1. Generate summary statistics markdown
+    if result.walkforward_summary is not None:
+        summary_md = format_wf_summary_markdown(result.walkforward_summary)
+        summary_file = output_path / "summary_stats.md"
+        with open(summary_file, "w", encoding="utf-8") as f:
+            f.write(summary_md)
+        print(f"✓ Summary statistics: {summary_file}")
+
+    # 2. Export per-window results table
+    per_window_table_csv = build_per_window_table(result.split_metrics, format="csv")
+    csv_file = output_path / "per_window_results.csv"
+    with open(csv_file, "w", encoding="utf-8") as f:
+        f.write(per_window_table_csv)
+    print(f"✓ Per-window results: {csv_file}")
+
+    # Also save markdown version
+    per_window_table_md = build_per_window_table(result.split_metrics, format="markdown")
+    md_file = output_path / "per_window_results.md"
+    with open(md_file, "w", encoding="utf-8") as f:
+        f.write(per_window_table_md)
+    print(f"✓ Per-window results (markdown): {md_file}")
+
+    # 3. Identify and export stress periods
+    stress_periods = identify_stress_periods(result.split_metrics)
+    if stress_periods:
+        stress_lines = ["# Identified Stress Periods\n"]
+        for period in stress_periods:
+            stress_lines.append(
+                f"- **{period.label}** ({period.test_start} to {period.test_end}): "
+                f"Sharpe={period.sharpe:.2f}, Drawdown={period.max_drawdown:.2%}, "
+                f"Return={period.return_:.2%}\n"
+            )
+        stress_file = output_path / "stress_periods.md"
+        with open(stress_file, "w", encoding="utf-8") as f:
+            f.writelines(stress_lines)
+        print(f"✓ Stress periods: {stress_file}")
+
+    # 4. Generate visualizations
+    try:
+        fig = plot_walkforward_summary(result.split_metrics)
+        fig_file = output_path / "walkforward_analysis.png"
+        fig.savefig(fig_file, dpi=150, bbox_inches="tight")
+        print(f"✓ Walk-forward figures: {fig_file}")
+    except Exception as e:
+        print(f"⚠ Failed to generate visualizations: {e}", file=sys.stderr)
+
+    print(f"\nWalk-forward report saved to: {output_path}/")
+    print("Files generated:")
+    print("  - summary_stats.md")
+    print("  - per_window_results.csv")
+    print("  - per_window_results.md")
+    if stress_periods:
+        print("  - stress_periods.md")
+    print("  - walkforward_analysis.png")
+    print()
+
+
 def main(argv: Iterable[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(list(argv) if argv is not None else None)
@@ -180,6 +263,11 @@ def main(argv: Iterable[str] | None = None) -> int:
             _print_payload(payload, as_json=args.json)
         elif args.command == "backtest":
             result = run_backtest(args.config, dry_run=args.dry_run, settings=settings)
+
+            # Generate walk-forward report if requested
+            if hasattr(args, "wf_report") and args.wf_report and not args.dry_run:
+                _generate_wf_report(result, output_dir="reports/walkforward")
+
             payload = result.to_dict(include_timeseries=args.json)
             _print_payload(payload, as_json=args.json)
 

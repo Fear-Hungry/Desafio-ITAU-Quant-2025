@@ -13,6 +13,11 @@ from itau_quant.backtesting.metrics import PortfolioMetrics, compute_performance
 from itau_quant.backtesting.risk_monitor import evaluate_turnover_band
 from itau_quant.backtesting.walk_forward import generate_walk_forward_splits
 from itau_quant.config import Settings, get_settings
+from itau_quant.evaluation.walkforward_report import (
+    WalkForwardSummary,
+    compute_wf_summary_stats,
+    identify_stress_periods,
+)
 from itau_quant.optimization.solvers import resolve_config_path
 from itau_quant.portfolio import MarketData, rebalance
 from itau_quant.utils.data_loading import read_dataframe
@@ -49,6 +54,7 @@ class BacktestResult:
     trades: pd.DataFrame | None = None
     split_metrics: pd.DataFrame | None = None
     horizon_metrics: pd.DataFrame | None = None
+    walkforward_summary: WalkForwardSummary | None = None
     notes: list[str] = field(default_factory=list)
 
     def to_dict(self, include_timeseries: bool = False) -> dict[str, Any]:
@@ -76,6 +82,21 @@ class BacktestResult:
             payload["walkforward"] = self.split_metrics.to_dict(orient="records")
         if include_timeseries and self.horizon_metrics is not None:
             payload["horizon_metrics"] = self.horizon_metrics.to_dict(orient="records")
+        if self.walkforward_summary is not None:
+            payload["walkforward_summary"] = {
+                "n_windows": self.walkforward_summary.n_windows,
+                "success_rate": self.walkforward_summary.success_rate,
+                "avg_sharpe": self.walkforward_summary.avg_sharpe,
+                "avg_return": self.walkforward_summary.avg_return,
+                "avg_volatility": self.walkforward_summary.avg_volatility,
+                "avg_drawdown": self.walkforward_summary.avg_drawdown,
+                "avg_turnover": self.walkforward_summary.avg_turnover,
+                "avg_cost": self.walkforward_summary.avg_cost,
+                "consistency_r2": self.walkforward_summary.consistency_r2,
+                "best_window_nav": self.walkforward_summary.best_window_nav,
+                "worst_window_nav": self.walkforward_summary.worst_window_nav,
+                "range_ratio": self.walkforward_summary.range_ratio,
+            }
         return payload
 
 
@@ -483,4 +504,13 @@ def run_backtest(
     result.horizon_metrics = horizon_df
     result.notes = notes
     result.dry_run = False
+
+    # Compute walk-forward summary statistics
+    if split_df is not None and not split_df.empty:
+        try:
+            wf_summary = compute_wf_summary_stats(split_df)
+            result.walkforward_summary = wf_summary
+        except (ValueError, KeyError) as exc:
+            result.notes.append(f"Failed to compute walkforward summary: {exc}")
+
     return result
