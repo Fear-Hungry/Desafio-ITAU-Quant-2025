@@ -235,14 +235,15 @@ def solve_mean_variance(
         budget_cons = budgets_to_constraints(w, budgets, assets)
         constraints.extend(budget_cons)
 
+    slack_var: cp.Variable | None = None
     if config.turnover_cap is not None and config.turnover_cap > 0:
-        # Numerical tolerances on the solver side can lead to infeasibility if the
-        # cap is treated as a hard equality. We therefore allow a microscopic epsilon
-        # slack directly in the constant term rather than introducing an explicit
-        # optimisation variable, which guarantees the turnover constraint is respected
-        # in the returned weights (see tests/test_mv_qp.py).
-        epsilon = 1e-6
-        constraints.append(total_turnover <= float(config.turnover_cap) + epsilon)
+        slack_var = cp.Variable(nonneg=True, name="turnover_slack")
+        constraints.append(
+            total_turnover <= float(config.turnover_cap) + slack_var
+        )
+        base_weight = max(config.risk_aversion, 1.0) * 10_000.0
+        penalty_weight = max(config.turnover_penalty, base_weight)
+        objective_terms.append(-penalty_weight * slack_var)
 
     if risk_config_for_builder:
         context: dict[str, Any] = {
@@ -297,7 +298,20 @@ def solve_mean_variance(
         raw_weights = np.asarray(raw_weights).ravel()
     weights = pd.Series(raw_weights, index=assets, dtype=float)
     weights = weights.fillna(0.0)
-    weights /= weights.sum() if weights.sum() != 0 else 1.0
+    weights_sum = weights.sum()
+    if not np.isclose(weights_sum, 1.0):
+        weights /= weights_sum if weights_sum != 0 else 1.0
+
+    if config.turnover_cap is not None and np.isfinite(config.turnover_cap):
+        cap = float(config.turnover_cap)
+        if cap >= 0.0:
+            turnover_before_projection = float(np.abs(weights - prev).sum())
+            if turnover_before_projection > cap + 1e-6 and turnover_before_projection > 0:
+                scale = cap / turnover_before_projection
+                weights = prev + (weights - prev) * scale
+                weights_sum = weights.sum()
+                if not np.isclose(weights_sum, 1.0):
+                    weights /= weights_sum if weights_sum != 0 else 1.0
 
     # Validate budget constraints if provided
     if budgets and summary.is_optimal():

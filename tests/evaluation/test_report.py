@@ -15,13 +15,22 @@ from itau_quant.evaluation import (
     export_pdf,
     render_html,
 )
-from itau_quant.evaluation.stats import RiskSummary, aggregate_risk_metrics
+from itau_quant.evaluation.stats import RiskContributionResult, RiskSummary, aggregate_risk_metrics
 from itau_quant.risk.budgets import RiskBudget
 
 
 def _bundle_components():
-    perf = pd.DataFrame({"strategy": [0.5, 0.4]}, index=pd.MultiIndex.from_tuples([("performance", "sharpe"), ("risk", "drawdown")] , names=["category", "metric"]))
-    risk_df = pd.DataFrame({"strategy": [0.1]}, index=pd.MultiIndex.from_tuples([("risk", "volatility")]))
+    perf = pd.DataFrame(
+        {"strategy": [0.5, 0.4]},
+        index=pd.MultiIndex.from_tuples(
+            [("performance", "sharpe"), ("risk", "drawdown")],
+            names=["category", "metric"],
+        ),
+    )
+    risk_df = pd.DataFrame(
+        {"strategy": [0.1]},
+        index=pd.MultiIndex.from_tuples([("risk", "volatility")]),
+    )
     drawdowns = pd.DataFrame({"strategy": [-0.2, -0.05]}, index=["2024-01-01", "2024-02-01"])
     risk_summary = RiskSummary(metrics=risk_df, drawdowns=drawdowns, risk_contribution=None)
     fig, ax = plt.subplots()
@@ -33,13 +42,50 @@ def _bundle_components():
 
 def test_build_report_bundle_normalises_inputs():
     perf, risk_summary, figures, metadata = _bundle_components()
-    bundle = build_report_bundle(perf, risk_summary, figures, metadata)
+    bundle = build_report_bundle(perf, risk_summary, figures, metadata, auto_tearsheet=False)
     assert isinstance(bundle, ReportBundle)
     assert bundle.performance.equals(perf)
     assert bundle.risk.equals(risk_summary.metrics)
     assert bundle.drawdowns.equals(risk_summary.drawdowns)
     assert len(bundle.figures) == 1
     assert bundle.risk_contribution is None
+    plt.close("all")
+
+
+def test_build_report_bundle_generates_tearsheet_figures():
+    perf, risk_summary, figures, metadata = _bundle_components()
+    returns = pd.DataFrame(
+        {"strategy": [0.01, -0.005, 0.007]},
+        index=pd.date_range("2024-01-01", periods=3),
+    )
+    cost_breakdown = pd.Series({"slippage": 0.002, "fees": 0.001})
+    contrib_index = pd.DatetimeIndex([pd.Timestamp("2024-01-03")])
+    risk_contribution = RiskContributionResult(
+        component=pd.DataFrame([[0.6]], index=contrib_index, columns=["strategy"]),
+        marginal=pd.DataFrame([[0.6]], index=contrib_index, columns=["strategy"]),
+        percentage=pd.DataFrame([[1.0]], index=contrib_index, columns=["strategy"]),
+        portfolio_volatility=pd.Series([0.1], index=contrib_index, name="portfolio_volatility"),
+    )
+    risk_summary = RiskSummary(
+        metrics=risk_summary.metrics,
+        drawdowns=risk_summary.drawdowns,
+        risk_contribution=risk_contribution,
+    )
+    bundle = build_report_bundle(
+        perf,
+        risk_summary,
+        figures,
+        metadata,
+        returns=returns,
+        risk_budgets={"core": ["strategy"]},
+        cost_breakdown=cost_breakdown,
+    )
+    titles = {title for title, _ in bundle.figures}
+    assert "Cumulative NAV" in titles
+    assert "Drawdown" in titles
+    assert "Risk Contribution by Budget" in titles
+    assert "Cost Decomposition" in titles
+    plt.close("all")
 
 
 def test_render_html_contains_sections():
@@ -49,6 +95,7 @@ def test_render_html_contains_sections():
     assert "Performance Metrics" in html
     assert "Risk Metrics" in html
     assert "data:image/png;base64" in html
+    plt.close("all")
 
 
 def test_export_pdf_fallback_to_html(tmp_path):
@@ -56,6 +103,7 @@ def test_export_pdf_fallback_to_html(tmp_path):
     pdf_path = export_pdf(html, tmp_path / "report.pdf", engine="auto")
     assert pdf_path.exists()
     assert pdf_path.suffix in {".pdf", ".html"}
+    plt.close("all")
 
 
 def test_build_and_export_report_creates_files(tmp_path):
@@ -65,20 +113,35 @@ def test_build_and_export_report_creates_files(tmp_path):
     assert artifacts.html_path.exists()
     assert artifacts.pdf_path.exists()
     assert artifacts.bundle.metadata["strategy"] == "Demo"
+    assert artifacts.table_paths
+    for path in artifacts.table_paths.values():
+        assert path.exists()
+    plt.close("all")
 
 
 def test_build_and_export_report_with_advanced_tearsheet(tmp_path):
     dates = pd.date_range("2024-02-01", periods=6, freq="B")
-    returns = pd.Series([0.001, -0.0005, 0.0008, 0.0012, -0.0007, 0.0009], index=dates, name="strategy")
+    returns = pd.Series(
+        [0.001, -0.0005, 0.0008, 0.0012, -0.0007, 0.0009],
+        index=dates,
+        name="strategy",
+    )
 
     weights = pd.DataFrame([[0.55, 0.45]], index=[dates[-1]], columns=["EQ", "FI"])
-    covariance = pd.DataFrame([[0.03, 0.008], [0.008, 0.018]], index=["EQ", "FI"], columns=["EQ", "FI"])
+    covariance = pd.DataFrame(
+        [[0.03, 0.008], [0.008, 0.018]],
+        index=["EQ", "FI"],
+        columns=["EQ", "FI"],
+    )
 
     risk_summary = aggregate_risk_metrics(returns, weights=weights, covariance=covariance)
 
     performance = pd.DataFrame(
         {"strategy": [returns.mean()]},
-        index=pd.MultiIndex.from_tuples([("performance", "mean_return")], names=["category", "metric"]),
+        index=pd.MultiIndex.from_tuples(
+            [("performance", "mean_return")],
+            names=["category", "metric"],
+        ),
     )
 
     metadata = {"strategy": "Advanced Demo"}
@@ -119,3 +182,4 @@ def test_build_and_export_report_with_advanced_tearsheet(tmp_path):
     }
     assert expected_titles <= titles
     assert bundle.risk_contribution is not None
+    plt.close("all")

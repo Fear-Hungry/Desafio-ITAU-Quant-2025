@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import base64
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from io import BytesIO
 from pathlib import Path
 from string import Template
@@ -14,8 +14,7 @@ import pandas as pd
 
 from itau_quant.risk.budgets import RiskBudget
 
-from .plots import plot_cumulative_returns, plot_drawdown
-from .plots.tearsheet import TearsheetFigure
+from .plots import TearsheetFigure, plot_cumulative_returns, plot_drawdown
 from .stats import RiskContributionResult, RiskSummary
 
 
@@ -30,8 +29,12 @@ class ReportBundle:
     risk: pd.DataFrame
     drawdowns: Optional[pd.DataFrame]
     figures: List[Tuple[str, plt.Figure]]
-    risk_contribution: Optional[RiskContributionResult]
     metadata: Dict[str, Any]
+    returns: Optional[pd.DataFrame] = None
+    benchmark: Optional[pd.DataFrame] = None
+    risk_contribution: Optional[RiskContributionResult] = None
+    risk_budgets: Optional[Dict[str, List[str]]] = None
+    cost_breakdown: Optional[pd.DataFrame] = None
 
 
 @dataclass(frozen=True)
@@ -41,6 +44,7 @@ class ReportArtifacts:
     bundle: ReportBundle
     html_path: Path
     pdf_path: Path
+    table_paths: Dict[str, Path] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -76,6 +80,180 @@ def _normalise_figures(figures: Iterable[FigureLike]) -> List[Tuple[str, plt.Fig
             raise TypeError("Unsupported figure format: %r" % (item,))
     return normalised
 
+
+def _coerce_frame(
+    data: Union[pd.Series, pd.DataFrame, None],
+    *,
+    name: str,
+) -> Optional[pd.DataFrame]:
+    """Convert optional series/frames into a clean DataFrame."""
+
+    if data is None:
+        return None
+    if isinstance(data, pd.DataFrame):
+        frame = data.copy()
+    elif isinstance(data, pd.Series):
+        frame = data.to_frame(name=data.name or name)
+    else:
+        raise TypeError(f"{name} must be a pandas Series or DataFrame when provided.")
+
+    frame = frame.apply(pd.to_numeric, errors="coerce").dropna(how="all")
+    if frame.empty:
+        return None
+    return frame
+
+
+def _normalise_risk_budgets(
+    budgets: Union[Mapping[str, Sequence[str]], Sequence[Any], None]
+) -> Optional[Dict[str, List[str]]]:
+    """Convert different budget specifications into a {name: [tickers]} mapping."""
+
+    if budgets is None:
+        return None
+
+    if isinstance(budgets, Mapping):
+        return {
+            str(name): [str(ticker) for ticker in sequence if str(ticker)]
+            for name, sequence in budgets.items()
+        }
+
+    mapping: Dict[str, List[str]] = {}
+    for item in budgets:
+        if isinstance(item, RiskBudget):
+            mapping[item.name] = [str(ticker) for ticker in item.tickers if str(ticker)]
+        elif isinstance(item, Mapping):
+            name = str(item.get("name"))
+            tickers = item.get("tickers", [])
+            mapping[name] = [str(ticker) for ticker in tickers if str(ticker)]
+        elif hasattr(item, "name") and hasattr(item, "tickers"):
+            name = str(getattr(item, "name"))
+            tickers = getattr(item, "tickers")
+            mapping[name] = [str(ticker) for ticker in tickers if str(ticker)]
+        else:
+            raise TypeError("Unsupported risk budget specification.")
+
+    return mapping if mapping else None
+
+
+def _risk_by_budget(
+    latest_contribution: pd.Series,
+    budgets: Mapping[str, Sequence[str]],
+) -> pd.Series:
+    """Aggregate asset-level risk contributions into budget buckets."""
+
+    totals: Dict[str, float] = {}
+    assigned_assets: set[str] = set()
+
+    for name, tickers in budgets.items():
+        relevant = [ticker for ticker in tickers if ticker in latest_contribution.index]
+        if not relevant:
+            continue
+        totals[name] = float(latest_contribution.loc[relevant].sum())
+        assigned_assets.update(relevant)
+
+    remainder = latest_contribution.drop(labels=list(assigned_assets), errors="ignore")
+    if not remainder.empty:
+        totals["Unallocated"] = float(remainder.sum())
+
+    if not totals:
+        return pd.Series(dtype=float)
+
+    return pd.Series(totals, dtype=float).sort_values(ascending=False)
+
+
+def _build_auto_tearsheet_figures(
+    *,
+    returns: Optional[pd.DataFrame],
+    drawdowns: Optional[pd.DataFrame],
+    risk_contribution: Optional[RiskContributionResult],
+    risk_budgets: Optional[Mapping[str, Sequence[str]]],
+    cost_breakdown: Optional[Union[pd.Series, pd.DataFrame]],
+    existing_titles: Optional[set[str]] = None,
+) -> List[Tuple[str, plt.Figure]]:
+    """Create standard tear sheet figures when the required data is available."""
+
+    figures: List[Tuple[str, plt.Figure]] = []
+    titles = existing_titles or set()
+
+    if returns is not None and "Cumulative NAV" not in titles:
+        try:
+            ax_nav = plot_cumulative_returns(returns, title="Cumulative NAV")
+            ax_nav.set_ylabel("NAV")
+            figures.append(("Cumulative NAV", ax_nav.figure))
+        except Exception:
+            pass
+
+    dd_frame: Optional[pd.DataFrame] = None
+    if drawdowns is not None:
+        dd_frame = drawdowns.copy()
+    elif returns is not None:
+        cumulative = (1.0 + returns).cumprod()
+        peaks = cumulative.cummax()
+        dd_frame = cumulative / peaks - 1.0
+
+    if dd_frame is not None and not dd_frame.empty and "Drawdown" not in titles:
+        try:
+            ax_dd = plt.subplots(figsize=(8, 4))[1]
+            for column in dd_frame.columns:
+                ax_dd.fill_between(dd_frame.index, dd_frame[column], 0, alpha=0.3, label=column)
+            ax_dd.set_title("Drawdown")
+            ax_dd.set_ylabel("Drawdown")
+            ax_dd.set_xlabel("Date")
+            ax_dd.legend(loc="best")
+            ax_dd.grid(True, alpha=0.3)
+            figures.append(("Drawdown", ax_dd.figure))
+        except Exception:
+            pass
+
+    if (
+        risk_contribution is not None
+        and risk_contribution.percentage is not None
+        and not risk_contribution.percentage.empty
+        and risk_budgets is not None
+        and "Risk Contribution by Budget" not in titles
+    ):
+        latest_index = risk_contribution.percentage.index[-1]
+        latest_series = risk_contribution.percentage.loc[latest_index].dropna()
+        aggregated = _risk_by_budget(latest_series, risk_budgets)
+        if not aggregated.empty:
+            try:
+                fig_rc, ax_rc = plt.subplots(figsize=(8, 4))
+                ax_rc.bar(
+                    aggregated.index.astype(str),
+                    aggregated.values,
+                    color=plt.cm.tab20.colors[: len(aggregated)],
+                )
+                ax_rc.set_title("Risk Contribution by Budget")
+                ax_rc.set_ylabel("Share of portfolio risk")
+                ax_rc.set_ylim(0, float(max(1.0, aggregated.values.max() * 1.05)))
+                ax_rc.grid(True, axis="y", alpha=0.3)
+                ax_rc.tick_params(axis="x", rotation=45)
+                for label in ax_rc.get_xticklabels():
+                    label.set_horizontalalignment("right")
+                figures.append(("Risk Contribution by Budget", fig_rc))
+            except Exception:
+                pass
+
+    if cost_breakdown is not None and "Cost Decomposition" not in titles:
+        if isinstance(cost_breakdown, pd.DataFrame):
+            series = cost_breakdown.apply(pd.to_numeric, errors="coerce").sum(axis=1).dropna()
+        elif isinstance(cost_breakdown, pd.Series):
+            series = cost_breakdown.apply(pd.to_numeric, errors="coerce").dropna()
+        else:
+            series = pd.Series(dtype=float)
+        if not series.empty:
+            try:
+                series = series.sort_values(ascending=True)
+                fig_cost, ax_cost = plt.subplots(figsize=(8, 4))
+                ax_cost.barh(series.index.astype(str), series.values, color="tab:orange")
+                ax_cost.set_title("Cost Decomposition")
+                ax_cost.set_xlabel("Cost impact")
+                ax_cost.grid(True, axis="x", alpha=0.3)
+                figures.append(("Cost Decomposition", fig_cost))
+            except Exception:
+                pass
+
+    return figures
 
 def _ensure_frame(data: Union[pd.Series, pd.DataFrame], name: str) -> pd.DataFrame:
     if isinstance(data, pd.DataFrame):
@@ -272,44 +450,94 @@ def build_report_bundle(
     risk: Union[RiskSummary, pd.DataFrame],
     figures: Iterable[FigureLike],
     metadata: Optional[Dict[str, Any]] = None,
+    *,
+    returns: Optional[Union[pd.Series, pd.DataFrame]] = None,
+    benchmark: Optional[Union[pd.Series, pd.DataFrame]] = None,
+    risk_budgets: Optional[Union[Mapping[str, Sequence[str]], Sequence[Any]]] = None,
+    cost_breakdown: Optional[Union[pd.Series, pd.DataFrame]] = None,
+    auto_tearsheet: bool = True,
 ) -> ReportBundle:
     """Aggregate raw pieces into a :class:`ReportBundle`."""
 
     if not isinstance(performance, pd.DataFrame):
         raise TypeError("performance must be a DataFrame")
 
-    risk_contrib: Optional[RiskContributionResult]
+    risk_contribution_result: Optional[RiskContributionResult] = None
 
     if isinstance(risk, RiskSummary):
         risk_table = risk.metrics
         drawdowns = risk.drawdowns
-        risk_contrib = risk.risk_contribution
+        risk_contribution_result = risk.risk_contribution
     elif isinstance(risk, pd.DataFrame):
         risk_table = risk
         drawdowns = None
-        risk_contrib = None
     else:
         raise TypeError("risk must be RiskSummary or DataFrame")
 
     if not isinstance(risk_table, pd.DataFrame):
         raise TypeError("risk metrics must be a DataFrame")
 
+    meta_copy = dict(metadata or {})
+
+    returns_frame = _coerce_frame(returns, name="returns")
+    if returns_frame is None:
+        maybe_returns = meta_copy.get("returns")
+        if isinstance(maybe_returns, (pd.Series, pd.DataFrame)):
+            returns_frame = _coerce_frame(maybe_returns, name="returns")
+
+    benchmark_frame = _coerce_frame(benchmark, name="benchmark")
+    if benchmark_frame is None:
+        maybe_benchmark = meta_copy.get("benchmark")
+        if isinstance(maybe_benchmark, (pd.Series, pd.DataFrame)):
+            benchmark_frame = _coerce_frame(maybe_benchmark, name="benchmark")
+
+    risk_budgets_source = risk_budgets if risk_budgets is not None else meta_copy.get("risk_budgets")
+    risk_budgets_mapping = _normalise_risk_budgets(risk_budgets_source)
+
+    cost_input: Optional[Union[pd.Series, pd.DataFrame]] = cost_breakdown
+    if cost_input is None:
+        maybe_cost = meta_copy.get("cost_breakdown")
+        if isinstance(maybe_cost, (pd.Series, pd.DataFrame)):
+            cost_input = maybe_cost
+    if isinstance(cost_input, pd.Series):
+        cost_frame = cost_input.to_frame(name=cost_input.name or "value")
+    elif isinstance(cost_input, pd.DataFrame):
+        cost_frame = cost_input.copy()
+    else:
+        cost_frame = None
+
     figure_list = _normalise_figures(figures)
-    metadata = dict(metadata or {})
+    existing_titles = {title for title, _ in figure_list}
+
+    if auto_tearsheet:
+        auto_figures = _build_auto_tearsheet_figures(
+            returns=returns_frame,
+            drawdowns=drawdowns if isinstance(drawdowns, pd.DataFrame) else None,
+            risk_contribution=risk_contribution_result,
+            risk_budgets=risk_budgets_mapping,
+            cost_breakdown=cost_frame,
+            existing_titles=existing_titles,
+        )
+        figure_list.extend(auto_figures)
 
     return ReportBundle(
         performance=performance.copy(),
         risk=risk_table.copy(),
         drawdowns=drawdowns.copy() if isinstance(drawdowns, pd.DataFrame) else drawdowns,
         figures=figure_list,
-        risk_contribution=risk_contrib,
-        metadata=metadata,
+        metadata=meta_copy,
+        returns=returns_frame.copy() if isinstance(returns_frame, pd.DataFrame) else None,
+        benchmark=benchmark_frame.copy() if isinstance(benchmark_frame, pd.DataFrame) else None,
+        risk_contribution=risk_contribution_result,
+        risk_budgets=risk_budgets_mapping,
+        cost_breakdown=cost_frame.copy() if isinstance(cost_frame, pd.DataFrame) else None,
     )
 
 
 def _figure_to_base64(figure: plt.Figure) -> str:
     buffer = BytesIO()
     figure.savefig(buffer, format="png", bbox_inches="tight")
+    plt.close(figure)
     encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
     return f"data:image/png;base64,{encoded}"
 
@@ -403,6 +631,56 @@ def export_pdf(html: str, output_path: Union[str, Path], *, engine: str = "auto"
     return fallback_path
 
 
+def _export_tables(bundle: ReportBundle, output_dir: Path, filename: str) -> Dict[str, Path]:
+    """Persist key DataFrames to LaTeX and Markdown formats."""
+
+    def _float_format(value: float) -> str:
+        return "" if pd.isna(value) else f"{value:.4f}"
+
+    tables: Dict[str, pd.DataFrame] = {
+        "performance": bundle.performance,
+        "risk": bundle.risk,
+    }
+    if isinstance(bundle.drawdowns, pd.DataFrame):
+        tables["drawdowns"] = bundle.drawdowns
+
+    paths: Dict[str, Path] = {}
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    for name, df in tables.items():
+        if df.empty:
+            continue
+
+        df_export = df.copy()
+        latex_path = output_dir / f"{filename}_{name}.tex"
+        try:
+            latex_text = df_export.to_latex(
+                index=True,
+                escape=False,
+                multicolumn=isinstance(df_export.columns, pd.MultiIndex),
+                multirow=isinstance(df_export.index, pd.MultiIndex),
+                float_format=_float_format,
+            )
+            latex_path.write_text(latex_text, encoding="utf-8")
+            paths[f"{name}_latex"] = latex_path
+        except Exception:
+            latex_path.unlink(missing_ok=True)
+
+        md_path = output_dir / f"{filename}_{name}.md"
+        try:
+            markdown_text = df_export.to_markdown(
+                index=True,
+                tablefmt="pipe",
+                floatfmt=".4f",
+            )
+            md_path.write_text(markdown_text, encoding="utf-8")
+            paths[f"{name}_markdown"] = md_path
+        except Exception:
+            md_path.unlink(missing_ok=True)
+
+    return paths
+
+
 def build_and_export_report(
     performance: pd.DataFrame,
     risk: Union[RiskSummary, pd.DataFrame],
@@ -413,6 +691,11 @@ def build_and_export_report(
     filename: str = "evaluation_report",
     template_path: Optional[Union[str, Path]] = None,
     advanced_tearsheet: Optional[AdvancedTearsheetData] = None,
+    returns: Optional[Union[pd.Series, pd.DataFrame]] = None,
+    benchmark: Optional[Union[pd.Series, pd.DataFrame]] = None,
+    risk_budgets: Optional[Union[Mapping[str, Sequence[str]], Sequence[Any]]] = None,
+    cost_breakdown: Optional[Union[pd.Series, pd.DataFrame]] = None,
+    auto_tearsheet: bool = True,
 ) -> ReportArtifacts:
     """Create a :class:`ReportBundle`, write HTML, and attempt PDF export."""
 
@@ -423,7 +706,17 @@ def build_and_export_report(
         advanced_figures = build_advanced_tearsheet_figures(advanced_tearsheet, risk_summary)
         figure_list.extend(advanced_figures)
 
-    bundle = build_report_bundle(performance, risk, figure_list, metadata)
+    bundle = build_report_bundle(
+        performance,
+        risk,
+        figure_list,
+        metadata,
+        returns=returns,
+        benchmark=benchmark,
+        risk_budgets=risk_budgets,
+        cost_breakdown=cost_breakdown,
+        auto_tearsheet=auto_tearsheet,
+    )
     html = render_html(bundle, template_path=template_path)
 
     output_dir = Path(output_dir)
@@ -434,7 +727,14 @@ def build_and_export_report(
 
     pdf_path = export_pdf(html, output_dir / f"{filename}.pdf")
 
-    return ReportArtifacts(bundle=bundle, html_path=html_path, pdf_path=pdf_path)
+    table_paths = _export_tables(bundle, output_dir, filename)
+
+    return ReportArtifacts(
+        bundle=bundle,
+        html_path=html_path,
+        pdf_path=pdf_path,
+        table_paths=table_paths,
+    )
 
 
 __all__ = [
