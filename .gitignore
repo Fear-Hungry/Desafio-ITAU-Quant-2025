@@ -82,7 +82,6 @@ ipython_config.py
 
 # poetry
 .venv
-poetry.lock
 
 # PEP 582; __pypackages__
 __pypackages__/
@@ -151,11 +150,17 @@ data/processed/**
 *.npy
 reports/**/*.pdf
 reports/**/*.html
+reports/**/*.json
+reports/**/*.png
+reports/**/*.md
+reports/walkforward/*.csv
 notebooks/.ipynb_checkpoints/**
 notebooks/**.ipynb
 !notebooks/README.md
 logs/**
 runtime/**
+results/**/*.json
+results/**/*.csv
 # Credentials & local configs
 secrets/**
 *.key
