@@ -21,7 +21,7 @@ from itau_quant.config.loader import (
 class SimpleConfig(BaseModel):
     """Simple test configuration."""
 
-    name: str
+    name: str = "default"
     value: int = 10
     enabled: bool = True
 
@@ -29,8 +29,8 @@ class SimpleConfig(BaseModel):
 class StrictConfig(BaseModel):
     """Strict test configuration with validation."""
 
-    risk_aversion: float = Field(ge=0, le=100)
-    max_position: float = Field(ge=0, le=1)
+    risk_aversion: float = Field(default=3.0, ge=0, le=100)
+    max_position: float = Field(default=0.15, ge=0, le=1)
 
 
 @pytest.fixture
