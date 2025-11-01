@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import time
 
-import pytest
-
 from itau_quant.utils import timing
 
 
@@ -36,6 +34,10 @@ def test_benchmark_runs_function(monkeypatch):
     def fn():
         count["calls"] += 1
 
-    result = timing.benchmark(fn, repeat=2, number=3)
-    assert count["calls"] == 6
-    assert len(result["runs"]) == 2
+    REPEAT = 2
+    NUMBER = 3
+    EXPECTED_TOTAL_CALLS = REPEAT * NUMBER
+
+    result = timing.benchmark(fn, repeat=REPEAT, number=NUMBER)
+    assert count["calls"] == EXPECTED_TOTAL_CALLS
+    assert len(result["runs"]) == REPEAT
