@@ -1,0 +1,301 @@
+{
+  "base_currency": "BRL",
+  "config_path": "/home/marcusvinicius/Repositorios/Desafio-ITAU-Quant/configs/optimizer_example_tail.yaml",
+  "cost": 0.001,
+  "dry_run": false,
+  "environment": "development",
+  "metrics": {
+    "expected_return": 0.00023632125239521026,
+    "objective_value": -0.25095818306778683,
+    "variance": 1.2966954678811014e-05
+  },
+  "notes": [
+    "Turnover 100.00% exceeded soft target 20.00%; consider increasing \u03b7."
+  ],
+  "solver": {
+    "name": "CLARABEL",
+    "objective": -0.25095818306778683,
+    "runtime": 0.014405627000087406,
+    "status": "optimal"
+  },
+  "status": "optimal",
+  "turnover": 1.0,
+  "weights": [
+    {
+      "asset": "SPY",
+      "weight": 5.004721740801758e-07
+    },
+    {
+      "asset": "QQQ",
+      "weight": 5.467291005204342e-07
+    },
+    {
+      "asset": "IWM",
+      "weight": 2.1254929045732272e-07
+    },
+    {
+      "asset": "EFA",
+      "weight": 1.0215275313701476e-06
+    },
+    {
+      "asset": "VGK",
+      "weight": 1.1825342167505366e-06
+    },
+    {
+      "asset": "VPL",
+      "weight": 5.930564701216602e-06
+    },
+    {
+      "asset": "EWJ",
+      "weight": 3.443724033030396e-06
+    },
+    {
+      "asset": "EWG",
+      "weight": 2.314443680337615e-06
+    },
+    {
+      "asset": "EEM",
+      "weight": 0.02082365883848184
+    },
+    {
+      "asset": "EWZ",
+      "weight": 5.41327762687863e-07
+    },
+    {
+      "asset": "INDA",
+      "weight": 3.1336349921782448e-06
+    },
+    {
+      "asset": "MCHI",
+      "weight": 2.035269129217052e-06
+    },
+    {
+      "asset": "EWU",
+      "weight": 0.08875714830203206
+    },
+    {
+      "asset": "EZA",
+      "weight": 4.4617547308953247e-07
+    },
+    {
+      "asset": "XLC",
+      "weight": 0.09999612859263216
+    },
+    {
+      "asset": "XLY",
+      "weight": 3.798406220330257e-07
+    },
+    {
+      "asset": "XLP",
+      "weight": 0.019998702435948524
+    },
+    {
+      "asset": "XLE",
+      "weight": 2.108202252313789e-07
+    },
+    {
+      "asset": "XLF",
+      "weight": 5.194185429506516e-07
+    },
+    {
+      "asset": "XLV",
+      "weight": 4.328276175829795e-07
+    },
+    {
+      "asset": "XLK",
+      "weight": 4.911033502308197e-07
+    },
+    {
+      "asset": "XLI",
+      "weight": 7.435470745084174e-07
+    },
+    {
+      "asset": "XLB",
+      "weight": 1.202162310976691e-07
+    },
+    {
+      "asset": "XLRE",
+      "weight": 1.7148546555110017e-07
+    },
+    {
+      "asset": "XLU",
+      "weight": 0.09999946873948933
+    },
+    {
+      "asset": "USMV",
+      "weight": 1.4507689058975181e-06
+    },
+    {
+      "asset": "MTUM",
+      "weight": 5.343529619084302e-07
+    },
+    {
+      "asset": "QUAL",
+      "weight": 3.4048360511390766e-07
+    },
+    {
+      "asset": "VLUE",
+      "weight": 8.893432373913119e-05
+    },
+    {
+      "asset": "SIZE",
+      "weight": 2.3311258986555544e-07
+    },
+    {
+      "asset": "VYM",
+      "weight": 8.360708455352388e-07
+    },
+    {
+      "asset": "SCHD",
+      "weight": 2.749793480119757e-07
+    },
+    {
+      "asset": "SPLV",
+      "weight": 9.608820927138284e-07
+    },
+    {
+      "asset": "VUG",
+      "weight": 6.63932595569479e-07
+    },
+    {
+      "asset": "VTV",
+      "weight": 6.262511413063636e-07
+    },
+    {
+      "asset": "VNQ",
+      "weight": 1.2869470521177557e-07
+    },
+    {
+      "asset": "VNQI",
+      "weight": 6.066509832543457e-06
+    },
+    {
+      "asset": "O",
+      "weight": 2.679910330495108e-07
+    },
+    {
+      "asset": "PSA",
+      "weight": 1.0514627490941397e-07
+    },
+    {
+      "asset": "SHY",
+      "weight": 0.09999795460531563
+    },
+    {
+      "asset": "IEI",
+      "weight": 0.09999779854786263
+    },
+    {
+      "asset": "IEF",
+      "weight": 2.4897231322594116e-06
+    },
+    {
+      "asset": "TLT",
+      "weight": 1.1693178638873797e-07
+    },
+    {
+      "asset": "TIP",
+      "weight": 1.6596983996735125e-07
+    },
+    {
+      "asset": "VGSH",
+      "weight": 0.09999899925433715
+    },
+    {
+      "asset": "VGIT",
+      "weight": 0.09998604068998718
+    },
+    {
+      "asset": "AGG",
+      "weight": 1.2298350487708255e-06
+    },
+    {
+      "asset": "MUB",
+      "weight": 6.815867361597956e-07
+    },
+    {
+      "asset": "LQD",
+      "weight": 3.8931273335202504e-07
+    },
+    {
+      "asset": "HYG",
+      "weight": 3.765025923001148e-07
+    },
+    {
+      "asset": "VCIT",
+      "weight": 7.996209312824272e-07
+    },
+    {
+      "asset": "VCSH",
+      "weight": 4.169838733007715e-06
+    },
+    {
+      "asset": "EMB",
+      "weight": 4.0184585367070113e-07
+    },
+    {
+      "asset": "EMLC",
+      "weight": 6.446247044443069e-07
+    },
+    {
+      "asset": "BNDX",
+      "weight": 7.641506563300497e-06
+    },
+    {
+      "asset": "GLD",
+      "weight": 0.063437232915478
+    },
+    {
+      "asset": "SLV",
+      "weight": 2.679728151009169e-07
+    },
+    {
+      "asset": "PPLT",
+      "weight": 0.010755682883863766
+    },
+    {
+      "asset": "DBC",
+      "weight": 0.00011426974738083903
+    },
+    {
+      "asset": "USO",
+      "weight": 4.3384887786933314e-07
+    },
+    {
+      "asset": "UNG",
+      "weight": 4.680158897841262e-07
+    },
+    {
+      "asset": "DBA",
+      "weight": 0.033423460593927326
+    },
+    {
+      "asset": "CORN",
+      "weight": 0.09646099676152088
+    },
+    {
+      "asset": "UUP",
+      "weight": 0.04580646117772436
+    },
+    {
+      "asset": "IBIT",
+      "weight": 9.865285350743458e-06
+    },
+    {
+      "asset": "ETHA",
+      "weight": 8.296766389108935e-08
+    },
+    {
+      "asset": "FBTC",
+      "weight": 0.020285055629293825
+    },
+    {
+      "asset": "GBTC",
+      "weight": 4.8314167236047585e-06
+    },
+    {
+      "asset": "ETHE",
+      "weight": 8.176786374718247e-08
+    }
+  ]
+}
