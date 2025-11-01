@@ -94,14 +94,42 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 | **MV penalizado (proposta)**    | **5.35%**  | **11.25%**| **0.52**| **0.44**| **-27.74%** | **0.19** | **0.62%** | **0.74** |
 | MV penalizado + tail hedge exp. | 4.40%      | 10.50%    | 0.46    | 0.40    | -24.73% | 0.18   | 0.63%         | 0.78              |
 
-### 5.2 Gráficos
+### 5.2 Análise Walk-Forward Detalhada (162 janelas OOS)
+
+**Estatísticas Agregadas:**
+| Métrica                      | Valor     |
+|------------------------------|-----------|
+| Número de Janelas OOS        | 162       |
+| Taxa de Sucesso              | 59.9%     |
+| **Sharpe Médio (OOS)**       | **1.30**  |
+| **Retorno Médio (OOS)**      | **13.60%**|
+| Volatilidade Média           | 10.05%    |
+| Drawdown Médio por Janela    | -2.70%    |
+| Turnover Médio               | 0.62%     |
+| Custo Médio                  | 0.1 bps   |
+| Consistência (R²)            | 0.051     |
+| Melhor Janela NAV            | 1.0880    |
+| Pior Janela NAV              | 0.8385    |
+| Range Ratio                  | 1.30      |
+
+**Períodos de Stress Identificados:** 56 janelas (34.6% do total)
+- **2011-2012:** Crise europeia (8 janelas)
+- **Pandemic 2020:** 4 janelas críticas (pior: drawdown -25.3%, Sharpe -2.88)
+- **Inflation 2022:** 5 janelas severas (pior: drawdown -7.11%, Sharpe -5.21)
+- **Banking Crisis 2023:** 1 janela (drawdown -4.67%)
+- **2024-2025:** Stress recentes detectados
+
+> Relatórios completos disponíveis em `reports/walkforward/` (summary_stats.md, per_window_results.csv, stress_periods.md)
+
+### 5.3 Gráficos
 ![Curva de capital](reports/figures/tearsheet_cumulative_nav.png)
 ![Drawdown](reports/figures/tearsheet_drawdown.png)
 ![Risco por budget](reports/figures/tearsheet_risk_contribution_by_budget.png)
 ![Custos](reports/figures/tearsheet_cost_decomposition.png)
 ![Walk-forward NAV + Sharpe (destaque pandemia)](reports/figures/walkforward_nav_20251101.png)
+![Análise Walk-Forward Completa (parameter evolution, Sharpe por janela, consistency, turnover/cost)](reports/figures/walkforward_analysis_20251101.png)
 
-### 5.3 Ablations e sensibilidade
+### 5.4 Ablations e sensibilidade
 - **Custos:** elevar para 15 bps derruba Sharpe do MV penalizado para ≈ 0.35 (experimentos `results/cost_sensitivity`).
 - **Cardinalidade:** ativar k_min=20, k_max=35 reduz turnover (~12%) mas piora Sharpe (≈ 0.45). Heurística GA documentada em `scripts/research/run_ga_mv_walkforward.py`.
 - **Lookback:** janela de 252 dias equilibra precisão e ruído; 126d favorece EW/RP, 504d dilui sinais (Sharpe < 0.4).
