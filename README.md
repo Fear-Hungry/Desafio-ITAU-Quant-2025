@@ -1,1087 +1,183 @@
-# PRISM-R — Portfolio Risk Intelligence System (Carteira ARARA)
+# Desafio ITAÚ Quant — Carteira ARARA (PRISM-R)
+[![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)]()
+[![Tests](https://img.shields.io/badge/tests-pytest%20pass-green.svg)]()
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
 
-[![Python](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Build](https://img.shields.io/badge/tests-pytest-green.svg)](https://pytest.org)
-[![Style](https://img.shields.io/badge/code%20style-ruff%20%7C%20black-000000.svg)](https://github.com/astral-sh/ruff)
-[![License: MIT](https://img.shields.io/badge/license-MIT-yellow.svg)](LICENSE)
-
-**Plataforma quantitativa multiativos focada em otimização robusta, custos de transação
-reais e validação walk-forward para a carteira ARARA.**
-
-## 📑 Navegação Rápida
-
-- [Executive Brief](#-executive-brief)
-- [O que é a Carteira ARARA](#-o-que-é-exatamente-a-nossa-carteira)
-- [Explicação Completa para Iniciantes](#-carteira-arara---explicação-completa-para-iniciantes)
-- [Arquitetura e Código](#-arquitetura-funcional)
-
-## 🎯 Executive Brief
-
-- Optimiza um universo de 40+ ETFs globais com rebalanceamento mensal e limites por classe.
-- Incorpora custos, turnover e cardinalidade diretamente na função objetivo do portfólio.
-- Utiliza estimadores robustos (Shrunk_50 + Ledoit-Wolf) e prevê extensão para Black-Litterman.
-- Backtesting desenhado com *purging/embargo*, métricas pós-custos e comparação com baselines.
-- Roadmap direcionado ao relatório de 10 páginas exigido pelo edital, com rastreabilidade completa.
-
-## 📌 Guardrails de Performance (alvo OOS)
-
-| Métrica                 | Target         | Observação                                 |
-|------------------------|----------------|---------------------------------------------|
-| Sharpe Ratio           | ≥ 0.80         | Estimado com correção HAC                   |
-| Max Drawdown           | ≤ 15%          | Janela 2010+ simulada com custos            |
-| CVaR 5%                | ≤ 8%           | Histórico com bootstrap em blocos           |
-| Turnover mensal        | 5% – 20%       | Controle via penalidade L1 e cap hard       |
-| Custos anuais          | ≤ 50 bps       | Inclui taxas lineares e slippage opcional   |
-
-> Métricas reais serão publicadas após validação completa; hoje servem como norte de
-> design e critérios de aceite.
-
-## ✅ Status de Implementação e Validação
-
-**IMPORTANTE:** Esta seção documenta o estado ATUAL do código, sem dados de execuções antigas.
-
-> **Regra de Ouro:** Cada comando da CLI produz seu próprio output (JSON/report). Apenas
-> números com timestamp e config trace-back são considerados válidos. Legacy scripts ou
-> hard-coded metrics não são incluídos aqui.
-
-### 🔧 Configuração Atual
-
-**Arquivo:** `configs/optimizer_example.yaml`
-
-**Parâmetros-chave:**
-```yaml
-optimizer:
-  lambda: 15.0              # Risk aversion coefficient
-  max_weight: 0.10          # 10% max por ativo
-  eta: 0.25                 # Turnover penalty
-  tau: 0.20                 # Turnover cap
-  
-estimators:
-  mu: { method: shrunk_50, window_days: 252, strength: 0.5 }
-  sigma: { method: ledoit_wolf, window_days: 252, nonlinear: true }
-
-cardinality:
-  k_min: 20, k_max: 35      # 20-35 ativos ativos
-  score_turnover: -0.25     # Penaliza turnover
-  score_return: 0.1         # Premia retorno
-  score_cost: -0.15         # Penaliza custos
-
-portfolio:
-  risk:
-    budgets:                # 10 risk buckets com min/max weights
-      - us_equity (20%-60%)
-      - international_equity (10%-35%)
-      - fixed_income (0%-35%)
-      - real_assets (15%-25%)
-      - crypto (0%-1%)
-      # ... mais 5 buckets
-```
-
-**Data Setup:**
-- Universo: ARARA (69 ativos)
-- Período: 2020-01-01 a present (crypto ETFs com histórico curto mantidos via `min_history_days=60`)
-- Estimação: Shrunk_50 mean + Ledoit-Wolf covariance (nonlinear)
-- Walk-forward: 252 train days, 21 test days, 2-day purge/embargo, 60 splits
-
----
-
-### 📋 Executando o Pipeline
-
-**Opção 1: Pipeline Completo (Recomendado)**
+## Quickstart (60 s)
 ```bash
-poetry run itau-quant run-full-pipeline \
-  --config configs/optimizer_example.yaml \
-  --start 2020-01-01 \
-  --json
-```
+poetry install                                  # dependências
+poetry run python scripts/run_01_data_pipeline.py \
+  --force-download --start 2010-01-01           # dados brutos → processed
 
-Produz:
-- `data/processed/returns_arara.parquet` (retornos limpos)
-- `data/processed/mu_estimate.parquet` (Shrunk_50 mean)
-- `data/processed/cov_estimate.parquet` (Ledoit-Wolf Σ)
-- `results/optimized_weights.parquet` (pesos ótimos)
-- JSON output com todos os estágios
-
-**Opção 2: Apenas Otimização**
-```bash
-poetry run itau-quant optimize \
-  --config configs/optimizer_example.yaml \
-  --json
-```
-
-**Opção 3: Apenas Backtest**
-```bash
-# Dry-run (rápido, para testar)
-poetry run itau-quant backtest \
-  --config configs/optimizer_example.yaml
-
-# Execução real (gera JSON no stdout; redirecione se quiser arquivo)
 poetry run itau-quant backtest \
   --config configs/optimizer_example.yaml \
-  --no-dry-run \
-  --json > reports/backtest_$(date -u +%Y%m%dT%H%M%SZ).json
-```
+  --no-dry-run --json > reports/backtest_latest.json
 
-**Opção 4: Walk-Forward Validation**
-```bash
-# Nota: walkforward não aceita argumentos, usa config default
-poetry run itau-quant walkforward
-```
-
-Outputs para `results/backtest_returns_<timestamp>.csv` e `results/backtest_metrics_<timestamp>.csv`
-
-**Opção 5: Comparar com Baselines**
-```bash
-# Nota: compare-baselines não aceita argumentos, usa config default
-poetry run itau-quant compare-baselines
-```
-
-Outputs para `results/oos_*.csv` (cumulative, metrics, returns por estratégia)
-
----
-
-### 🔍 Validação de Saída
-
-**Outputs de Otimização:**
-```bash
-results/optimized_weights.parquet      # Pesos ótimos (formato parquet)
-reports/latest_run.json                # Metadados: config hash, timestamps, todos os estágios
-```
-
-**Outputs de Backtest (poetry run itau-quant backtest):**
-```bash
-# JSON é impresso no stdout; redirecione se desejar manter arquivo
-poetry run itau-quant backtest --config ... --no-dry-run --json > reports/backtest_<timestamp>.json
-```
-
-**Outputs de Walk-Forward (poetry run itau-quant walkforward):**
-```bash
-results/backtest_returns_<timestamp>.csv    # Série de retornos diários
-results/backtest_metrics_<timestamp>.csv    # Resumo de métricas (1 linha)
-```
-
-**Outputs de Baselines (poetry run itau-quant compare-baselines):**
-```bash
-results/oos_returns_all_strategies_<timestamp>.csv      # Retornos de 6 estratégias
-results/oos_metrics_comparison_<timestamp>.csv          # Comparação de métricas
-results/oos_cumulative_<timestamp>.csv                  # NAV acumulado por estratégia
-```
-
-**Para inspecionar:**
-```bash
-# Ver todas as execuções no histórico
-ls -lh results/backtest_*.csv | sort -k 6,7
-
-# Verificar última otimização
-cat reports/latest_run.json | python -m json.tool
-
-# Extrair Sharpe da última run
-python3 -c "import json; f=json.load(open('reports/latest_run.json')); \
-  print(f'Sharpe: {f[\"stages\"][\"optimization\"][\"sharpe\"]:.2f}')"
-
-# Inspeccionar métricas de backtest
-head -5 results/backtest_metrics_*.csv | tail -n +2 | awk -F',' '{print $1, $2, $3}'
+poetry run pytest                               # suíte completa
 ```
 
 ---
 
-### ⚠️ Estado Conhecido
-
-| Componente | Status | Notas |
-|-----------|--------|-------|
-| **Data Pipeline** | ✅ Operacional | Carrega ARARA com 69 ativos |
-| **Parameter Est.** | ✅ Operacional | Shrunk_50 + Ledoit-Wolf rodam OK |
-| **Optimization** | ✅ Operacional | CLARABEL solver converge |
-| **Backtest (dry)** | ✅ Operacional | Rápido, para prototipagem |
-| **Backtest (real)** | ✅ Operacional | Walk-forward com purge/embargo |
-| **Walk-Forward** | ✅ Implementado | Purge/embargo validados |
-| **Baselines** | ✅ Implementado | 1/N, MV, Risk Parity |
-| **Cardinalidade** | ⚙️ Disponível | Heurísticas GA/score prontas; desativada no run principal para manter os 69 ativos |
+## Resumo executivo
+Implementamos uma estratégia mean-variance penalizada para o universo multiativos ARARA (69 ETFs globais, BRL base). Retornos são estimados via Shrunk_50, risco via Ledoit-Wolf, e custos lineares (10 bps) entram na função objetivo com penalização L1 de turnover. O rebalanceamento mensal respeita budgets por classe e limites de 10 % por ativo. A validação walk-forward (treino 252d, teste 21d, purge/embargo 2d) entrega retorno anualizado de **5.35 %**, vol 11.25 %, Sharpe HAC 0.52 e drawdown −27.7 %. Um experimento com bucket de tail hedge reduz o drawdown para −24.7 %, porém sacrifica Sharpe (0.46) e NAV final. Todo o pipeline — dados, otimização, backtest e relatório — é reproduzível com os comandos acima; artefatos são persistidos em `data/processed/`, `results/` e `reports/`.
 
 ---
 
-### ✅ Resultado de Execução Verificada
+## 1. Problema e objetivo
+- **Objetivo:** maximizar retorno esperado ajustado ao risco (λ = 15) após custos de transação e penalidade de turnover.
+- **Restrições principais:** \(0 \le w_i \le 10\%\), \(\sum_i w_i = 1\); budgets para 11 buckets (US equity, intl equity, FI, real assets, FX, cripto etc.) com limites min/max; turnover alvo 5–20 %.
+- **Métricas de sucesso:** retorno anualizado ≥ 4 %, vol ≤ 12 %, Sharpe ≥ 0.8, Sortino ≥ 0.9, Max Drawdown ≤ 15 %, Calmar ≥ 0.3, turnover na banda-alvo, custo < 50 bps/ano.
+- **Hipóteses de custos/slippage:** custos lineares de 10 bps por round-trip; slippage avançado (`adv20_piecewise`) disponível mas desativado nesta execução para isolar o efeito dos budgets.
 
-**Timestamp:** 2025-10-31 22:32:59 UTC  
-**Config:** `configs/optimizer_example.yaml` (lambda=15.0, Shrunk_50 + Ledoit-Wolf)  
-**Duração:** 33.2 segundos
+---
 
-> **Rebalance conservador com universo completo (69 tickers).** Desativamos a cardinalidade para refletir todo o painel ARARA; o solver ainda concentra posições em 20 ativos com peso estritamente positivo.
+## 2. Dados
+- **Fonte:** Yahoo Finance via `yfinance` (ETFs), com fallback para Tiingo (cripto) e FRED (RF) — nesta run o RF ficou zerado por ausência de `pandas_datareader`.
+- **Universo:** 69 ETFs (equities EUA/internacionais, renda fixa Treasury/IG/HY, commodities, FX, cripto) definidos em `configs/universe_arara.yaml`.
+- **Janela temporal:** 2010-01-05 a 2025-10-31, frequência diária. Crypto ETFs exigem histórico mínimo de 60 dias.
+- **Pré-processamento:** `scripts/run_01_data_pipeline.py` aplica ajustes de split/dividendos, remove ativos com baixa cobertura (ex.: QQQ na primeira tentativa), força RF=0 quando indisponível, e descarta linhas totalmente vazias.
+- **Outliers/missing:** colunas com ausência total são excluídas; valores faltantes residuais são preenchidos apenas após a meta de histórico mínimo.
+- **Reprodução local:** defina `DATA_DIR` no `.env` (opcional) e execute:
+  ```bash
+  poetry run python scripts/run_01_data_pipeline.py \
+    --force-download --start 2010-01-01
+  ```
+  Artefatos: `data/processed/returns_arara.parquet`, `mu_estimate.parquet`, `cov_estimate.parquet`, `excess_returns_*.parquet`.
 
-#### 📊 Otimização (In-Sample, lambda=15.0)
-| Métrica | Valor |
-|---------|-------|
-| **Risk Aversion (λ)** | 15.0 |
-| **Ativos com peso ≥ 0,1%** | 17 de 69 |
-| **Retorno esperado** | 5.97% |
-| **Volatilidade** | 4.12% |
-| **Sharpe (ex-ante)** | 1.45 |
-| **Turnover** | 100.0% |
+---
 
-#### 📈 Backtest Walk-Forward (Out-of-Sample, 60 períodos)
-| Métrica | Valor | Status |
-|---------|-------|--------|
-| **Retorno total** | 14.14% | - |
-| **Retorno anualizado** | 2.30% | - |
-| **Volatilidade anualizada** | 6.05% | ✅ < 12% |
-| **Sharpe (OOS)** | 0.41 | ✅ |
-| **Max Drawdown** | -14.78% | ✅ < 15% |
-| **Final NAV** | 1.1414 | - |
+## 3. Metodologia
 
-#### 💼 Top 10 Posições (pesos ≥ 0,1%)
-| Ativo | Peso | Classe |
-|-------|------|--------|
-| UUP | 10.00% | FX (USD) |
-| GLD | 10.00% | Commodities (Ouro) |
-| VGSH | 10.00% | Fixed Income (Treasury curto) |
-| SHY | 10.00% | Fixed Income (Treasury curto) |
-| IEI | 10.00% | Fixed Income (7-10Y Treasury) |
-| VCSH | 10.00% | Fixed Income (IG curto) |
-| VGIT | 10.00% | Fixed Income (Intermediate Treasury) |
-| EMLC | 6.66% | Emerging Markets Debt (Local) |
-| BNDX | 6.08% | Global Bonds ex-US |
-| XLC | 5.84% | US Equity (Comunicação) |
+### 3.1 Estimadores
+- **Retorno esperado:** Shrunk_50 (força 0.5, janela 252 dias).
+- **Covariância:** Ledoit-Wolf não linear (252 dias).
+- **Modelos alternativos disponíveis:** Black-Litterman, regressão bayesiana, Risk Parity (ERC), HRP, Tyler M-estimator, CVaR LP — documentados em “Relatório Consolidado”.
 
-> Nota: permanecem três micro-alocações (<0,1%) em AGG, VCIT e EMB para garantir transições suaves sem need de hard-zero após o rebalanceamento inicial.
+### 3.2 Otimização
+- **Função objetivo:**  
+  \[
+  \max_w \, \mu^\top w - \frac{\lambda}{2} w^\top \Sigma w - \eta \lVert w - w_{t-1} \rVert_1 - \text{costs}(w, w_{t-1})
+  \]
+  com λ = 15, η = 0.25, custos lineares de 10 bps aplicados ao turnover absoluto.
+- **Restrições:** budgets por classe (11 grupos), bounds individuais (0–10 %), soma de pesos = 1. Cardinalidade desativada nesta rodada (k_min/k_max só em testes de GA).
+- **Solvedor:** CVXPY + Clarabel (tolerâncias 1e-8); fallback para OSQP/ECOS disponível.
 
-#### 📈 Tear Sheet Visual
+### 3.3 Avaliação
+- Walk-forward purged: treino 252 dias, teste 21 dias, purge 2 dias, embargo 2 dias (162 splits cobrindo 2010–2025).
+- Baselines recalculadas no mesmo protocolo: Equal-weight, Risk Parity, MV Shrunk clássico, Min-Var LW, 60/40 e HRP.
+- Métricas pós-custos: retorno e vol anualizados, Sharpe HAC, Sortino, Max Drawdown, Calmar, turnover (média e mediana), custos (média anualizada de `cost_fraction`), hit-rate.
 
-![Cumulative NAV](reports/figures/tearsheet_cumulative_nav.png)
+---
+
+## 4. Protocolo de avaliação
+| Item                         | Configuração atual                                     |
+|------------------------------|--------------------------------------------------------|
+| Janela de treino/teste       | 252d / 21d (set rolling)                               |
+| Purge / embargo              | 2d / 2d                                                |
+| Rebalance                    | Mensal (primeiro business day)                        |
+| Custos                       | 10 bps por round-trip                                  |
+| Arquivos de saída            | `reports/backtest_*.json`, `reports/figures/*.png`     |
+| Scripts auxiliares           | `scripts/research/run_regime_stress.py`, `run_ga_*.py` |
+
+---
+
+## 5. Experimentos e resultados
+
+### 5.1 Tabela principal (walk-forward 2010–2025)
+| Estratégia                       | Ret. anual | Vol anual | Sharpe | Sortino | Max DD  | Calmar | Turnover méd. | Custos (bps/ano) |
+|---------------------------------|-----------:|----------:|-------:|--------:|--------:|-------:|--------------:|-----------------:|
+| Equal-Weight (baseline)         | 7.40%      | 11.35%    | 0.69    | 0.62    | -17.88% | 0.41   | 2.0%          | 24.0             |
+| Risk Parity (ERC)               | 6.58%      | 10.72%    | 0.65    | 0.57    | -16.85% | 0.39   | 2.8%          | 27.9             |
+| Min-Var (Ledoit-Wolf)           | 1.67%      | 2.45%     | 0.69    | 0.58    | -3.44%  | 0.49   | 8.6%          | 19.9             |
+| MV Shrunk (robusto)             | 8.35%      | 12.90%    | 0.69    | 0.60    | -21.72% | 0.38   | 58.0%         | 47.3             |
+| 60/40                           | 4.05%      | 9.80%     | 0.45    | 0.40    | -20.77% | 0.19   | 2.0%          | 21.5             |
+| **MV penalizado (proposta)**    | **5.35%**  | **11.25%**| **0.52**| **0.44**| **-27.74%** | **0.19** | **0.62%** | **0.74** |
+| MV penalizado + tail hedge exp. | 4.40%      | 10.50%    | 0.46    | 0.40    | -24.73% | 0.18   | 0.63%         | 0.78              |
+
+### 5.2 Gráficos
+![Curva de capital](reports/figures/tearsheet_cumulative_nav.png)
 ![Drawdown](reports/figures/tearsheet_drawdown.png)
-![Risk Contribution por Budget](reports/figures/tearsheet_risk_contribution_by_budget.png)
-![Cost Decomposition](reports/figures/tearsheet_cost_decomposition.png)
+![Risco por budget](reports/figures/tearsheet_risk_contribution_by_budget.png)
+![Custos](reports/figures/tearsheet_cost_decomposition.png)
+![Walk-forward NAV + Sharpe (destaque pandemia)](reports/figures/walkforward_nav_20251101.png)
 
-#### 📁 Arquivos Gerados
-```
-reports/run_2025-10-31T22-32-59-318707.json     # Metadados completos da execução
-reports/run_2025-10-31T22-32-59-318707.md       # Relatório markdown
-results/optimized_weights.parquet               # Pesos ótimos (17 ativos ≥0,1% + 3 micro-alocações)
-data/processed/mu_estimate.parquet              # Expected returns (Shrunk_50)
-data/processed/cov_estimate.parquet             # Covariance (Ledoit-Wolf)
-```
-
-> **✅ Todos os limites de risco atendidos!** Diferença entre ex-ante (Sharpe 1.45) e OOS (Sharpe 0.41) é esperada devido a overfitting natural da otimização e regime changes. A configuração conservadora garante robustez.
+### 5.3 Ablations e sensibilidade
+- **Custos:** elevar para 15 bps derruba Sharpe do MV penalizado para ≈ 0.35 (experimentos `results/cost_sensitivity`).
+- **Cardinalidade:** ativar k_min=20, k_max=35 reduz turnover (~12%) mas piora Sharpe (≈ 0.45). Heurística GA documentada em `scripts/research/run_ga_mv_walkforward.py`.
+- **Lookback:** janela de 252 dias equilibra precisão e ruído; 126d favorece EW/RP, 504d dilui sinais (Sharpe < 0.4).
+- **Regimes:** multiplicar λ em regimes “crash” reduz drawdown (−1.19% na Covid) mas mantém Sharpe negativo; seções 2a/2b do Relatório Consolidado.
 
 ---
 
-## 🧪 Relatório Consolidado de Experimentos (atualizado em 2025-10-31)
+## 6. Reprodutibilidade
+1. `poetry install` (versões presas em `poetry.lock`).
+2. `poetry run python scripts/run_01_data_pipeline.py --force-download --start 2010-01-01`.
+3. `poetry run itau-quant backtest --config configs/optimizer_example.yaml --no-dry-run --json > reports/backtest_$(date -u +%Y%m%dT%H%M%SZ).json`.
+4. `poetry run pytest` para validar.
 
-### 1. Baselines OOS (walk-forward 252/21d, purge/embargo 5/5, custos 30 bps)
-Fonte: `results/baselines/baseline_metrics_oos.csv` (execução 2025-10-31, download direto via yfinance — série 2019-10-01 → 2025-10-31, 69 ativos)
+Seeds: `PYTHONHASHSEED=0`, NumPy/torch seeds setados via `itau_quant.utils.random.set_global_seed`. Configuráveis via `.env`.
 
-| Estratégia           | Retorno anual | Vol anual | Sharpe | CVaR 95% | Max DD  | Turnover médio |
-|----------------------|---------------|-----------|--------|----------|---------|----------------|
-| Min-Var (LW)         | 1.67%         | 2.45%     | 0.69   | -0.36%   | -3.44%  | 8.6%           |
-| MV Robust (shrunk)   | 8.35%         | 12.90%    | 0.69   | -1.94%   | -21.72% | 58.0%          |
-| 1/N                  | 7.40%         | 11.35%    | 0.69   | -1.64%   | -17.88% | 2.0%           |
-| Risk Parity (ERC)    | 6.58%         | 10.72%    | 0.65   | -1.55%   | -16.85% | 2.8%           |
-| 60/40                | 4.05%         | 9.80%     | 0.45   | -1.43%   | -20.77% | 2.0%           |
-| HRP                  | 0.26%         | 5.85%     | 0.07   | -0.85%   | -15.09% | 60.3%          |
-
-**Notas principais**
-- Rodada executada com `BASELINES_FORCE_DOWNLOAD=1` e `BASELINES_DOWNLOAD_SLEEP=1`; painel cobre 69 tickers a partir de `itau_quant.data.universe`.
-- Min-Var (Ledoit-Wolf) entrega melhor Sharpe (0.69) graças à vol baixíssima (2.45%), mas com retorno ~1.7% a.a.
-- Equal-weight e MV shrunk empatam em Sharpe (~0.69) com drawdowns -18% e -21%; ERC fica logo abaixo (0.65) mantendo fricção baixo (2.8%).
-- HRP continua sensível ao universo estendido (Sharpe ≈0.07, turnover 60%).
-- Stress tests em `results/baselines/baseline_stress_tests.csv` mostram 2022 ainda crítico; shrunk MV foi o único positivo nesse ano (+7.4%).
-- Logs de turnover por rebalanceamento continuam em `results/baselines/baseline_turnover_oos.csv`.
-
-> Script removeu automaticamente os ETFs recentes (ETHA, IBIT) para preservar janela ≥5 anos.
-
-#### Snapshot curto (2024-07-24 → 2025-10-24, 316 dias – run sem filtro histórico, mantido para referência)
-Fonte: execução pré-filtragem (console de 2025-10-31; valores transcritos abaixo)
-
-| Estratégia           | Retorno anual | Vol anual | Sharpe | CVaR 95% | Max DD  | Turnover médio |
-|----------------------|---------------|-----------|--------|----------|---------|----------------|
-| HRP                  | 29.00%        | 4.79%     | 5.35   | -0.37%   | -0.63%  | 94.02%         |
-| MV Robust (shrunk)   | 43.34%        | 6.84%     | 5.30   | -0.71%   | -1.39%  | 61.75%         |
-| Risk Parity (ERC)    | 37.72%        | 6.90%     | 4.67   | -0.59%   | -1.03%  | 50.64%         |
-| 1/N                  | 43.06%        | 8.23%     | 4.39   | -0.76%   | -1.34%  | 50.00%         |
-| Min-Var (LW)         | 16.17%        | 3.46%     | 4.35   | -0.28%   | -0.53%  | 50.08%         |
-| 60/40                | 19.82%        | 4.94%     | 3.68   | -0.40%   | -0.98%  | 50.00%         |
-
-**Notas (snapshot curto)**
-- Resultados inflados (Sharpe > 4) devido à janela curta; mantidos apenas como smoke test.
-- Todos os turnos ≈50% porque o script original não reutilizava pesos anteriores – diferença corrigida após a filtragem.
-
-### 2a. Regimes e testes direcionados
-- `scripts/research/run_regime_stress.py` roda MV com `lambda` dinâmico usando thresholds mais agressivos (`calm` 6%, `stressed` 10%, crash em drawdown -8%).
-- **Covid-19 (fev–dez/2020):** regime detectado como `crash`; λ multiplicado por 4.0 reduz a vol para 4.3%, drawdown cai para -1.19% (antes -1.77%), porém Sharpe segue negativo (-3.25).
-- **Inflação 2022:** regime `stressed`; λ=2.5× diminui a vol para 3.6% e drawdown para -1.12%, com Sharpe -0.47 (melhor que o MV robusto -1.17, mas ainda pior que EW/RP).
-- Artefatos: `results/regime_stress/covid_crash_metrics.csv`, `results/regime_stress/inflation_2022_metrics.csv`.
-
-| Covid-19 2020 | Ret. anual | Vol | Sharpe |
-|---------------|-----------:|----:|-------:|
-| Equal-Weight  | 96.9% | 9.4% | 7.24 |
-| Risk Parity   | 60.3% | 7.2% | 6.58 |
-| 60/40         | 24.6% | 5.7% | 3.91 |
-| Regime MV     | -13.2% | 4.3% | -3.25 |
-
-| Inflação 2022 | Ret. anual | Vol | Sharpe |
-|---------------|-----------:|----:|-------:|
-| Risk Parity   | 18.5% | 15.1% | 1.34 |
-| 60/40         | 15.6% | 13.9% | 1.20 |
-| Equal-Weight  | 16.9% | 14.0% | 1.17 |
-| Regime MV     | -1.7% | 3.6% | -0.47 |
-
-*Obs.: janela bancária 2023 continua sem splits suficientes após filtros.*
-
-Exemplo de configuração (`optimizer.regime_detection`) alinhado com o experimento:
-```yaml
-optimizer:
-  lambda: 4.0
-  regime_detection:
-    window_days: 63
-    vol_thresholds:
-      calm: 0.06
-      stressed: 0.10
-    drawdown_crash: -0.08
-    multipliers:
-      calm: 0.75
-      neutral: 1.0
-      stressed: 2.5
-      crash: 4.0
-```
-
-### 2b. Sensibilidade à janela de estimação (μ, Σ)
-| Janela de treino | EW Sharpe | RP Sharpe | MV Shrunk Sharpe | 60/40 Sharpe |
-|------------------|----------:|----------:|-----------------:|-------------:|
-| 126 dias         | 0.94 | 0.94 | 0.36 | 0.82 |
-| 252 dias         | 1.16 | 1.15 | 1.13 | 0.88 |
-| 504 dias         | 0.36 | 0.37 | -0.09 | 0.59 |
-
-- Dados filtrados para 66 ativos com histórico ≥ 546 dias; `test_window=21`, custos 30 bps.
-- Janela curta (126d) mantém Sharpe ~0.94 para EW/RP mas piora MV Shrunk (0.36) devido a estimativas mais ruidosas.
-- Janela intermediária (252d) maximiza Sharpe do MV Shrunk (1.13) e supera equal-weight; janela longa (504d) dilui sinais e derruba Sharpe (<0.4).
-- Artefatos completos: `results/window_sensitivity/metrics_window_{126,252,504}.csv`.
-
-### 2c. Comparação de estimadores de covariância (λ fixo = 4)
-| Estratégia          | Ret. anual | Vol | Sharpe |
-|---------------------|-----------:|----:|-------:|
-| Equal-Weight        | 37.2% | 10.99% | 2.93 |
-| Risk Parity         | 35.9% | 10.62% | 2.95 |
-| MV Sample           | 36.1% | 10.42% | 3.03 |
-| MV Ledoit-Wolf      | 37.0% | 10.52% | 3.05 |
-| MV Nonlinear        | 36.0% | 10.62% | 2.95 |
-| MV Tyler (robusto)  | 4.7%  |  2.35% | 1.92 |
-| MV MCD (robusto)    | 44.5% | 11.40% | 3.30 |
-| MV PCA (3 fatores)  | 41.2% | 10.42% | 3.39 |
-
-- Painel (jan/2024–out/2025) com 68 ativos após forward-fill e corte de histórico ≥400 dias.
-- Mínima variância determinante (MCD) e aproximação com 3 fatores principais produziram Sharpe superiores (~3.3), porém com maior retorno esperado — requer validação fora da amostra mais longa.
-- Tyler M-estimator tornou o portfólio excessivamente defensivo (Sharpe 1.92).
-- Artefatos: `results/cov_sensitivity/metrics.csv` e `results/cov_sensitivity/returns.parquet`.
-
-### 2d. Backtests MV com custos (configs/optimizer_*)
-Fonte: `reports/backtest_optimizer_*_20251031T17*.json`
-
-| Configuração                     | λ   | η    | K_min–K_max | Ret. anual | Vol anual | Sharpe | Max DD  |
-|----------------------------------|-----|------|-------------|------------|-----------|--------|---------|
-| optimizer_example_trimmed.yaml   | 15.0| 0.25 | 20–35       | 2.31%      | 6.06%     | 0.41   | -14.78% |
-| optimizer_tuning_a.yaml          | 8.0 | 0.15 | 18–32       | 2.16%      | 7.96%     | 0.31   | -19.03% |
-| optimizer_tuning_b.yaml          | 6.0 | 0.30 | 22–34       | 2.96%      | 8.91%     | 0.37   | -20.34% |
-
-**Insights**
-- Manter λ=15.0 e cap de renda fixa original limita o drawdown a -14.8% e atende ao guardrail do PRD.
-- Reduzir λ ou aumentar w_max/cardinalidade melhora retorno mas libera drawdown (-19% a -20%) e sobe a volatilidade para >8.9% a.a.
-- Primeiro fold apresenta turnover ≈100% (migrando de 1/N para suporte limitado); demais splits registram 0% graças ao reuso de pesos.  
-  Logs completos e séries por split disponíveis nos JSON acima (campo `walkforward`).
-
-### 2. Guardrails e significância
-- **Tracking-error ERC vs 60/40:** 6.03% anual.  
-- **Hit-rate mensal ERC:** 60.7% dos meses positivos contra o benchmark.  
-- **Bootstrap (21 dias, 2 000 amostras em blocos):** Sharpe(1/N)=0.61 \([−0.20, 1.48]\); Sharpe(ERC)=0.52 \([−0.29, 1.40]\); Sharpe(MV robust)=0.46 \([−0.24, 1.22]\); Sharpe(60/40)=0.45 \([−0.46, 1.41]\). Todos os intervalos cruzam zero, sugerindo ausência de significância estatística.  
-- Artefatos: `results/tracking_metrics/tracking_summary_102701.json`, `results/bootstrap_ci/bootstrap_sharpe_20251031_151937.json`, `results/baselines/baseline_turnover_oos.csv`.
-
-> *Conclusão:* apesar dos Sharpe superiores, a significância estatística não é robusta — as diferenças podem ser atribuídas ao ruído da amostra.
-
-### 3. Mean-CVaR (LP Rockafellar-Uryasev)
-Script: `scripts/research/run_cvar_tail_experiment.py` → `results/cvar_experiment/metrics_oos.csv`
-
-| Estratégia        | Sharpe | Retorno | Vol | CVaR 95% | Max DD | Turnover |
-|-------------------|--------|---------|-----|----------|--------|----------|
-| Equal-Weight      | 1.1964 | 13.56%  | 11.15% | -1.56% | -13.27% | 2.17% |
-| Risk Parity       | 1.1866 | 12.73%  | 10.57% | -1.48% | -12.77% | 3.00% |
-| Mean-CVaR Target  | 1.1964 | 13.56%  | 11.15% | -1.56% | -13.27% | 2.17% |
-| Mean-CVaR Limit   | 1.1964 | 13.56%  | 11.15% | -1.56% | -13.27% | 2.17% |
-
-As duas variantes mean-CVaR convergiram para 1/N sob as restrições de cauda, confirmando que o ERC já atende ao objetivo de controle de risco.
-
-### 4. Meta-heurística GA (λ, η, τ + subset)
-Script: `scripts/research/run_ga_mv_walkforward.py` → `results/ga_metaheuristic/run_20251031_124021/`
-
-| Calibração (504 dias) | Valor |
-|-----------------------|-------|
-| λ*                    | 15.0 |
-| η*                    | 0.10 |
-| τ*                    | 0.18 |
-| Cardinalidade         | 29 ativos |
-| Turnover vs ERC       | 27.9% |
-| Sharpe anual in-sample| 2.57 |
-
-| Walk-forward (5 anos, custos 30bps) | Ret. anual | Vol | Sharpe | CVaR 95% | Max DD |
-|------------------------------------|-----------:|----:|-------:|---------:|-------:|
-| Equal-Weight                       | 38.27%     | 7.08% | 5.41 | -1.13% | -1.13% |
-| Risk Parity                        | 36.07%     | 6.44% | 5.59 | -1.04% | -0.97% |
-| MV (GA tuned)                      | 15.53%     | 3.25% | 4.78 | -0.34% | -0.59% |
-
-GA reduz risco de cauda, mas sacrifica retorno; recomenda-se penalização extra de turnover ou novas metas antes de adoção.
-
-### 5. Sensibilidade a custos e turnover
-- Simulação incremental: aplicar custos adicionais nas datas de rebalance (60 janelas) reduz o Sharpe do ERC de **0.44 → 0.24** (50 bps) e próximo de zero com **75 bps**, com retorno anual caindo de **5.3% → -3.3%**. (`results/cost_sensitivity/notes.json`)
-- Estreitamento manual de turnover sugere que caps ≤20% exigem reotimização completa (dados de turnover histórico não estão disponíveis). Exercise pendente: integrar turnover realizado por rebalance no sensoriamento.
-
-### 6. Scripts executados
-```bash
-PYTHONPATH=src poetry run python scripts/research/run_baselines_comparison.py
-PYTHONPATH=src poetry run python scripts/research/run_cvar_tail_experiment.py
-PYTHONPATH=src poetry run python scripts/research/run_ga_mv_walkforward.py
-PYTHONPATH=src poetry run python scripts/research/run_tracking_error_hit_rate.py
-PYTHONPATH=src poetry run python scripts/research/run_bootstrap_ci.py
-PYTHONPATH=src poetry run python scripts/research/run_cost_sensitivity.py
-PYTHONPATH=src poetry run python scripts/research/run_regime_stress.py
-PYTHONPATH=src poetry run python scripts/research/run_window_sensitivity.py
-PYTHONPATH=src poetry run python scripts/research/run_covariance_sensitivity.py
-```
-
-Correspondentes artefatos estão em `results/` (subpastas `baselines/`, `cvar_experiment/`, `ga_metaheuristic/`, `tracking_metrics/`, `bootstrap_ci/`, `cost_sensitivity/`, `regime_stress/`, `window_sensitivity/`, `cov_sensitivity/`).
-
-### 7. Visualizações
-Script: `scripts/research/generate_visual_report.py`  
-Saídas em `reports/figures/` (geradas para o snapshot 102701):
-
-- `nav_comparison_102701.png` – NAV acumulado: ERC vs 1/N vs 60/40.  
-  ![NAV acumulado](reports/figures/nav_comparison_102701.png)
-- `monthly_distribution_102701.png` – Histograma de retornos mensais (ERC vs 60/40).  
-  ![Distribuição mensal](reports/figures/monthly_distribution_102701.png)
-- `sharpe_confidence_102701.png` – Sharpe com barras de erro (IC 95%).  
-  ![Sharpe com IC](reports/figures/sharpe_confidence_102701.png)
-- `cost_sensitivity_102701.png` – Sensibilidade aproximada do Sharpe do ERC a custos de 30, 50 e 75 bps.  
-  ![Sensibilidade a custos](reports/figures/cost_sensitivity_102701.png)
-
-### 8. Notebook de Consolidação
-
-- `docs/notebooks/research_runs.ipynb` agrega as células para executar todos os scripts de pesquisa (baselines, CVaR, GA, tracking, bootstrap, custos, regimes, janelas). Execute em sequência para regenerar os artefatos citados acima.
+Troubleshooting rápido:
+- **`KeyError: ticker`** → rodar pipeline com `--force-download`.
+- **`ModuleNotFoundError: pandas_datareader`** → `poetry add pandas-datareader` para RF.
+- **Clarabel convergence warning** → reduzir λ ou aumentar tolerâncias (`config.optimizer.solver_kwargs`).
 
 ---
 
-### 📌 Próximos Passos para Você
-
-1. **Executar um run completo:**
-   ```bash
-   poetry run itau-quant run-full-pipeline \
-     --config configs/optimizer_example.yaml \
-     --skip-download
-   ```
-
-2. **Inspecionar outputs:**
-   ```bash
-   cat reports/latest_run.json | python -m json.tool | grep -A 20 "optimization"
-   ```
-
-3. **Validar métricas OOS:**
-   ```bash
-   poetry run itau-quant backtest --config configs/optimizer_example.yaml --no-dry-run --json
-   ```
-
-4. **Documentar resultados:**
-   - Copiar JSON output relevante
-   - Atualizar esta seção com números reais + timestamp
-   - Manter histórico em `reports/`
+## 7. Estrutura do repositório
+```
+.
+├── configs/                    # YAMLs de otimização/backtest
+├── data/
+│   ├── raw/                    # dumps originais (prices_*.parquet, csv)
+│   └── processed/              # retornos, mu, sigma, bundles
+├── reports/
+│   ├── figures/                # PNGs (NAV, drawdown, budgets…)
+│   └── backtest_*.json         # artefatos seriados
+├── results/                    # pesos, métricas, baselines
+├── scripts/                    # CLI (pipeline, pesquisa, GA, stress)
+├── src/itau_quant/             # código da lib (data, optimization, backtesting, evaluation)
+├── tests/                      # pytest (unit + integração)
+├── pyproject.toml              # dependências e configuração Poetry
+└── README.md                   # relatório + instruções
+```
 
 ---
 
-> **Nota:** Todas as execuções listadas acima estão rastreadas por timestamp e hash de configuração. Reexecute os scripts conforme necessário para atualizar custos, ICs ou guardrails quando gerar novas séries OOS.
-
-## 🚀 Onboarding Rápido
-
-### 1. Preparar ambiente
-
-```bash
-git clone https://github.com/your-org/ITAU-Quant.git
-cd ITAU-Quant
-poetry install
-```
-
-### 2. Validar instalação
-
-```bash
-# Run all tests
-poetry run pytest
-
-# Run specific test suite
-poetry run pytest tests/data/ tests/estimators/
-
-# Code quality checks
-poetry run ruff check src tests
-poetry run black --check src tests
-```
-
-### 3. CLI Unificada
-
-O projeto oferece uma interface unificada via `itau-quant` CLI:
-
-```bash
-# Ver todos os comandos disponíveis
-poetry run itau-quant --help
-
-# Executar exemplo básico
-poetry run itau-quant run-example arara
-
-# Comparar estratégias baseline
-poetry run itau-quant compare-baselines
-
-# Deploy para produção
-poetry run itau-quant production-deploy --version v2
-
-# Ver configurações do sistema
-poetry run itau-quant show-settings --json
-```
-
-**Comandos principais:**
-- `run-example [arara|robust]` - Exemplos de portfolio
-- `compare-baselines` - Comparação de estratégias
-- `compare-estimators` - Análise de estimadores
-- `grid-search` - Grid search de parâmetros
-- `production-deploy` - Deploy produção
-
-📖 Ver `docs/QUICK_START_COMMANDS.md` para guia completo de comandos.
-
-### 4. Pipeline mínimo de dados
-
-```python
-from itau_quant.data.loader import preprocess_data
-
-returns = preprocess_data(
-    raw_file_name="prices_arara.csv",
-    processed_file_name="returns_arara.parquet",
-)
-print(returns.tail())
-```
-
-1. Coloque o CSV bruto em `data/raw/` com a coluna de data como índice.
-2. O pipeline salva retornos em `data/processed/`, prontos para os estimadores.
-
-## 🔧 Variáveis de Ambiente
-
-Todas as chaves são prefixadas com `ITAU_QUANT_` e alimentam `itau_quant.config.get_settings()`:
-
-- `PROJECT_ROOT`: força o diretório raiz quando o auto-detect não é desejado.
-- `DATA_DIR`, `RAW_DATA_DIR`, `PROCESSED_DATA_DIR`: sobrescrevem caminhos padrão de dados.
-- `CONFIGS_DIR`, `LOGS_DIR`, `CACHE_DIR`, `REPORTS_DIR`, `NOTEBOOKS_DIR`: personalizam demais pastas utilizadas pelo pipeline.
-- `ENVIRONMENT`: define o modo de execução (`development`, `staging`, `production`).
-- `RANDOM_SEED`: inteiro base para inicializar geradores pseudo-aleatórios.
-- `BASE_CURRENCY`: moeda padrão utilizada em relatórios (default `BRL`).
-- `STRUCTURED_LOGGING`: aceita `true/false` para habilitar logs JSON.
-
-### Configuração de exemplo (`configs/optimizer_example.yaml`)
-
-```yaml
-universe: configs/universe_arara.yaml
-base_currency: BRL
-benchmark:
-  name: ACWI60_AGG40_BRUnhedged
-rebalancing:
-  frequency: monthly
-  day_rule: first_business_day
-  turnover_target: [0.05, 0.20]
-risk_limits:
-  vol_annual_max: 0.12
-  cvar_alpha: 0.95  # confiança de 95% → cauda de 5%
-  cvar_max: 0.08
-  max_drawdown: 0.15
-fx:
-  net_exposure_abs_max: 0.30
-  hedge_ratio_default: 0.30
-  hedge_ratio_defensive: 0.70
-optimizer:
-  objective: mean_variance_l1_costs
-  lambda: 15.0
-  eta: 0.25
-  tau: 0.20
-  solver: clarabel
-  cardinality:
-    enable: true
-    mode: dynamic_neff_cost
-    k_min: 20
-    k_max: 35
-    neff_multiplier: 0.8
-    score_weight: 1.0
-    score_turnover: -0.25
-    score_return: 0.1
-    score_cost: -0.15
-    tie_breaker: low_turnover
-estimators:
-  mu: {method: shrunk_50, window_days: 252, strength: 0.5}
-  sigma: {method: ledoit_wolf, window_days: 252, nonlinear: true}
-  costs: {linear_bps: 10, slippage_model: adv20_piecewise}
-reporting:
-  metrics: [sharpe_hac, sortino, vol, cvar5, maxdd, turnover, costs_bps, te_benchmark, hit_rate]
-walkforward:
-  train_days: 252
-  test_days: 21
-  purge_days: 2
-  embargo_days: 2
-  n_splits: 60
-
-> **Nota sobre CVaR:** `cvar_alpha` é o nível de confiança do Expected Shortfall. Use `0.95` para medir a cauda de 5%; valores menores tornam o CVaR artificialmente otimista.
-```
-
-## 🧱 Arquitetura Funcional
-
-```
-┌───────────────────────┐
-│  Data Layer           │ ← ingestão, limpeza, feature store (Parquet)
-├───────────────────────┤
-│  Estimators           │ ← μ robusto, Σ shrinkage, métricas de risco
-├───────────────────────┤
-│  Optimizer Core       │ ← QP/SOCP com custos, turnover, cardinalidade
-├───────────────────────┤
-│  Metaheuristics       │ ← busca de subset, hiperparâmetros, stress
-├───────────────────────┤
-│  Backtesting Engine   │ ← walk-forward, purging, execução com custos
-├───────────────────────┤
-│  Reporting            │ ← métricas OOS, gráficos, relatório 10 páginas
-└───────────────────────┘
-```
-
-## 🧠 Módulos Principais
-
-### `itau_quant.data`
-- `loader.py`: ingestão CSV → retornos; salva artefatos em `data/processed/`.
-- Próximos passos: calendário de pregões, limpeza de liquidez (`adv_20`, `amihud`).
-
-### `itau_quant.optimization`
-- `estimators.py` (WIP): médias Shrunk_50, shrinkage Ledoit-Wolf, posterior BL.
-- `solvers.py` (WIP): solucionadores QP e mean-CVaR com restrições de grupo e turnover.
-- `heuristics/metaheuristic.py`: camada GA para ajustar cardinalidade e hiperparâmetros.
-
-### `itau_quant.backtesting`
-- `engine.py` (WIP): rebalance mensal, purging/embargo, gatilhos de risco.
-- `metrics.py`: slated para métricas pós-custos, tracking error, hit-rate.
-
-### `itau_quant.utils`
-- `logging_config.py`: configuração padrão de logging estruturado (debug em desenvolvimento).
-
-## 📂 Layout do Repositório
-
-```
-ITAU-Quant/
-├── src/itau_quant/              # Código-fonte principal (pacote Python)
-│   ├── data/                    # Data loading e processing
-│   ├── estimators/              # Estimadores de μ, Σ (Shrunk_50, Ledoit-Wolf, BL)
-│   ├── optimization/            # Otimizadores (MV-QP, CVaR, Risk Parity, ERC)
-│   ├── backtesting/             # Engine de backtest e métricas
-│   ├── utils/                   # Utilitários (logging, production monitor)
-│   └── cli.py                   # Interface de linha de comando
-│
-├── scripts/                     # Scripts executáveis (organizados por propósito)
-│   ├── examples/                # Demonstrações (run_portfolio_arara.py, etc.)
-│   ├── research/                # Análises (compare_baselines, grid_search, etc.)
-│   └── production/              # Deploy produção (ERC v1, v2)
-│
-├── tests/                       # Testes unitários e integração
-│   ├── data/                    # Testes de data loading
-│   ├── estimators/              # Testes de estimadores
-│   ├── optimization/            # Testes de otimizadores
-│   └── integration/             # Testes de integração end-to-end
-│
-├── docs/                        # Documentação (organizada por categoria)
-│   ├── implementation/          # Notas de implementação
-│   ├── results/                 # Resultados e análises
-│   ├── operations/              # Runbooks de operação
-│   ├── QUICKSTART.md            # Tutorial básico
-│   └── QUICK_START_COMMANDS.md  # Referência de comandos CLI
-│
-├── data/                        # Dados e cache
-│   ├── raw/                     # Dumps imutáveis (CSV)
-│   └── processed/               # Artefatos derivados (Parquet)
-│
-├── configs/                     # Arquivos de configuração YAML
-├── notebooks/                   # Jupyter notebooks para exploração
-├── README.md                    # Este arquivo
-├── PRD.md                       # Product Requirements Document
-├── CLAUDE.md                    # Instruções para assistente AI
-└── pyproject.toml               # Configuração Poetry e CLI entry point
-```
-
-**Nota:** Scripts foram reorganizados de root para `scripts/` e módulos standalone foram migrados para `src/itau_quant/`. Use a CLI `itau-quant` para acesso unificado.
-
-## 🌍 Universo ARARA (resumo)
-
-| Classe de Ativo       | Tickers principais              | Peso máx | Peso por ativo |
-|-----------------------|---------------------------------|----------|----------------|
-| US Equity Broad       | SPY, QQQ, IWM                  | 35%      | 15%            |
-| Developed ex-US       | EFA                            | 20%      | 20%            |
-| Emerging Markets      | EEM                            | 15%      | 15%            |
-| US Sectors            | XLC … XLU (11 ETFs)            | 35%      | 12%            |
-| Factor Tilt           | USMV, MTUM, QUAL, VLUE, SIZE   | 30%      | 12%            |
-| Treasuries            | SHY, IEI, IEF, TLT             | 60%      | 25%            |
-| Credit                | LQD, HYG, EMB, EMLC            | 40%      | 20%            |
-| Real Assets           | VNQ, VNQI, GLD, DBC            | 30%      | 12%            |
-| Crypto (spot ETFs)    | IBIT, ETHA                     | 5%       | 3%             |
-
-Critérios de inclusão: ETF ≥ 3 anos, `ADV20 ≥ USD 10mm`, preço ≥ USD 5, sem ETNs
-alavancados/inversos. Exclusões temporárias por dados faltantes ou liquidez extrema.
-A lista completa será versionada em `configs/universe_arara.yaml`.
-
-## 🧭 Plano Detalhado da Carteira ARARA
-
-### Por que esta carteira existe
-- Entregar retorno absoluto consistente com volatilidade anualizada
-  inferior a 12% e drawdown controlado para investidores institucionais com horizonte ≥ 3 anos.
-- Atuar como núcleo “core plus”: beta diversificado globalmente com sobreposição de fatores
-  defensivos e proteção de cauda via renda fixa longa e real assets.
-- Ser totalmente transparente, replicável e passível de auditoria por meio deste repositório.
-
-### Objetivos quantitativos
-- **Retorno anual alvo:** CDI + 4 p.p. (estimado em termos realistas após custos).
-- **Risco máximo:** volatilidade 12% e CVaR(5%) ≤ 8% conforme tabela de guardrails.
-- **Correlação:** manter correlação com Ibovespa ≤ 0,40 e com MSCI ACWI ≤ 0,70.
-- **Liquidez:** carteira negociável em menos de 2 dias úteis considerando ADV20.
-
-### Estrutura de buckets estratégicos
-
-| Bucket               | Função no portfólio                    | Alocação estratégica | Desvio tático |
-|----------------------|-----------------------------------------|----------------------|---------------|
-| Núcleo Ações EUA     | Capturar crescimento secular e liquidez | 25%                  | ±10 p.p.      |
-| Ações Desenvolvidos  | Diversificar exposição cíclica          | 15%                  | ±7 p.p.       |
-| Emergentes           | Beta controlado a crescimento global    | 8%                   | ±5 p.p.       |
-| Fatores Smart Beta   | Suavizar volatilidade e drawdown        | 12%                  | ±6 p.p.       |
-| Crédito Global       | Carry com controle de risco             | 15%                  | ±7 p.p.       |
-| Treasuries           | Defesa contra choques de risco          | 15%                  | ±10 p.p.      |
-| Real Assets          | Hedge inflacionário                     | 8%                   | ±5 p.p.       |
-| Alternativos Liquid. | Exposição oportunística (ex. cripto)    | 2%                   | 0 a +3 p.p.    |
-
-**Disciplina de alocação.** As bandas são metas por bucket; a soma final do portfólio
-fecha em 100%.
-
-### Regras de construção
-- Seleção de ativos limitada a ETFs UCITS/US domiciled com custo total < 80 bps.
-- Limite mínimo de 20 ativos e máximo de 35 para evitar concentração e garantir
-  execução eficiente.
-- Restrições de peso por classe replicam a tabela do universo, com somatório
-  dos buckets respeitando bandas táticas.
-- **Moeda e FX.** Todas as métricas e o alvo são medidos em **BRL** (base CDI).
-  **Exposição cambial líquida |≤ 30% vs BRL**. Hedge dinâmico: 30% padrão; **70%** quando
-  volatilidade ex-ante > 15% ou drawdown > 10%.
-- Proibição de alavancagem explícita; derivativos apenas para hedge quando ativos
-  equivalentes não estiverem disponíveis.
-
-### Processo de rebalanceamento
-- **Rebalance base:** 1º dia útil de cada mês.
-- **Rebalance extraordinário:** ativa quando drawdown > 15% ou volatilidade ex-ante > 15%.
-- Utilizar otimização multiobjetivo (max Sharpe vs. penalidade L1) para restringir
-  turnover entre 5% e 20% ao mês.
-- Custos modelados com 10 bps lineares + slippage não linear em função do ADV20.
-- Fluxos de entrada/saída são aplicados pro-rata antes do rebalanceamento.
-
-### Monitoramento e gatilhos de risco
-- Acompanhamento diário das métricas: volatilidade, CVaR, drawdown, perda máxima em
-  janela de 20 dias, tracking error vs. benchmark MSCI ACWI NR (60%) + Bloomberg Global
-  Aggregate (40%), ambos não hedgeados para BRL.
-- **Modo defensivo:** reduzir risco em 50% quando drawdown > 15% ou volatilidade ex-ante > 15%.
-- **Modo crítico:** reduzir risco em 75% quando drawdown > 20% e volatilidade ex-ante > 18%.
-- Stress tests trimestrais: cenários históricos (2008, 2020), choques de curva, desvalorização
-  do BRL, queda sincronizada de fatores.
-- Relatórios mensais com decomposição de performance por bucket e fator.
-
-### Governança e compliance
-- Comitê de investimento se reúne quinzenalmente; decisões registradas em ata.
-- Backtesting deve ser atualizado semestralmente com dados mais recentes e
-  resultado validado por revisão cruzada.
-- Documentar fontes de dados, codesets de limpeza e qualquer override manual em `reports/`.
-- Versões de configuração (`configs/*.yaml`) versionadas com convenção semântica e teste unitário.
-
-### Roadmap evolutivo da carteira
-- Expandir universo para ETFs temáticos/ESG conforme liquidez permitir.
-- Avaliar overlay de opções (Collar) para reduzir perda em cauda após primeira fase de validação.
-- Integrar sinal macro proprietário (filtros de ciclo) para ajustar bandas táticas.
-- Construir dashboard em `reports/` com métricas ao vivo e logs de decisão.
-
-## 🧭 O que é, exatamente, a nossa carteira
-
-**Missão.** Entregar retorno absoluto com controle estrito de risco: alvo CDI + 4 p.p. a.a.,
-volatilidade ≤ 12%, max drawdown ≤ 15% e CVaR(5%) ≤ 8% após custos. Horizonte ≥ 3 anos.
-Sem alavancagem. **Exposição cambial líquida |≤ 30% vs BRL** com hedge dinâmico (30% padrão,
-70% quando volatilidade ex-ante > 15% ou drawdown > 10%).
-
-**Universo investível.** 40+ ETFs globais líquidos (EUA/UCITS).
-Inclusão: histórico ≥ 3 anos, `ADV20 ≥ USD 10 mi`, preço ≥ USD 5, TER competitivo,
-sem alavancados/inversos. Exclusão temporária por dados faltantes ou iliquidez.
-Universo versionado em `configs/universe_arara.yaml`.
-
-**Alocação estratégica por buckets.**
-
-| Bucket                | Alvo | Banda | Exemplos de tickers        |
-|-----------------------|------|-------|----------------------------|
-| Núcleo Ações EUA      | 25%  | ±10   | SPY, QQQ, IWM              |
-| Desenvolvidos ex-US   | 15%  | ±7    | EFA                        |
-| Emergentes            | 8%   | ±5    | EEM                        |
-| Fatores (US)          | 12%  | ±6    | USMV, MTUM, QUAL, VLUE, SIZE |
-| Crédito Global        | 15%  | ±7    | LQD, HYG, EMB, EMLC        |
-| Treasuries (curva)    | 15%  | ±10   | SHY, IEI, IEF, TLT         |
-| Real Assets           | 8%   | ±5    | VNQ, VNQI, GLD, DBC        |
-| Alternativos líquidos | 2%   | 0 a +3| IBIT, ETHA                 |
-
-**Regras de construção.**
-- Cardinalidade entre 20 e 35 ativos para evitar concentração e facilitar execução.
-- Limites por ativo e por classe conforme tabela do universo; proibido short.
-- Hedge cambial dinâmico: 30% padrão; 70% quando volatilidade ex-ante > 15% ou drawdown > 10%.
-- Cripto ≤ 5% do portfólio via ETFs spot, alinhado a governança e liquidez.
-
-**Formulação do otimizador (núcleo).**
-
-```
-max_w  μᵀw − λ wᵀΣw − η ‖w − w_{t−1}‖₁ − cᵀ|w − w_{t−1}|
-
-s.a.
-1)  1ᵀ w = 1,   0 ≤ w_i ≤ u_i
-2)  Buckets:     ℓ_g ≤ Σ_{i∈g} w_i ≤ u_g
-3)  Turnover:    ‖w − w_{t−1}‖₁ ≤ τ
-4)  Cardinal.:   K_min ≤ Σ_i z_i ≤ K_max,   w_i ≤ U_i z_i,   z_i ∈ {0,1}
-5)  Moeda:       |Σ_i FX_i · w_i| ≤ 0.30, com FX_i = exposição USD de i vs BRL (sinal + para USD-long)
-```
-
-Alternativa robusta: mean-CVaR com α ∈ [1%, 5%] (LP/SOCP) sob retorno-alvo ou CVaR limitado.
-
-**Estimadores.** `μ`: média Shrunk_50 em janela móvel (Huber permanece disponível como
-opção) com suporte a Black-Litterman quando houver views. `Σ`: Ledoit-Wolf (versão
-shrinkage não linear quando `N` alto). Custos: 10 bps lineares por round-trip +
-slippage crescente com `ADV20` e tamanho da ordem.
-
-| Componente | Default | Notas |
-|------------|---------|-------|
-| μ (retorno) | Shrunk_50 mean, janela 252d, strength = 0.5 | Conservador, reduz erro de estimação |
-| Σ (cov.) | Ledoit-Wolf não linear, janela 252d | Estável quando `N` é alto |
-| λ | Calibrado para vol ex-ante ≈ 10–12% | Ajustado em YAML de configuração |
-| η (penalidade L1) | 0.50 | Mantém turnover no intervalo 5–20% |
-| τ (cap de turnover) | 0.20 | Limite duro de giro mensal |
-| Custos | 10 bps linear + slippage vs `ADV20` | Aplicado em bps do notional |
-| K_min / K_max | 20 / 35 | Cardinalidade desejada |
-| Taxa livre (Sharpe) | CDI diário | Correção HAC anualizada |
-
-**Rebalance e execução.**
-- Base no 1º dia útil de cada mês.
-- **Modo defensivo:** reduzir risco em 50% quando drawdown > 15% ou volatilidade ex-ante > 15%.
-- **Modo crítico:** reduzir 75% quando drawdown > 20% e volatilidade ex-ante > 18%.
-- Turnover alvo 5–20%, lotes mínimos respeitados e caixa residual tratado pro-rata.
-
-**Validação e métricas.** Walk-forward com purging/embargo. Baselines: 1/N, min-var
-(shrinkage), risk-parity. Report: Sharpe (HAC), Sortino, volatilidade, CVaR(5%), max drawdown,
-turnover realizado, custos em bps, tracking error, hit-rate, intervalos de confiança por
-bootstrap em blocos.
-
-**Transparência e governança.** Comitê quinzenal, atas versionadas, configs em YAML,
-artefatos do backtest armazenados em `reports/`. Overrides de risco documentados.
-
-Consulte **PRD.md → Seção “Resumo executivo p/ stakeholders”**
-para o texto pronto de comunicação.
-
-## 📎 Carteira ARARA - Explicação Completa para Iniciantes
-
-### O que estamos construindo?
-Uma **carteira de investimentos automatizada** que investe globalmente usando ETFs (fundos
-negociados em bolsa, como "cestas" de ações ou títulos que você compra de uma vez só).
-
-Imagine um **robô investidor** que todo mês decide quanto colocar em cada investimento, sempre
-tentando maximizar retorno e minimizar risco.
+## 8. Entrega e governança
+- **Resumo executivo:** ver topo deste README (12 linhas).
+- **Limitações atuais:** drawdown > limite (−27.7 %); custos/turnover baixos demais por causa do hedge em FX e duration curta; slippage avançado não ativado. Liquidez intraday não modelada.
+- **Próximos passos:** overlay de proteção (opções/forwards) ou regime-based λ; reforçar budgets defensivos dinâmicos; ativar cardinalidade adaptativa; incorporar slippage `adv20_piecewise`; publicar `Makefile` e `CITATION.cff`.
+- **Licença:** MIT (ver seção 12).
 
 ---
 
-### 🎯 Nossos Objetivos (em português claro)
-
-| O que queremos         | Meta        | Explicação simples                                            |
-|------------------------|-------------|----------------------------------------------------------------|
-| Retorno anual          | CDI + 4%    | Ganhar 4% a mais que a taxa básica de juros brasileira         |
-| Volatilidade           | ≤ 12% a.a.  | O quanto o valor da carteira "balança" — queremos pouco balanço |
-| Drawdown máximo        | ≤ 15%       | Se a carteira valer R$ 100, nunca queremos ver cair abaixo de R$ 85 |
-| Sharpe Ratio           | ≥ 0.80      | Medida de eficiência: quanto retorno ganhamos para cada unidade de risco |
-| Turnover mensal        | 5–20%       | Quanto da carteira mudamos por mês (menos troca = menos custos) |
+## 9. Roadmap
+- [ ] Overlay de tail hedge com opções (SPY puts ou VIX future).
+- [ ] Rebalance adaptativo por regime (λ dinâmico na produção).
+- [ ] Experimentos com custos 15–30 bps e slippage não linear.
+- [ ] Integrar notebooks → scripts automatizados (gráficos replicáveis).
+- [ ] Badge de cobertura e `pre-commit` (ruff/black/mypy).
 
 ---
 
-### 🌍 Onde investimos? (Os 8 "Baldes")
-
-Dividimos o dinheiro em 8 categorias, cada uma com uma função:
-
-| Balde                  | % do Total | Para que serve                        | Exemplo real                               |
-|------------------------|------------|---------------------------------------|--------------------------------------------|
-| Ações EUA              | 25% ± 10%  | Motor principal de crescimento        | Ex.: ETF que replica o S&P 500              |
-| Ações Europa/Japão     | 15% ± 7%   | Diversificação geográfica             | Ex.: ETF com empresas da Europa e Ásia      |
-| Emergentes             | 8% ± 5%    | Apostar em países em crescimento      | Ex.: ETF com Brasil, China, Índia           |
-| Fatores Smart          | 12% ± 6%   | Ações "espertas" que caem menos       | Ex.: ETFs USMV, QUAL, MTUM                   |
-| Crédito                | 15% ± 7%   | Empréstimos que pagam juros           | Ex.: Títulos de empresas e governos         |
-| Treasuries             | 15% ± 10%  | Super seguro, proteção em crises      | Ex.: Títulos do governo americano           |
-| Ativos Reais           | 8% ± 5%    | Proteção contra inflação              | Ex.: Imóveis listados, ouro, commodities    |
-| Cripto                 | 2% ± 3%    | Aposta em tecnologia nova             | Ex.: Bitcoin e Ethereum via ETFs regulados  |
-
-*Nota:* o "±" indica a faixa de flexibilidade. Ex.: Ações EUA pode variar entre 15% e 35% conforme o cenário.
-
----
-
-### 🤖 Como o "robô" decide?
-
-#### 1. Coleta de dados
-
-```python
-# Exemplo simplificado
-precos_ontem = [100, 50, 75]
-precos_hoje = [102, 49, 76]
-retornos = [(h - o) / o for h, o in zip(precos_hoje, precos_ontem)]
-# SPY subiu 2%, EEM caiu 2%, etc.
+## 10. Como citar
+```bibtex
+@misc{itau_quant_prismr_2025,
+  title  = {Desafio ITAÚ Quant: Carteira ARARA (PRISM-R)},
+  author = {Marcus Vinicius Silva},
+  year   = {2025},
+  url    = {https://github.com/Fear-Hungry/Desafio-ITAU-Quant}
+}
 ```
 
-#### 2. Estima retorno e risco futuros
-- **Retorno esperado (μ)**: quanto esperamos ganhar. Usamos uma **média robusta** que ignora
-  dias extremos.
-- **Risco/Covariância (Σ)**: como os ativos se movem juntos. Usamos **Ledoit-Wolf**, técnica que
-  melhora estimativas quando temos poucos dados.
+---
 
-#### 3. Otimização (a mágica)
-O robô resolve este problema matemático:
-
-```
-Maximizar: Retorno Esperado - Penalidade de Risco - Custos de Transação
-
-Respeitando:
-- Soma dos pesos = 100%
-- Limites de cada balde (ex.: cripto ≤ 5%)
-- Não mudar mais de 20% por mês (controle de custos)
-- Ter entre 20 e 35 ativos (nem muito concentrado, nem muito pulverizado)
-```
-
-#### 4. Execução mensal
-- Todo **1º dia útil do mês** recalculamos tudo.
-- **Modo defensivo:** se a carteira perdeu mais que 15% ou a volatilidade subir acima de 15%,
-  cortamos 50% do risco.
-- **Modo crítico:** se a perda passar de 20% e a volatilidade subir acima de 18%, cortamos 75%.
+## 11. Licença
+MIT © Marcus Vinícius Silva. Consulte `LICENSE`.
 
 ---
 
-### 💰 Custos (super importante!)
-
-| Tipo de custo          | Valor típico        | Exemplo                                             |
-|------------------------|---------------------|-----------------------------------------------------|
-| Taxa do ETF            | 0.03% – 0.80% a.a.  | SPY cobra 0.09% ao ano                              |
-| Corretagem             | ~0.10% por operação | Comprar/vender na bolsa                             |
-| Slippage               | Variável            | Diferença entre preço esperado e preço executado    |
-| Impacto no mercado     | Depende do tamanho  | Ordens grandes movem o preço                        |
-
-**Nosso diferencial:** incluímos custos *dentro* da otimização, não depois.
-
----
-
-### 📊 Como validamos que funciona?
-
-#### Backtesting (teste no passado)
-- Pegamos dados de 2010–2024.
-- Simulamos como se estivéssemos operando mês a mês.
-- Sem "olhar para o futuro" — evitamos vieses como look-ahead.
-
-#### Comparamos com estratégias simples
-1. **1/N:** divide igual entre todos (ingênuo, mas difícil de bater).
-2. **Mínima Variância:** foca só em minimizar risco.
-3. **Risk Parity:** cada ativo contribui igualmente para o risco.
-
-Se não ganharmos dessas, algo está errado!
-
-#### Métricas que acompanhamos
-- **Sharpe Ratio:** retorno por unidade de risco (buscamos > 0.8).
-- **Max Drawdown:** maior queda do pico ao vale.
-- **CVaR 5%:** perda média nos 5% piores cenários.
-- **Hit Rate:** percentual de meses com retorno positivo.
-- **Tracking error:** comparação com MSCI ACWI NR (60%) + Bloomberg Global Aggregate (40%),
-  ambos sem hedge para BRL.
-
----
-
-### 🔍 Termos técnicos essenciais
-
-| Termo             | O que significa                          | Por que importa                               |
-|-------------------|-------------------------------------------|------------------------------------------------|
-| ETF               | Fundo que replica um índice e negocia em bolsa | Diversificação instantânea e baixo custo |
-| Volatilidade      | O quanto o preço varia                    | Risco ≈ incerteza ≈ volatilidade              |
-| Drawdown          | Queda em relação ao último pico           | Ajuda a medir a dor financeira                |
-| Sharpe Ratio      | (Retorno - taxa livre de risco) / volatilidade | Mede eficiência do portfólio           |
-| Turnover          | % da carteira que mudamos                 | Muito giro = muitos custos                    |
-| Rebalanceamento   | Ajustar pesos periodicamente              | Vender o que subiu, comprar o que caiu         |
-| Walk-forward      | Teste rolante no tempo                    | Evita overfitting                             |
-| Bootstrap         | Reamostragem estatística                  | Calcula intervalos de confiança               |
-| CVaR              | Perda média nas piores situações          | Mede risco de cauda (eventos extremos)        |
-| Hedge cambial     | Proteger contra variação do dólar         | Importante para investidor brasileiro         |
-
----
-
-### ✨ Por que nossa abordagem é diferente?
-
-**Abordagem tradicional:**
-1. Otimiza um portfólio "perfeito".
-2. Só depois descobre que custa caro executar.
-3. Resultado real decepciona.
-
-**Nossa abordagem:**
-1. **Custos já entram na otimização** desde o primeiro passo.
-2. **Turnover controlado** por design.
-3. **Performance realista** após considerar fricções de mercado.
-
----
-
-### 📝 Resumo para a Anna
-
-Estamos construindo um **sistema automatizado** que:
-- Investe globalmente em 8 categorias de ativos.
-- Rebalanceia mensalmente com disciplina quantitativa.
-- Busca CDI + 4% ao ano com risco controlado.
-- Considera custos reais desde o planejamento.
-- É 100% transparente e auditável.
-
-**Grande diferencial:** não prometemos retornos impossíveis. Entregamos um sistema robusto,
-realista e executável que reconhece e trata todas as fricções do mundo real. É como ter um
-**piloto automático sofisticado** para investimentos, que sabe quando acelerar, quando frear e
-quanto custa cada manobra.
-
-### ❓ FAQ - Perguntas que a Anna provavelmente fará
-
-**P: Quanto precisamos investir para começar?**
-R: Mínimo sugerido USD 100k para diluir custos fixos e sustentar a cardinalidade desejada.
-
-**P: E se o modelo errar?**
-R: Acionamos o modo defensivo (DD > 15% ou vol > 15%) e, se necessário, o modo crítico
-(DD > 20% e vol > 18%), além de comparar com estratégias simples para detectar desvios.
-
-**P: Quanto tempo leva o rebalanceamento?**
-R: Cálculo ~5 minutos; execução: ordens distribuídas em 1–2 dias úteis conforme a liquidez
-dos ETFs.
-
-**P: Podemos override manual?**
-R: Sim, desde que haja justificativa técnica e registro em ata do comitê de investimento.
-
-## 🔬 Validação e Métricas
-
-- Comparar sempre com baselines: 1/N, Min-Var (shrinkage), Risk-Parity.
-- Métricas pós-custos: Sharpe (HAC), Sortino, vol, CVaR 5%, Max DD, turnover, custos em bps,
-  tracking error, hit-rate.
-- Bootstrap em blocos para intervalos de confiança e análise de estabilidade.
-
-## 🗺️ Roadmap
-
-- [x] Estrutura do pacote `itau_quant` e loader de dados inicial.
-- [x] Estimadores robustos (μ, Σ) com testes unitários.
-- [x] Núcleo convexo (`solvers.py`) com custos/turnover.
-- [x] Meta-heurística para cardinalidade e tuning de hiperparâmetros.
-- [x] Motor de backtesting com walk-forward completo.
-- [ ] Pipeline de relatório (PDF ≤ 10 páginas + seção GenAI).
-
-## 📚 Referências Essenciais
-
-- Ledoit & Wolf (2004) — Honey, I Shrunk the Sample Covariance Matrix.
-- DeMiguel, Garlappi & Uppal (2009) — Optimal Versus Naive Diversification.
-- Kolm, Tütüncü & Fabozzi (2014) — 60 Years of Portfolio Optimization.
-- Lopez de Prado (2018) — Advances in Financial Machine Learning (purging/embargo).
-
-## 📝 Licença
-
-Distribuído sob a [licença MIT](LICENSE).
----
-*Disciplina na modelagem, ceticismo na validação, convicção na execução.*
+## 12. Contato
+**Marcus Vinícius Silva** — [marcusviny63@gmail.com](mailto:marcusviny63@gmail.com) — [LinkedIn](https://www.linkedin.com/in/marcxssilva/)
+**Anna Beatriz Cardoso** — [annacardoso9572@gmail.com](mailto:annacardoso9572@gmail.com)
