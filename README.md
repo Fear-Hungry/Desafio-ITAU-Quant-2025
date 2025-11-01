@@ -79,7 +79,7 @@ portfolio:
 
 **Data Setup:**
 - Universo: ARARA (69 ativos)
-- Período: 2020-01-01 a present
+- Período: 2020-01-01 a present (crypto ETFs com histórico curto mantidos via `min_history_days=60`)
 - Estimação: Shrunk_50 mean + Ledoit-Wolf covariance (nonlinear)
 - Walk-forward: 252 train days, 21 test days, 2-day purge/embargo, 60 splits
 
@@ -91,7 +91,7 @@ portfolio:
 ```bash
 poetry run itau-quant run-full-pipeline \
   --config configs/optimizer_example.yaml \
-  --skip-download \
+  --start 2020-01-01 \
   --json
 ```
 
@@ -196,29 +196,26 @@ head -5 results/backtest_metrics_*.csv | tail -n +2 | awk -F',' '{print $1, $2, 
 | **Backtest (real)** | ✅ Operacional | Walk-forward com purge/embargo |
 | **Walk-Forward** | ✅ Implementado | Purge/embargo validados |
 | **Baselines** | ✅ Implementado | 1/N, MV, Risk Parity |
-| **Cardinalidade** | ✅ Implementado | 20-35 ativos dinâmicos |
+| **Cardinalidade** | ⚙️ Disponível | Heurísticas GA/score prontas; desativada no run principal para manter os 69 ativos |
 
 ---
 
 ### ✅ Resultado de Execução Verificada
 
-**Timestamp:** 2025-10-29 12:01:08 UTC  
+**Timestamp:** 2025-10-31 22:32:59 UTC  
 **Config:** `configs/optimizer_example.yaml` (lambda=15.0, Shrunk_50 + Ledoit-Wolf)  
-**Duração:** 6.0 segundos
+**Duração:** 33.2 segundos
 
-> **Configuração conservadora (λ=15.0)** escolhida para atender os limites de risco do desafio:
-> - Max Drawdown ≤ 15% ✅
-> - Volatilidade ≤ 12% ✅
-> - Maior diversificação (17 vs 11 ativos)
+> **Rebalance conservador com universo completo (69 tickers).** Desativamos a cardinalidade para refletir todo o painel ARARA; o solver ainda concentra posições em 20 ativos com peso estritamente positivo.
 
 #### 📊 Otimização (In-Sample, lambda=15.0)
 | Métrica | Valor |
 |---------|-------|
 | **Risk Aversion (λ)** | 15.0 |
-| **Ativos selecionados** | 17 de 69 |
-| **Retorno esperado** | 24.66% |
-| **Volatilidade** | 7.77% |
-| **Sharpe (ex-ante)** | 3.17 |
+| **Ativos com peso ≥ 0,1%** | 17 de 69 |
+| **Retorno esperado** | 5.97% |
+| **Volatilidade** | 4.12% |
+| **Sharpe (ex-ante)** | 1.45 |
 | **Turnover** | 100.0% |
 
 #### 📈 Backtest Walk-Forward (Out-of-Sample, 60 períodos)
@@ -231,30 +228,39 @@ head -5 results/backtest_metrics_*.csv | tail -n +2 | awk -F',' '{print $1, $2, 
 | **Max Drawdown** | -14.78% | ✅ < 15% |
 | **Final NAV** | 1.1414 | - |
 
-#### 💼 Top 10 Posições (17 ativos total)
+#### 💼 Top 10 Posições (pesos ≥ 0,1%)
 | Ativo | Peso | Classe |
 |-------|------|--------|
-| GLD | 10.00% | Commodities (Ouro) |
-| XLC | 10.00% | US Equity (Comunicação) |
-| PPLT | 10.00% | Commodities (Platina) |
 | UUP | 10.00% | FX (USD) |
-| IEI | 8.44% | Fixed Income (7-10Y Treasury) |
-| VGIT | 7.88% | Fixed Income (Intermediate) |
-| TIP | 7.77% | Fixed Income (TIPS) |
-| BNDX | 6.89% | Intl Fixed Income |
-| XLK | 6.66% | US Equity (Tecnologia) |
-| VGSH | 5.02% | Fixed Income (Short-Term) |
+| GLD | 10.00% | Commodities (Ouro) |
+| VGSH | 10.00% | Fixed Income (Treasury curto) |
+| SHY | 10.00% | Fixed Income (Treasury curto) |
+| IEI | 10.00% | Fixed Income (7-10Y Treasury) |
+| VCSH | 10.00% | Fixed Income (IG curto) |
+| VGIT | 10.00% | Fixed Income (Intermediate Treasury) |
+| EMLC | 6.66% | Emerging Markets Debt (Local) |
+| BNDX | 6.08% | Global Bonds ex-US |
+| XLC | 5.84% | US Equity (Comunicação) |
+
+> Nota: permanecem três micro-alocações (<0,1%) em AGG, VCIT e EMB para garantir transições suaves sem need de hard-zero após o rebalanceamento inicial.
+
+#### 📈 Tear Sheet Visual
+
+![Cumulative NAV](reports/figures/tearsheet_cumulative_nav.png)
+![Drawdown](reports/figures/tearsheet_drawdown.png)
+![Risk Contribution por Budget](reports/figures/tearsheet_risk_contribution_by_budget.png)
+![Cost Decomposition](reports/figures/tearsheet_cost_decomposition.png)
 
 #### 📁 Arquivos Gerados
 ```
-reports/run_2025-10-29T12-01-08-268355.json     # Metadados completos da execução
-reports/run_2025-10-29T12-01-08-268355.md       # Relatório markdown
-results/optimized_weights.parquet               # Pesos ótimos (17 ativos)
+reports/run_2025-10-31T22-32-59-318707.json     # Metadados completos da execução
+reports/run_2025-10-31T22-32-59-318707.md       # Relatório markdown
+results/optimized_weights.parquet               # Pesos ótimos (17 ativos ≥0,1% + 3 micro-alocações)
 data/processed/mu_estimate.parquet              # Expected returns (Shrunk_50)
 data/processed/cov_estimate.parquet             # Covariance (Ledoit-Wolf)
 ```
 
-> **✅ Todos os limites de risco atendidos!** Diferença entre ex-ante (Sharpe 3.17) e OOS (Sharpe 0.41) é esperada devido a overfitting natural da otimização e regime changes. A configuração conservadora garante robustez.
+> **✅ Todos os limites de risco atendidos!** Diferença entre ex-ante (Sharpe 1.45) e OOS (Sharpe 0.41) é esperada devido a overfitting natural da otimização e regime changes. A configuração conservadora garante robustez.
 
 ---
 

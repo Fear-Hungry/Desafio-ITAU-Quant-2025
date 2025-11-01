@@ -394,7 +394,18 @@ class DataLoader:
             factors = calculate_adjustment_factors(actions, prices.index)
             prices = apply_price_adjustments(prices, factors)
 
-        prices, liquidity_stats = filter_liquid_assets(prices)
+        metadata = get_arara_metadata()
+        per_asset_min_history = {
+            ticker: int(meta.get("min_history_days"))
+            for ticker, meta in metadata.items()
+            if isinstance(meta, Mapping)
+            and meta.get("min_history_days") is not None
+        }
+
+        prices, liquidity_stats = filter_liquid_assets(
+            prices,
+            per_asset_min_history=per_asset_min_history,
+        )
         illiquid: list[str] = []
         if not liquidity_stats.empty and "is_liquid" in liquidity_stats:
             liquidity_flags = liquidity_stats["is_liquid"]

@@ -220,6 +220,27 @@ def optimize_portfolio(
             budgets = list(direct)
             if loadable:
                 budgets.extend(load_budgets(loadable))
+        if budgets:
+            assets_set = set(mu.index)
+            sanitized: list[RiskBudget] = []
+            for budget in budgets:
+                present = [ticker for ticker in budget.tickers if ticker in assets_set]
+                if not present:
+                    continue
+                if len(present) != len(budget.tickers):
+                    sanitized.append(
+                        RiskBudget(
+                            name=budget.name,
+                            tickers=present,
+                            min_weight=budget.min_weight,
+                            max_weight=budget.max_weight,
+                            target=budget.target,
+                            tolerance=budget.tolerance,
+                        )
+                    )
+                else:
+                    sanitized.append(budget)
+            budgets = sanitized
         validate_budgets(budgets, mu.index)
 
     config = MeanVarianceConfig(

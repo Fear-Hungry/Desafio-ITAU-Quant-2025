@@ -28,7 +28,7 @@ Guia das funções
 
 from __future__ import annotations
 
-from typing import Iterable, Tuple, Union
+from typing import Iterable, Mapping, Tuple, Union
 import pandas as pd
 from pandas import DatetimeIndex
 
@@ -102,18 +102,24 @@ def compute_liquidity_stats(prices: pd.DataFrame) -> pd.DataFrame:
     if prices.empty:
         return pd.DataFrame()
 
-    total_obs = len(prices.index)
     stats = []
     for ticker in prices.columns:
         series = prices[ticker]
-        non_na = int(series.notna().sum())
-        coverage = float(non_na / total_obs) if total_obs else 0.0
+        first_valid = series.first_valid_index()
+        if first_valid is None:
+            active = series
+        else:
+            active = series.loc[first_valid:]
+        active_obs = len(active.index)
+        non_na = int(active.notna().sum())
+        coverage = float(non_na / active_obs) if active_obs else 0.0
+        max_gap = _longest_nan_streak(active)
         stats.append(
             {
                 "ticker": ticker,
                 "non_na": non_na,
                 "coverage": coverage,
-                "max_gap": _longest_nan_streak(series),
+                "max_gap": max_gap,
                 "first_valid": series.first_valid_index(),
                 "last_valid": series.last_valid_index(),
             }
@@ -127,6 +133,7 @@ def filter_liquid_assets(
     min_history: int = 252,
     min_coverage: float = 0.85,
     max_gap: int = 5,
+    per_asset_min_history: Mapping[str, int] | None = None,
 ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Drop assets that fail basic liquidity screens.
 
@@ -153,8 +160,19 @@ def filter_liquid_assets(
 
     stats = compute_liquidity_stats(prices)
     effective_min_history = min(len(prices), max(min_history, 0))
+    per_asset_min_history = per_asset_min_history or {}
+
+    required_history = pd.Series(
+        effective_min_history, index=stats.index, dtype=float
+    )
+    for ticker, override in per_asset_min_history.items():
+        if ticker in required_history.index:
+            required_history.at[ticker] = min(
+                len(prices), max(int(override), 0)
+            )
+    stats["required_history"] = required_history
     stats["is_liquid"] = (
-        (stats["non_na"] >= effective_min_history)
+        (stats["non_na"] >= stats["required_history"])
         & (stats["coverage"] >= min_coverage)
         & (stats["max_gap"] <= max_gap)
     )

@@ -3,7 +3,7 @@
 
 **Data:** 2025-10-26  
 **Sistema:** ERC v2 com Defensive Overlay  
-**Universo:** ARARA (30 ativos multi-asset)
+**Universo:** ARARA completo (69 ativos multi-asset; ERC v2 opera com subset defensivo de 22)
 
 ---
 

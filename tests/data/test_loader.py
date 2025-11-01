@@ -679,7 +679,7 @@ def test_dataloader_load_reuses_cache(tmp_path, monkeypatch):
     monkeypatch.setattr(dl, "RAW_DATA_DIR", raw_dir)
     monkeypatch.setattr(dl, "PROCESSED_DATA_DIR", processed_dir)
     monkeypatch.setattr(dl, "normalize_index", lambda df: df)
-    def fake_filter(df):
+    def fake_filter(df, **_):
         index_local = df.index
         stats = pd.DataFrame(
             {

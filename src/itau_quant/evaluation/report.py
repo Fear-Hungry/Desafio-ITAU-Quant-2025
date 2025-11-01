@@ -7,13 +7,16 @@ from dataclasses import dataclass
 from io import BytesIO
 from pathlib import Path
 from string import Template
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import pandas as pd
 
+from itau_quant.risk.budgets import RiskBudget
+
+from .plots import plot_cumulative_returns, plot_drawdown
 from .plots.tearsheet import TearsheetFigure
-from .stats import RiskSummary
+from .stats import RiskContributionResult, RiskSummary
 
 
 FigureLike = Union[plt.Figure, TearsheetFigure, Tuple[str, plt.Figure]]
@@ -27,6 +30,7 @@ class ReportBundle:
     risk: pd.DataFrame
     drawdowns: Optional[pd.DataFrame]
     figures: List[Tuple[str, plt.Figure]]
+    risk_contribution: Optional[RiskContributionResult]
     metadata: Dict[str, Any]
 
 
@@ -37,6 +41,22 @@ class ReportArtifacts:
     bundle: ReportBundle
     html_path: Path
     pdf_path: Path
+
+
+@dataclass(frozen=True)
+class AdvancedTearsheetData:
+    """Inputs required to build the advanced tear sheet figures."""
+
+    returns: Optional[Union[pd.Series, pd.DataFrame]] = None
+    benchmark: Optional[Union[pd.Series, pd.DataFrame]] = None
+    nav: Optional[Union[pd.Series, pd.DataFrame]] = None
+    risk_budgets: Optional[Sequence[RiskBudget]] = None
+    cost_breakdown: Optional[Union[pd.Series, pd.DataFrame, Mapping[str, float]]] = None
+    nav_title: str = "Cumulative NAV"
+    drawdown_title: str = "Drawdown"
+    risk_budget_title: str = "Risk Contribution by Budget"
+    cost_title: str = "Cost Decomposition"
+    cost_label: str = "Cost"
 
 
 def _normalise_figures(figures: Iterable[FigureLike]) -> List[Tuple[str, plt.Figure]]:
@@ -57,6 +77,196 @@ def _normalise_figures(figures: Iterable[FigureLike]) -> List[Tuple[str, plt.Fig
     return normalised
 
 
+def _ensure_frame(data: Union[pd.Series, pd.DataFrame], name: str) -> pd.DataFrame:
+    if isinstance(data, pd.DataFrame):
+        frame = data.copy()
+    elif isinstance(data, pd.Series):
+        frame = data.to_frame(name=data.name or name)
+    else:
+        raise TypeError(f"{name} must be a pandas Series or DataFrame")
+    frame = frame.apply(pd.to_numeric, errors="coerce").dropna(how="all")
+    if frame.empty:
+        raise ValueError(f"{name} is empty after dropping NaNs")
+    return frame
+
+
+def _build_nav_figure(data: AdvancedTearsheetData) -> Optional[Tuple[str, plt.Figure]]:
+    if data.nav is not None:
+        frame = _ensure_frame(data.nav, "nav")
+        fig, ax = plt.subplots(figsize=(8, 4))
+        for column in frame.columns:
+            ax.plot(frame.index, frame[column], label=column)
+        ax.set_title(data.nav_title)
+        ax.set_ylabel("NAV")
+        ax.set_xlabel("Date")
+        ax.legend(loc="best")
+        ax.grid(True, alpha=0.3)
+        return data.nav_title, fig
+
+    if data.returns is None:
+        return None
+
+    ax = plot_cumulative_returns(
+        data.returns,
+        benchmark=data.benchmark,
+        title=data.nav_title,
+    )
+    return data.nav_title, ax.figure
+
+
+def _build_drawdown_figure(data: AdvancedTearsheetData) -> Optional[Tuple[str, plt.Figure]]:
+    returns: Optional[Union[pd.Series, pd.DataFrame]] = data.returns
+
+    if returns is None and data.nav is not None:
+        nav_frame = _ensure_frame(data.nav, "nav")
+        returns = nav_frame.pct_change().dropna(how="all")
+
+    if returns is None:
+        return None
+
+    ax = plot_drawdown(returns, title=data.drawdown_title)
+    return data.drawdown_title, ax.figure
+
+
+def _aggregate_budget_contributions(
+    percentage: pd.Series,
+    budgets: Sequence[RiskBudget],
+) -> pd.Series:
+    contributions: Dict[str, float] = {}
+    accounted: set[str] = set()
+
+    for budget in budgets:
+        if not budget.tickers:
+            continue
+        values = percentage.reindex(budget.tickers).fillna(0.0)
+        contributions[budget.name] = float(values.sum())
+        accounted.update(ticker for ticker in budget.tickers if ticker in percentage.index)
+
+    residual = float(percentage.drop(labels=list(accounted), errors="ignore").sum())
+    if abs(residual) > 1e-8:
+        contributions["Unallocated"] = residual
+
+    series = pd.Series(contributions, dtype=float)
+    if series.empty:
+        return series
+    series = series.sort_values(ascending=False)
+    return series
+
+
+def _build_budget_figure(
+    data: AdvancedTearsheetData,
+    risk_summary: Optional[RiskSummary],
+) -> Optional[Tuple[str, plt.Figure]]:
+    if not data.risk_budgets:
+        return None
+    if risk_summary is None or risk_summary.risk_contribution is None:
+        return None
+
+    percentage = risk_summary.risk_contribution.percentage
+    if percentage.empty:
+        return None
+
+    latest = percentage.iloc[-1].dropna()
+    aggregated = _aggregate_budget_contributions(latest, data.risk_budgets)
+    if aggregated.empty:
+        return None
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    colors = plt.cm.tab20.colors
+    for idx, (label, value) in enumerate(aggregated.items()):
+        ax.bar(label, value, color=colors[idx % len(colors)])
+
+    ax.set_title(data.risk_budget_title)
+    ax.set_ylabel("Risk Share")
+    ax.set_xlabel("Budget")
+    ax.axhline(0.0, color="black", linewidth=0.8)
+    ax.grid(True, axis="y", alpha=0.3)
+    ax.tick_params(axis="x", rotation=20)
+    return data.risk_budget_title, fig
+
+
+def _normalise_cost_series(cost_breakdown: Optional[Union[pd.Series, pd.DataFrame, Mapping[str, float]]]) -> Optional[pd.Series]:
+    if cost_breakdown is None:
+        return None
+
+    if isinstance(cost_breakdown, pd.Series):
+        series = cost_breakdown.copy()
+    elif isinstance(cost_breakdown, pd.DataFrame):
+        if cost_breakdown.empty:
+            return None
+        if cost_breakdown.shape[1] == 1:
+            series = cost_breakdown.iloc[:, 0]
+        elif cost_breakdown.shape[0] == 1:
+            series = cost_breakdown.iloc[0]
+        else:
+            series = cost_breakdown.sum(axis=0)
+            if isinstance(series, pd.DataFrame):
+                series = series.iloc[:, 0]
+    elif isinstance(cost_breakdown, Mapping):
+        series = pd.Series(dict(cost_breakdown), dtype=float)
+    else:
+        raise TypeError("cost_breakdown must be Series, DataFrame, or mapping")
+
+    series = pd.to_numeric(series, errors="coerce").dropna()
+    series = series[series != 0]
+    if series.empty:
+        return None
+    return series.astype(float).sort_values(ascending=False)
+
+
+def _build_cost_figure(
+    data: AdvancedTearsheetData,
+) -> Optional[Tuple[str, plt.Figure]]:
+    series = _normalise_cost_series(data.cost_breakdown)
+    if series is None:
+        return None
+
+    fig, ax = plt.subplots(figsize=(8, 4))
+    ax.barh(series.index[::-1], series.values[::-1], color="#4B8BBE")
+    ax.set_title(data.cost_title)
+    ax.set_xlabel(data.cost_label)
+    ax.set_ylabel("Component")
+    ax.grid(True, axis="x", alpha=0.3)
+    ax.tick_params(axis="y", labelsize=9)
+
+    max_abs = float(series.abs().max())
+    if max_abs > 0:
+        padding = max_abs * 0.02
+        for y, value in enumerate(series.values[::-1]):
+            offset = padding if value >= 0 else -padding
+            ha = "left" if value >= 0 else "right"
+            ax.text(value + offset, y, f"{value:.4f}", va="center", ha=ha, fontsize=9)
+
+    return data.cost_title, fig
+
+
+def build_advanced_tearsheet_figures(
+    data: AdvancedTearsheetData,
+    risk_summary: Optional[RiskSummary],
+) -> List[Tuple[str, plt.Figure]]:
+    """Generate standardised figures for the advanced tear sheet."""
+
+    figures: List[Tuple[str, plt.Figure]] = []
+
+    nav_fig = _build_nav_figure(data)
+    if nav_fig is not None:
+        figures.append(nav_fig)
+
+    drawdown_fig = _build_drawdown_figure(data)
+    if drawdown_fig is not None:
+        figures.append(drawdown_fig)
+
+    budget_fig = _build_budget_figure(data, risk_summary)
+    if budget_fig is not None:
+        figures.append(budget_fig)
+
+    cost_fig = _build_cost_figure(data)
+    if cost_fig is not None:
+        figures.append(cost_fig)
+
+    return figures
+
+
 def build_report_bundle(
     performance: pd.DataFrame,
     risk: Union[RiskSummary, pd.DataFrame],
@@ -68,12 +278,16 @@ def build_report_bundle(
     if not isinstance(performance, pd.DataFrame):
         raise TypeError("performance must be a DataFrame")
 
+    risk_contrib: Optional[RiskContributionResult]
+
     if isinstance(risk, RiskSummary):
         risk_table = risk.metrics
         drawdowns = risk.drawdowns
+        risk_contrib = risk.risk_contribution
     elif isinstance(risk, pd.DataFrame):
         risk_table = risk
         drawdowns = None
+        risk_contrib = None
     else:
         raise TypeError("risk must be RiskSummary or DataFrame")
 
@@ -88,6 +302,7 @@ def build_report_bundle(
         risk=risk_table.copy(),
         drawdowns=drawdowns.copy() if isinstance(drawdowns, pd.DataFrame) else drawdowns,
         figures=figure_list,
+        risk_contribution=risk_contrib,
         metadata=metadata,
     )
 
@@ -197,10 +412,18 @@ def build_and_export_report(
     *,
     filename: str = "evaluation_report",
     template_path: Optional[Union[str, Path]] = None,
+    advanced_tearsheet: Optional[AdvancedTearsheetData] = None,
 ) -> ReportArtifacts:
     """Create a :class:`ReportBundle`, write HTML, and attempt PDF export."""
 
-    bundle = build_report_bundle(performance, risk, figures, metadata)
+    figure_list = list(figures)
+
+    risk_summary = risk if isinstance(risk, RiskSummary) else None
+    if advanced_tearsheet is not None:
+        advanced_figures = build_advanced_tearsheet_figures(advanced_tearsheet, risk_summary)
+        figure_list.extend(advanced_figures)
+
+    bundle = build_report_bundle(performance, risk, figure_list, metadata)
     html = render_html(bundle, template_path=template_path)
 
     output_dir = Path(output_dir)
@@ -217,6 +440,8 @@ def build_and_export_report(
 __all__ = [
     "ReportBundle",
     "ReportArtifacts",
+    "AdvancedTearsheetData",
+    "build_advanced_tearsheet_figures",
     "build_report_bundle",
     "render_html",
     "export_pdf",

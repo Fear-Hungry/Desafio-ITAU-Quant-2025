@@ -571,6 +571,7 @@ IBIT:
   currency: USD
   min_weight: 0.0
   max_weight: 0.03
+  min_history_days: 60
 ETHA:
   display_name: "iShares Ethereum Trust"
   asset_class: Crypto
@@ -579,6 +580,7 @@ ETHA:
   currency: USD
   min_weight: 0.0
   max_weight: 0.03
+  min_history_days: 60
 FBTC:
   display_name: "Fidelity Wise Origin Bitcoin Fund"
   asset_class: Crypto
@@ -587,6 +589,7 @@ FBTC:
   currency: USD
   min_weight: 0.0
   max_weight: 0.03
+  min_history_days: 60
 GBTC:
   display_name: "Grayscale Bitcoin Trust"
   asset_class: Crypto

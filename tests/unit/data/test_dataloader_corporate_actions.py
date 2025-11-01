@@ -18,7 +18,7 @@ def test_dataloader_applies_corporate_actions(monkeypatch):
     from itau_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
-    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)))
+    monkeypatch.setattr(dl, "filter_liquid_assets", lambda df, **_: (df, pd.DataFrame({"is_liquid": True}, index=df.columns)))
     monkeypatch.setattr(dl, "validate_panel", lambda df: None)
     monkeypatch.setattr(dl, "fred_download_dtb3", lambda start, end: pd.Series(0.0, index=prices.index))
     monkeypatch.setattr(dl, "compute_excess_returns", lambda ret, rf: ret)
