@@ -704,6 +704,44 @@ def rebalance(
         if solver_flags.get("turnover_cap_relaxed"):
             solver_extra["turnover_cap_relaxed"] = True
 
+    # Apply defensive mode if enabled
+    defensive_cfg = config.get("defensive_mode")
+    defensive_mode_info: dict[str, Any] | None = None
+    if defensive_cfg and defensive_cfg.get("enable", False):
+        # Compute current portfolio state for triggers
+        nav_series = pd.Series(dtype=float)
+        if "nav" in config:
+            nav_series = pd.Series(config["nav"])
+        elif len(historical_returns) > 0:
+            # Fallback: compute NAV from cumulative returns
+            nav_series = (1 + historical_returns.sum(axis=1)).cumprod()
+
+        current_dd = 0.0
+        current_vol = 0.0
+        if not nav_series.empty:
+            rolling_max = nav_series.cummax()
+            drawdown_series = nav_series / rolling_max - 1.0
+            current_dd = float(drawdown_series.iloc[-1])
+
+        if len(historical_returns) > 0:
+            recent_window = int(defensive_cfg.get("vol_window", 63))
+            recent_returns = historical_returns.tail(recent_window).sum(axis=1)
+            current_vol = float(recent_returns.std(ddof=1) * np.sqrt(252))
+
+        portfolio_state = {
+            "drawdown": current_dd,
+            "volatility": current_vol,
+        }
+
+        target_weights, defensive_mode_info = apply_defensive_mode(
+            target_weights,
+            portfolio_state=portfolio_state,
+            config=defensive_cfg,
+        )
+
+        if defensive_mode_info and defensive_mode_info["mode"] != "normal":
+            solver_extra["defensive_mode"] = defensive_mode_info
+
     rounding_result = apply_postprocessing(
         target_weights, prices_at_date, capital, rounding_cfg
     )
