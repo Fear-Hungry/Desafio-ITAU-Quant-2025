@@ -111,33 +111,45 @@ def plot_drawdown(data: dict, output_name: str = "tearsheet_drawdown.png"):
 
 def plot_cost_decomposition(data: dict, output_name: str = "tearsheet_cost_decomposition.png"):
     """Plot cost breakdown over time."""
-    ledger = data.get("ledger", [])
-    if not ledger:
-        print("No ledger data found")
+    ledger = data.get("ledger", {})
+    if not ledger or "costs" not in ledger:
+        print("No ledger cost data found")
         return
 
-    dates = [entry["date"] for entry in ledger]
-    costs = [entry.get("cost_fraction", 0) * 10000 for entry in ledger]  # Convert to bps
-    turnovers = [entry.get("turnover", 0) * 100 for entry in ledger]  # Convert to %
+    costs_list = ledger["costs"]
+    turnovers_list = ledger.get("turnover", [])
+
+    # Convert to bps and %
+    costs = [c * 10000 for c in costs_list]  # Convert to bps
+    turnovers = [t * 100 for t in turnovers_list]  # Convert to %
+
+    # Filter to only rebalance events (where turnover > 0)
+    rebal_indices = [i for i, t in enumerate(turnovers) if t > 0.01]
+    if not rebal_indices:
+        print("No rebalance events found")
+        return
+
+    rebal_costs = [costs[i] for i in rebal_indices]
+    rebal_turnovers = [turnovers[i] for i in rebal_indices]
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 
     # Cost plot
-    ax1.bar(range(len(costs)), costs, color="#F18F01", alpha=0.7)
+    ax1.bar(range(len(rebal_costs)), rebal_costs, color="#F18F01", alpha=0.7)
     ax1.set_title("Transaction Costs Over Time", fontsize=12, fontweight="bold")
     ax1.set_ylabel("Cost (bps)")
     ax1.grid(True, alpha=0.3, axis="y")
-    avg_cost = np.mean([c for c in costs if c > 0]) if any(c > 0 for c in costs) else 0
+    avg_cost = np.mean([c for c in rebal_costs if c > 0]) if any(c > 0 for c in rebal_costs) else 0
     ax1.axhline(y=avg_cost, color="red", linestyle="--", label=f"Avg: {avg_cost:.2f} bps")
     ax1.legend()
 
     # Turnover plot
-    ax2.bar(range(len(turnovers)), turnovers, color="#6A994E", alpha=0.7)
+    ax2.bar(range(len(rebal_turnovers)), rebal_turnovers, color="#6A994E", alpha=0.7)
     ax2.set_title("Portfolio Turnover", fontsize=12, fontweight="bold")
     ax2.set_xlabel("Rebalance Event")
     ax2.set_ylabel("Turnover (%)")
     ax2.grid(True, alpha=0.3, axis="y")
-    avg_turnover = np.mean([t for t in turnovers if t > 0]) if any(t > 0 for t in turnovers) else 0
+    avg_turnover = np.mean([t for t in rebal_turnovers if t > 0]) if any(t > 0 for t in rebal_turnovers) else 0
     ax2.axhline(y=avg_turnover, color="blue", linestyle="--", label=f"Avg: {avg_turnover:.2f}%")
     ax2.legend()
 
