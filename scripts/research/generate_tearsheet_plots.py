@@ -30,16 +30,17 @@ def load_backtest_json(path: Path) -> dict:
 
 def plot_cumulative_nav(data: dict, output_name: str = "tearsheet_cumulative_nav.png"):
     """Plot cumulative NAV from ledger."""
-    ledger = data.get("ledger", [])
-    if not ledger:
-        print("No ledger data found")
+    ledger = data.get("ledger", {})
+    if not ledger or "nav" not in ledger:
+        print("No ledger NAV data found")
         return
 
-    dates = [entry["date"] for entry in ledger]
-    navs = [entry["nav"] for entry in ledger]
+    navs = ledger["nav"]
+    trades = data.get("trades", [])
+    dates = [t["date"] for t in trades] if trades else list(range(len(navs)))
 
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(dates, navs, linewidth=2, color="#2E86AB")
+    ax.plot(dates, navs, linewidth=2, color="#2E86AB", marker="o", markersize=3)
     ax.set_title("Cumulative Portfolio NAV", fontsize=14, fontweight="bold")
     ax.set_xlabel("Date")
     ax.set_ylabel("NAV (Net Asset Value)")
