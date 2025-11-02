@@ -67,13 +67,14 @@ def plot_cumulative_nav(data: dict, output_name: str = "tearsheet_cumulative_nav
 
 def plot_drawdown(data: dict, output_name: str = "tearsheet_drawdown.png"):
     """Plot drawdown series from ledger."""
-    ledger = data.get("ledger", [])
-    if not ledger:
-        print("No ledger data found")
+    ledger = data.get("ledger", {})
+    if not ledger or "nav" not in ledger:
+        print("No ledger NAV data found")
         return
 
-    dates = [entry["date"] for entry in ledger]
-    navs = np.array([entry["nav"] for entry in ledger])
+    navs = np.array(ledger["nav"])
+    trades = data.get("trades", [])
+    dates = [t["date"] for t in trades] if trades else list(range(len(navs)))
 
     # Calculate drawdown
     running_max = np.maximum.accumulate(navs)
