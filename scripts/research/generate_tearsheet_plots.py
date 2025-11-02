@@ -73,8 +73,8 @@ def plot_drawdown(data: dict, output_name: str = "tearsheet_drawdown.png"):
         return
 
     navs = np.array(ledger["nav"])
-    trades = data.get("trades", [])
-    dates = [t["date"] for t in trades] if trades else list(range(len(navs)))
+    # Use indices for x-axis
+    x_axis = list(range(len(navs)))
 
     # Calculate drawdown
     running_max = np.maximum.accumulate(navs)
