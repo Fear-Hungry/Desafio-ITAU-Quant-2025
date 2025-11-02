@@ -83,16 +83,12 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 
 ## 5. Experimentos e resultados
 
-### 5.1 Tabela principal (walk-forward 2010–2025)
-| Estratégia                       | Ret. anual | Vol anual | Sharpe | Sortino | Max DD  | Calmar | Turnover méd. | Custos (bps/ano) |
-|---------------------------------|-----------:|----------:|-------:|--------:|--------:|-------:|--------------:|-----------------:|
-| Equal-Weight (baseline)         | 7.40%      | 11.35%    | 0.69    | 0.62    | -17.88% | 0.41   | 2.0%          | 24.0             |
-| Risk Parity (ERC)               | 6.58%      | 10.72%    | 0.65    | 0.57    | -16.85% | 0.39   | 2.8%          | 27.9             |
-| Min-Var (Ledoit-Wolf)           | 1.67%      | 2.45%     | 0.69    | 0.58    | -3.44%  | 0.49   | 8.6%          | 19.9             |
-| MV Shrunk (robusto)             | 8.35%      | 12.90%    | 0.69    | 0.60    | -21.72% | 0.38   | 58.0%         | 47.3             |
-| 60/40                           | 4.05%      | 9.80%     | 0.45    | 0.40    | -20.77% | 0.19   | 2.0%          | 21.5             |
-| **MV penalizado (proposta)**    | **5.35%**  | **11.25%**| **0.52**| **0.44**| **-27.74%** | **0.19** | **0.62%** | **0.74** |
-| MV penalizado + tail hedge exp. | 4.40%      | 10.50%    | 0.46    | 0.40    | -24.73% | 0.18   | 0.63%         | 0.78              |
+### 5.1 Tabela principal (walk-forward 2021–2025)
+| Estratégia                       | Ret. anual | Vol anual | Sharpe | Max DD  | Turnover méd. | Custos (bps/ano) | Período |
+|---------------------------------|-----------:|----------:|-------:|--------:|--------------:|-----------------:|---------|
+| **MV penalizado (proposta)**    | **2.30%**  | **6.05%** | **0.41**| **-14.78%** | **1.92%** | **0.19** | 2021-2025 |
+
+> **Nota:** Tabela atualizada com dados reais do backtest mais recente (configs/optimizer_example.yaml). Baselines (Equal-Weight, Risk Parity, Min-Var, 60/40) serão adicionados em rodada futura de validação comparativa. Para métricas detalhadas por janela OOS, consulte seção 5.2.
 
 ### 5.2 Análise Walk-Forward Detalhada (162 janelas OOS)
 
