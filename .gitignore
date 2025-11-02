@@ -152,7 +152,9 @@ reports/**/*.pdf
 reports/**/*.html
 reports/**/*.json
 reports/**/*.png
+!reports/figures/*.png
 reports/**/*.md
+!reports/walkforward/*.md
 reports/walkforward/*.csv
 notebooks/.ipynb_checkpoints/**
 notebooks/**.ipynb
