@@ -36,11 +36,11 @@ def plot_cumulative_nav(data: dict, output_name: str = "tearsheet_cumulative_nav
         return
 
     navs = ledger["nav"]
-    trades = data.get("trades", [])
-    dates = [t["date"] for t in trades] if trades else list(range(len(navs)))
+    # Use indices for x-axis since we have daily NAV but only monthly trade dates
+    x_axis = list(range(len(navs)))
 
     fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(dates, navs, linewidth=2, color="#2E86AB", marker="o", markersize=3)
+    ax.plot(x_axis, navs, linewidth=2, color="#2E86AB", markersize=0)
     ax.set_title("Cumulative Portfolio NAV", fontsize=14, fontweight="bold")
     ax.set_xlabel("Date")
     ax.set_ylabel("NAV (Net Asset Value)")
