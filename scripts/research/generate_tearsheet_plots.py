@@ -162,15 +162,17 @@ def plot_cost_decomposition(data: dict, output_name: str = "tearsheet_cost_decom
 def plot_risk_contribution(data: dict, output_name: str = "tearsheet_risk_contribution_by_budget.png"):
     """Plot risk contribution by asset class (budget groups)."""
     # Get final weights
-    ledger = data.get("ledger", [])
-    if not ledger:
-        print("No ledger data found")
+    weights_list = data.get("weights", [])
+    if not weights_list:
+        print("No weights data found")
         return
 
-    final_weights = ledger[-1].get("weights", {})
+    final_weights = weights_list[-1].copy()
+    # Remove 'date' key if present
+    final_weights.pop('date', None)
 
     # Group by asset class (simplified - would need config for proper grouping)
-    # For now, just show top 10 assets by weight
+    # For now, just show top 15 assets by weight
     weights_series = pd.Series(final_weights)
     weights_series = weights_series[weights_series > 0.001]  # Filter tiny positions
     weights_series = weights_series.sort_values(ascending=False).head(15)
