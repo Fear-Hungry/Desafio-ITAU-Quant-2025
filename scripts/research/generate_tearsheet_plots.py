@@ -51,7 +51,7 @@ def plot_cumulative_nav(data: dict, output_name: str = "tearsheet_cumulative_nav
     final_nav = navs[-1]
     ax.annotate(
         f"Final NAV: {final_nav:.4f}",
-        xy=(len(dates) - 1, final_nav),
+        xy=(len(navs) - 1, final_nav),
         xytext=(-100, 20),
         textcoords="offset points",
         bbox=dict(boxstyle="round,pad=0.5", facecolor="yellow", alpha=0.7),
