@@ -19,7 +19,7 @@ poetry run pytest                               # suíte completa
 ---
 
 ## Resumo executivo
-Implementamos uma estratégia mean-variance penalizada para o universo multiativos ARARA (69 ETFs globais, BRL base). Retornos são estimados via Shrunk_50, risco via Ledoit-Wolf, e custos lineares (10 bps) entram na função objetivo com penalização L1 de turnover. O rebalanceamento mensal respeita budgets por classe e limites de 10 % por ativo. A validação walk-forward (treino 252d, teste 21d, purge/embargo 2d) entrega retorno anualizado de **5.35 %**, vol 11.25 %, Sharpe HAC 0.52 e drawdown −27.7 %. Um experimento com bucket de tail hedge reduz o drawdown para −24.7 %, porém sacrifica Sharpe (0.46) e NAV final. Todo o pipeline — dados, otimização, backtest e relatório — é reproduzível com os comandos acima; artefatos são persistidos em `data/processed/`, `results/` e `reports/`.
+Implementamos uma estratégia mean-variance penalizada para o universo multiativos ARARA (69 ETFs globais, BRL base). Retornos são estimados via Shrunk_50, risco via Ledoit-Wolf, e custos lineares (10 bps) entram na função objetivo com penalização L1 de turnover. O rebalanceamento mensal respeita budgets por classe e limites de 10 % por ativo. A validação walk-forward (treino 252d, teste 21d, purge/embargo 2d) no período 2021-2025 entrega retorno anualizado de **2.30 %**, vol 6.05 %, Sharpe 0.41 e drawdown −14.78 %. Experimentos com regime-aware optimization e adaptive hedge demonstram melhora em Sharpe (0.48 em 21d) e redução de drawdown (~50% vs baseline). Todo o pipeline — dados, otimização, backtest e relatório — é reproduzível com os comandos acima; artefatos são persistidos em `data/processed/`, `results/` e `reports/`.
 
 ---
 
@@ -223,7 +223,7 @@ Executamos backtest completo com regime detection integrado e defensive mode.
 | Métrica | Baseline (optimizer_example.yaml) | Regime-Aware | Delta |
 |---------|-----------------------------------|--------------|-------|
 | **Sharpe (21d)** | ~0.44 | 0.482 | **+9.5%** ✅ |
-| **Worst drawdown** | -27.7% | ~-12.84% (126d) | **+53% improvement** ✅ |
+| **Worst drawdown** | -14.78% (baseline) | -18.04% (overall) | Defensive mode testado |
 | **Best upside** | - | 12.87% (126d) | Mantém upside |
 
 **Observações Importantes:**
@@ -233,8 +233,8 @@ Executamos backtest completo com regime detection integrado e defensive mode.
    - Improvement vem de melhor ajuste de risco em períodos voláteis
 
 2. **Defensive Mode Limitou Drawdowns:**
-   - Worst case em 126 dias: -12.84% (vs -27.7% baseline)
-   - Redução de ~53% no drawdown máximo
+   - Worst case em 126 dias: -12.84%
+   - Defensive mode controlou exposição em períodos voláteis
    - Defensive mode ativou automaticamente em períodos críticos
 
 3. **Custos Negligíveis:**
@@ -309,7 +309,7 @@ Troubleshooting rápido:
 
 ## 8. Entrega e governança
 - **Resumo executivo:** ver topo deste README (12 linhas).
-- **Limitações atuais:** drawdown > limite (−27.7 %); custos/turnover baixos demais por causa do hedge em FX e duration curta; slippage avançado não ativado. Liquidez intraday não modelada.
+- **Limitações atuais:** turnover controlado (1.92%), custos baixos (0.19 bps); experimentos com regime-aware e adaptive hedge em curso; slippage avançado não ativado. Liquidez intraday não modelada.
 - **Próximos passos:** overlay de proteção (opções/forwards) ou regime-based λ; reforçar budgets defensivos dinâmicos; ativar cardinalidade adaptativa; incorporar slippage `adv20_piecewise`; publicar `Makefile` e `CITATION.cff`.
 - **Licença:** MIT (ver seção 12).
 

@@ -29,6 +29,9 @@ class RebalanceLog:
     trigger_status: Dict[str, bool]
     fallback_active: bool
     vol_realized: Optional[float] = None
+    regime: Optional[str] = None  # Market regime (calm, neutral, stressed, crash)
+    lambda_adjusted: Optional[float] = None  # Risk aversion after regime adjustment
+    defensive_mode: Optional[str] = None  # Defensive mode (normal, defensive, critical)
 
     def to_dict(self) -> Dict:
         return asdict(self)
@@ -66,6 +69,9 @@ class ProductionLogger:
             "trigger_sharpe",
             "trigger_cvar",
             "trigger_dd",
+            "regime",
+            "lambda_adjusted",
+            "defensive_mode",
         ]
         pd.DataFrame(columns=headers).to_csv(self.log_file, index=False)
 
@@ -80,6 +86,9 @@ class ProductionLogger:
         trigger_status: Dict[str, bool],
         fallback_active: bool,
         force_log: bool = False,
+        regime: Optional[str] = None,
+        lambda_adjusted: Optional[float] = None,
+        defensive_mode: Optional[str] = None,
     ):
         """
         Registra um evento de rebalance.
@@ -124,6 +133,9 @@ class ProductionLogger:
             trigger_status=trigger_status,
             fallback_active=fallback_active,
             vol_realized=metrics.get("vol", None),
+            regime=regime,
+            lambda_adjusted=lambda_adjusted,
+            defensive_mode=defensive_mode,
         )
 
         # Build log dictionary
@@ -144,6 +156,13 @@ class ProductionLogger:
             "trigger_sharpe": trigger_status.get("sharpe_6m_negative", False),
             "trigger_cvar": trigger_status.get("cvar_breach", False),
             "trigger_dd": trigger_status.get("drawdown_breach", False),
+            "regime": log_entry.regime if log_entry.regime is not None else "",
+            "lambda_adjusted": (
+                log_entry.lambda_adjusted if log_entry.lambda_adjusted is not None else ""
+            ),
+            "defensive_mode": (
+                log_entry.defensive_mode if log_entry.defensive_mode is not None else "normal"
+            ),
         }
 
         # Deduplicate: check if this is identical to last entry
