@@ -349,6 +349,118 @@ def optimize_portfolio(
     return weights_out, config, result, cardinality_info, solver_flags
 
 
+def apply_defensive_mode(
+    weights: pd.Series,
+    *,
+    portfolio_state: Mapping[str, Any],
+    config: Mapping[str, Any] | None = None,
+) -> tuple[pd.Series, dict[str, Any]]:
+    """Apply defensive risk reduction when triggers activate.
+
+    Implements PRD defensive modes:
+    - Defensive mode: Reduce 50% of risky exposure if DD > 15% OR vol > 15%
+    - Critical mode: Reduce 75% of risky exposure if DD > 20% AND vol > 18%
+
+    Parameters
+    ----------
+    weights : pd.Series
+        Target portfolio weights from optimizer
+    portfolio_state : Mapping[str, Any]
+        Current portfolio state with keys:
+        - drawdown: float (current drawdown, e.g., -0.15 for -15%)
+        - volatility: float (annualized volatility, e.g., 0.15 for 15%)
+    config : Mapping[str, Any], optional
+        Defensive mode configuration with keys:
+        - enable: bool (default: False)
+        - defensive_threshold_dd: float (default: -0.15)
+        - defensive_threshold_vol: float (default: 0.15)
+        - critical_threshold_dd: float (default: -0.20)
+        - critical_threshold_vol: float (default: 0.18)
+        - safe_assets: list[str] (assets to keep at full weight, default: ["CASH", "SHY", "TLT"])
+
+    Returns
+    -------
+    scaled_weights : pd.Series
+        Adjusted weights with risk reduction applied
+    mode_info : dict[str, Any]
+        Diagnostic information about applied mode
+    """
+
+    config = dict(config or {})
+
+    if not config.get("enable", False):
+        return weights, {"mode": "normal", "scaling": 1.0}
+
+    # Extract thresholds from config
+    defensive_dd = float(config.get("defensive_threshold_dd", -0.15))
+    defensive_vol = float(config.get("defensive_threshold_vol", 0.15))
+    critical_dd = float(config.get("critical_threshold_dd", -0.20))
+    critical_vol = float(config.get("critical_threshold_vol", 0.18))
+    safe_assets = config.get("safe_assets", ["CASH", "SHY", "TLT", "SGOV", "BIL"])
+
+    # Get current state
+    current_dd = float(portfolio_state.get("drawdown", 0.0))
+    current_vol = float(portfolio_state.get("volatility", 0.0))
+
+    # Determine mode
+    mode = "normal"
+    scaling_factor = 1.0
+
+    # Critical mode: DD > 20% AND vol > 18%
+    if current_dd <= critical_dd and current_vol >= critical_vol:
+        mode = "critical"
+        scaling_factor = 0.25  # Keep only 25% of risky exposure (75% reduction)
+    # Defensive mode: DD > 15% OR vol > 15%
+    elif current_dd <= defensive_dd or current_vol >= defensive_vol:
+        mode = "defensive"
+        scaling_factor = 0.50  # Keep only 50% of risky exposure (50% reduction)
+
+    if mode == "normal":
+        return weights, {"mode": mode, "scaling": scaling_factor}
+
+    # Apply scaling to risky assets
+    scaled_weights = weights.copy()
+    risky_mask = ~scaled_weights.index.isin(safe_assets)
+    risky_weights = scaled_weights[risky_mask]
+
+    # Scale down risky assets
+    scaled_weights[risky_mask] = risky_weights * scaling_factor
+
+    # Compute freed capital
+    freed_capital = (risky_weights * (1.0 - scaling_factor)).sum()
+
+    # Allocate freed capital to CASH (or first safe asset available)
+    cash_asset = None
+    for asset in safe_assets:
+        if asset in scaled_weights.index:
+            cash_asset = asset
+            break
+
+    if cash_asset is None:
+        # If no safe asset in universe, add CASH
+        cash_asset = "CASH"
+        scaled_weights[cash_asset] = 0.0
+
+    scaled_weights[cash_asset] += freed_capital
+
+    # Normalize to ensure sum = 1.0
+    total = scaled_weights.sum()
+    if abs(total - 1.0) > 1e-6:
+        scaled_weights = scaled_weights / total
+
+    mode_info = {
+        "mode": mode,
+        "scaling": scaling_factor,
+        "drawdown": current_dd,
+        "volatility": current_vol,
+        "freed_capital": float(freed_capital),
+        "cash_asset": cash_asset,
+        "n_risky_assets": int(risky_mask.sum()),
+    }
+
+    return scaled_weights, mode_info
+
+
 def apply_postprocessing(
     weights: pd.Series,
     prices: pd.Series,
