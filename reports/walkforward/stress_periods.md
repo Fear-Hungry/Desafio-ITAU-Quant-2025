@@ -1,0 +1,19 @@
+# Identified Stress Periods
+- **Stress 2021** (2021-02-09 to 2021-03-10): Sharpe=-4.24, Drawdown=-4.36%, Return=-30.71%
+- **Stress 2021** (2021-04-16 to 2021-05-14): Sharpe=-1.09, Drawdown=-2.28%, Return=-6.89%
+- **Stress 2021** (2021-08-26 to 2021-09-24): Sharpe=-1.54, Drawdown=-1.71%, Return=-7.04%
+- **Stress 2021** (2021-11-01 to 2021-11-30): Sharpe=-1.80, Drawdown=-2.08%, Return=-7.76%
+- **Inflation 2022** (2022-01-06 to 2022-02-04): Sharpe=-2.95, Drawdown=-3.09%, Return=-18.93%
+- **Inflation 2022** (2022-02-09 to 2022-03-10): Sharpe=-3.47, Drawdown=-2.76%, Return=-22.85%
+- **Inflation 2022** (2022-04-18 to 2022-05-16): Sharpe=-3.92, Drawdown=-4.57%, Return=-34.53%
+- **Inflation 2022** (2022-05-19 to 2022-06-17): Sharpe=-2.17, Drawdown=-4.21%, Return=-21.90%
+- **Inflation 2022** (2022-08-29 to 2022-09-27): Sharpe=-9.26, Drawdown=-5.94%, Return=-53.85%
+- **Inflation 2022** (2022-09-30 to 2022-10-28): Sharpe=-0.77, Drawdown=-3.75%, Return=-8.29%
+- **Stress 2023** (2023-02-13 to 2023-03-14): Sharpe=-1.77, Drawdown=-2.48%, Return=-11.81%
+- **Stress 2023** (2023-04-20 to 2023-05-18): Sharpe=-1.70, Drawdown=-1.04%, Return=-7.42%
+- **Stress 2023** (2023-07-31 to 2023-08-28): Sharpe=-5.51, Drawdown=-4.03%, Return=-29.58%
+- **Stress 2023** (2023-08-31 to 2023-09-29): Sharpe=-6.13, Drawdown=-2.72%, Return=-27.92%
+- **Stress 2024** (2024-03-20 to 2024-04-18): Sharpe=-2.21, Drawdown=-1.95%, Return=-10.30%
+- **Stress 2024** (2024-10-07 to 2024-11-04): Sharpe=-4.23, Drawdown=-2.15%, Return=-21.57%
+- **Stress 2024** (2024-12-11 to 2025-01-13): Sharpe=-5.78, Drawdown=-3.05%, Return=-29.18%
+- **Stress 2025** (2025-03-25 to 2025-04-23): Sharpe=-0.60, Drawdown=-5.30%, Return=-10.54%
