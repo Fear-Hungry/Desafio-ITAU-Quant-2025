@@ -29,6 +29,7 @@ __all__ = [
     "run_estimators",
     "optimize_portfolio",
     "apply_postprocessing",
+    "apply_defensive_mode",
     "compute_costs",
     "build_rebalance_log",
     "rebalance",
