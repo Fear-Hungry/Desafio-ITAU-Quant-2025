@@ -1,0 +1,2 @@
+timestamp,n_assets,n_active,risk_aversion,expected_return,volatility,sharpe_ratio,herfindahl,effective_n,solver_status,solver_time
+20251026_103747,28,8,3.0,0.34204531899200025,0.1632624504410974,2.0950642236954846,0.13437371599481127,7.441931575655869,optimal,0.010573284999964017

@@ -1,0 +1,5 @@
+Estimator,Return (ann),Vol (ann),Sharpe,N_active,N_eff,At Ceiling,Time (s)
+sample,35.63%,17.14%,2.08,12,10.7,8,0.010
+huber,40.29%,16.44%,2.45,12,10.9,8,0.006
+shrunk_50,12.91%,10.70%,1.21,14,11.9,6,0.007
+bl_neutral,2.76%,6.08%,0.45,30,27.8,0,0.006

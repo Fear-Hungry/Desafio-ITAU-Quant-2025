@@ -182,3 +182,13 @@ secrets/**
 **/.mypy_cache/**
 **/.ipynb_checkpoints/**
 **/.DS_Store
+
+# === Committed artifacts exceptions (allow committing canonical results) ===
+# Unignore canonical reports files
+!reports/walkforward/nav_daily.csv
+!reports/oos_consolidated_metrics.json
+!reports/oos_consolidated_metrics.csv
+
+# Unignore all results CSV/JSON artifacts
+!results/**/*.csv
+!results/**/*.json

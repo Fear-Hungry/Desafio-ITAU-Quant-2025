@@ -23,11 +23,11 @@ poetry run pytest                               # suíte completa
 
 ## Resumo executivo
 
-**Estratégia PRISM-R — Desempenho OOS Consolidado (2020-01-02 a 2025-10-31)**
+**Estratégia PRISM-R — Desempenho OOS Consolidado (2020-01-02 a 2025-10-09)**
 
 Implementamos uma estratégia mean-variance penalizada para o universo multiativos ARARA (69 ETFs globais, BRL base). Retornos são estimados via Shrunk_50, risco via Ledoit-Wolf, e custos lineares (10 bps) entram na função objetivo com penalização L1 de turnover. O rebalanceamento mensal respeita budgets por classe e limites de 10 % por ativo.
 
-**Validação Walk-Forward:** Treino 252 dias, teste 21 dias, purge/embargo 2 dias. Período oficial OOS: 2020-01-02 a 2025-10-31 (1,451 dias úteis).
+**Validação Walk-Forward:** Treino 252 dias, teste 21 dias, purge/embargo 2 dias. Período oficial OOS: 2020-01-02 a 2025-10-09 (1,451 dias úteis).
 
 **Resultados Consolidados (fonte: nav_daily.csv):**
 - **NAV Final:** 1.0289 (retorno de 2.89%)
@@ -55,7 +55,7 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 ## 2. Dados
 - **Fonte:** Yahoo Finance via `yfinance` (ETFs), com fallback para Tiingo (cripto) e FRED (RF) — nesta run o RF ficou zerado por ausência de `pandas_datareader`.
 - **Universo:** 69 ETFs (equities EUA/internacionais, renda fixa Treasury/IG/HY, commodities, FX, cripto) definidos em `configs/universe_arara.yaml`.
-- **Janela temporal:** 2010-01-05 a 2025-10-31, frequência diária. Crypto ETFs exigem histórico mínimo de 60 dias.
+- **Janela temporal:** 2020-01-02 a 2025-10-09, frequência diária. Crypto ETFs exigem histórico mínimo de 60 dias.
 - **Pré-processamento:** `scripts/run_01_data_pipeline.py` aplica ajustes de split/dividendos, remove ativos com baixa cobertura (ex.: QQQ na primeira tentativa), força RF=0 quando indisponível, e descarta linhas totalmente vazias.
 - **Outliers/missing:** colunas com ausência total são excluídas; valores faltantes residuais são preenchidos apenas após a meta de histórico mínimo.
 - **Reprodução local:** defina `DATA_DIR` no `.env` (opcional) e execute:
@@ -104,14 +104,14 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 
 ## 5. Experimentos e resultados
 
-### 5.1 Tabela principal (walk-forward 2021–2025)
+### 5.1 Tabela principal (walk-forward 2020–2025)
 | Estratégia                       | Ret. anual | Vol anual | Sharpe | Max DD  | Turnover méd. | Custos (bps/ano) | Período |
 |---------------------------------|-----------:|----------:|-------:|--------:|--------------:|-----------------:|---------|
-| **MV penalizado (proposta)**    | **2.30%**  | **6.05%** | **0.41**| **-14.78%** | **1.92%** | **0.19** | 2021-2025 |
+
 
 > **Nota:** Tabela atualizada com dados reais do backtest mais recente (configs/optimizer_example.yaml). Baselines (Equal-Weight, Risk Parity, Min-Var, 60/40) serão adicionados em rodada futura de validação comparativa. Para métricas detalhadas por janela OOS, consulte seção 5.2.
 
-### 5.2 Análise Walk-Forward Detalhada (52 janelas OOS)
+### 5.2 Análise Walk-Forward Detalhada (64 janelas OOS)
 
 **Estatísticas Agregadas:**
 | Métrica                      | Valor     |
@@ -160,7 +160,7 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 Implementamos e testamos um sistema de alocação dinâmica de tail hedge baseado em regime de mercado. O sistema ajusta automaticamente a exposição a ativos defensivos (TLT, TIP, GLD, SLV, PPLT, UUP) conforme condições de mercado.
 
 **Configuração do Experimento:**
-- **Período:** 2020-01-03 a 2025-10-31 (1,466 dias, 69 ativos)
+- **Período:** 2020-01-02 a 2025-10-09 (1,451 dias, 69 ativos)
 - **Janela de regime:** 63 dias (rolling)
 - **Ativos de hedge:** 6 (TLT, TIP, GLD, SLV, PPLT, UUP - todos disponíveis)
 - **Alocação base:** 5.0% em regimes neutros
@@ -295,8 +295,8 @@ poetry run itau-quant backtest \
 
 ## 5.6 Consolidação Final de Métricas OOS (2020-2025) — SINGLE SOURCE OF TRUTH
 
-**Período OOS oficial:** 2020-01-02 a 2025-10-31 (1,451 dias úteis)
-**Fonte de dados canônica:** `reports/walkfront/nav_daily.csv` (série diária de NAV)
+**Período OOS oficial:** 2020-01-02 a 2025-10-09 (1,451 dias úteis)
+**Fonte de dados canônica:** `reports/walkforward/nav_daily.csv` (série diária de NAV)
 **Consolidação:** `reports/oos_consolidated_metrics.json`
 
 ### Resultados Consolidados — PRISM-R (nav_daily.csv)
@@ -314,9 +314,9 @@ poetry run itau-quant backtest \
 | **Success Rate** | **52.0%** | (dias com retorno > 0) |
 | **Daily Stats** | Mean: 0.004%, Std: 0.541% | |
 
-### Figuras OOS (Geradas de nav_daily.csv)
+### Figuras OOS (Geradas de oos_consolidated_metrics.json + nav_daily.csv)
 
-Todos os gráficos abaixo são gerados diretamente da série canônica `nav_daily.csv`:
+Os gráficos abaixo refletem exatamente os artefatos atuais (período OOS filtrado em nav_daily.csv e métricas em oos_consolidated_metrics.json):
 
 ![NAV Cumulativo OOS](reports/figures/oos_nav_cumulative_20251103.png)
 
@@ -335,7 +335,7 @@ reports/
 └── figures/
     ├── oos_nav_cumulative_20251103.png
     ├── oos_drawdown_underwater_20251103.png
-    └── oos_daily_distribution_20251103.png
+    └── oos_window_metrics_distribution_20251103.png
 ```
 
 ---
@@ -357,7 +357,7 @@ Os seguintes arquivos foram gerados e validados:
 # 1. Verifique os arquivos existem
 ls -lh reports/FINAL_OOS_METRICS_REPORT.md
 ls -lh reports/oos_consolidated_metrics.json
-cat reports/oos_consolidated_metrics.json | jq '.nav_final, .annualized_return, .sharpe_oos_median'
+cat reports/oos_consolidated_metrics.json | jq '.nav_final, .annualized_return, .sharpe_ratio, .n_days'
 
 # 2. Valide consistência da matemática
 python3 << 'EOF'
@@ -415,15 +415,15 @@ tail -5 reports/oos_consolidated_metrics.csv
    df_returns = pd.read_csv('results/backtest_returns_20251031_145518.csv')
    df_returns['date'] = pd.to_datetime(df_returns['date'])
 
-   # Filtrar período 2020-01-02 a 2025-10-31
-   mask = (df_returns['date'] >= '2020-01-02') & (df_returns['date'] <= '2025-10-31')
+   # Filtrar período 2020-01-02 a 2025-10-09
+   mask = (df_returns['date'] >= '2020-01-02') & (df_returns['date'] <= '2025-10-09')
    returns = df_returns[mask]['return'].values
 
    # Calcular NAV cumulativo
    nav_computed = np.prod(1 + returns)
    print(f"NAV from daily returns: {nav_computed:.4f}")
-   print(f"NAV reported: 1.1414")
-   print(f"Discrepancy: {abs(nav_computed - 1.1414):.6f}")
+   print(f"NAV reported: 1.0289")
+   print(f"Discrepancy: {abs(nav_computed - 1.0289):.6f}")
    EOF
    ```
 
@@ -549,7 +549,7 @@ poetry install
 # 2. Pipeline de dados (se necessário)
 poetry run python scripts/run_01_data_pipeline.py --force-download --start 2010-01-01
 
-# 3. Backtest principal (gera NAV 1.1414 period 2020-2025)
+# 3. Backtest principal (gera artefatos OOS; consolidação lê o JSON)
 poetry run itau-quant backtest \
   --config configs/optimizer_example.yaml \
   --no-dry-run --json > reports/backtest_$(date -u +%Y%m%dT%H%M%SZ).json
@@ -563,7 +563,7 @@ poetry run python scripts/generate_final_metrics_report.py
 # 6. Validação
 poetry run pytest
 cat reports/FINAL_OOS_METRICS_REPORT.md
-cat reports/oos_consolidated_metrics.json | jq '.nav_final, .sharpe_oos_median, .psr, .dsr'
+cat reports/oos_consolidated_metrics.json | jq '.nav_final, .annualized_return, .sharpe_ratio, .n_days'
 ```
 
 Seeds: `PYTHONHASHSEED=0`, NumPy/torch seeds setados via `itau_quant.utils.random.set_global_seed`. Configuráveis via `.env`.
@@ -599,7 +599,7 @@ README.md (este documento, sem cálculos independentes)
 ```bash
 cat configs/oos_period.yaml
 ```
-Define período oficial: 2020-01-02 a 2025-10-31 (1,451 dias úteis)
+Define período oficial: 2020-01-02 a 2025-10-09 (1,451 dias úteis)
 
 **Passo 2: Executar Walk-Forward com Config**
 ```bash
@@ -614,7 +614,7 @@ poetry run python scripts/research/run_backtest_walkforward.py
 poetry run python scripts/consolidate_oos_metrics.py
 ```
 - Lê `configs/oos_period.yaml` (período)
-- Lê `reports/walkfront/nav_daily.csv` (dados canônicos)
+- Lê `reports/walkforward/nav_daily.csv` (dados canônicos)
 - Calcula TODAS as métricas diretamente do NAV diário
 - Outputs:
   - `reports/oos_consolidated_metrics.json` (¡FONTE PARA TODO RELATÓRIO!)
@@ -625,7 +625,7 @@ poetry run python scripts/consolidate_oos_metrics.py
 poetry run python scripts/generate_oos_figures.py
 ```
 - Lê `configs/oos_period.yaml`
-- Lê `reports/walkfront/nav_daily.csv`
+- Lê `reports/oos_consolidated_metrics.json` (fonte para figuras)
 - Gera 4 PNG figures diretamente de dados reais (não sintéticos)
 
 **Passo 5: Atualizar README com JSON**
@@ -702,19 +702,19 @@ Interpretação: Com 95% de confiança, pior perda esperada é 19.55%
 ```yaml
 oos_evaluation:
   start_date: "2020-01-02"
-  end_date: "2025-10-31"
+  end_date: "2025-10-09"
   business_days: 1451
   n_windows: 64
 ```
 
-**Dados Canônicos:** `reports/walkfront/nav_daily.csv`
+**Dados Canônicos:** `reports/walkforward/nav_daily.csv`
 - 1,451 linhas (dados OOS filtrados)
 - Colunas: date, nav, daily_return, cumulative_return
 - Fonte: `run_backtest_walkforward.py` com período de config
 
 ---
 
-### Visualizações (Figuras Geradas de nav_daily.csv)
+### Visualizações (Figuras Geradas de oos_consolidated_metrics.json)
 
 **1. NAV Cumulativo OOS (2020-01-02 a 2025-10-09)**
 
@@ -740,7 +740,7 @@ Arquivos de Configuração:
   └── oos_period.yaml              # ★ CENTRAL: Define período OOS
 
 Dados Canônicos:
-  reports/walkfront/
+  reports/walkforward/
   └── nav_daily.csv               # ★ SOURCE OF TRUTH: Série diária NAV
 
 Métricas Consolidadas:
@@ -765,7 +765,7 @@ Scripts de Consolidação:
 ### Checklist de Rastreabilidade
 
 - [x] Período OOS definido em único YAML (configs/oos_period.yaml)
-- [x] Serie diária salva em único CSV (reports/walkfront/nav_daily.csv)
+- [x] Serie diária salva em único CSV (reports/walkforward/nav_daily.csv)
 - [x] Todas as métricas calculadas de nav_daily.csv
 - [x] Consolidação salva em JSON (oos_consolidated_metrics.json)
 - [x] Figuras geradas de nav_daily.csv (não sintéticas)

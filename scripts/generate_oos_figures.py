@@ -80,15 +80,10 @@ def generate_nav_figure(df_oos: pd.DataFrame):
 
     ax.set_xlabel('Date', fontsize=12, fontweight='bold')
     ax.set_ylabel('NAV', fontsize=12, fontweight='bold')
-    ax.set_title('PRISM-R Out-of-Sample Daily NAV (2020-01-02 to 2025-10-31)', fontsize=14, fontweight='bold')
+    ax.set_title(f"PRISM-R Out-of-Sample Daily NAV ({pd.to_datetime(dates[0]).date()} to {pd.to_datetime(dates[-1]).date()})", fontsize=14, fontweight='bold')
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=11, loc='upper left')
     ax.set_ylim([0.7, max(1.1, nav_final * 1.05)])
-
-    # Source info
-    ax.text(0.99, 0.02, f'Source: reports/walkforward/nav_daily.csv | {len(df_oos)} trading days',
-            transform=ax.transAxes, fontsize=9, alpha=0.7, va='bottom', ha='right',
-            bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', alpha=0.3))
 
     plt.tight_layout()
     output = FIGURES_DIR / "oos_nav_cumulative_20251103.png"
@@ -119,30 +114,29 @@ def generate_drawdown_figure(df_oos: pd.DataFrame):
     ax.axhline(y=-20, color='darkred', linestyle='--', linewidth=2, alpha=0.6, label='Severe: -20%')
     ax.axhline(y=0, color='black', linestyle='-', linewidth=0.8, alpha=0.3)
 
-    # Mark max drawdown
+    # Mark worst drawdown
     min_dd_idx = int(np.argmin(drawdowns))
-    max_dd = drawdowns[min_dd_idx]
-    ax.scatter([dates[min_dd_idx]], [max_dd], color='black', s=150, zorder=5, marker='X', edgecolors='darkred', linewidth=2)
-    ax.text(dates[min_dd_idx], max_dd - 3, f'Max: {max_dd:.1f}%', fontsize=11, ha='center', fontweight='bold',
-            bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.4))
+    worst_dd = float(drawdowns[min_dd_idx])
+    ax.scatter(dates[min_dd_idx], worst_dd, color='darkred', s=100, zorder=5)
+    ax.annotate(f"Worst: {worst_dd:.1f}%\n({pd.to_datetime(dates[min_dd_idx]).strftime('%Y-%m-%d')})",
+                xy=(dates[min_dd_idx], worst_dd),
+                xytext=(20, -20), textcoords='offset points',
+                fontsize=10, ha='left',
+                bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
+                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0', color='darkred'))
 
-    ax.set_xlabel('Date', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Drawdown (%)', fontsize=12, fontweight='bold')
-    ax.set_title('PRISM-R Underwater Drawdown Plot (2020-01-02 to 2025-10-31)', fontsize=14, fontweight='bold')
+    ax.set_xlabel('Date', fontsize=11)
+    ax.set_ylabel('Drawdown (%)', fontsize=11)
+    ax.set_title(f"PRISM-R Underwater Drawdown ({pd.to_datetime(dates[0]).date()} to {pd.to_datetime(dates[-1]).date()})", fontsize=13, fontweight='bold')
     ax.grid(True, alpha=0.3, axis='y')
     ax.legend(fontsize=11, loc='lower left')
     ax.set_ylim([min(drawdowns) * 1.1, 2])
-
-    # Source info
-    ax.text(0.99, 0.98, f'Source: reports/walkforward/nav_daily.csv',
-            transform=ax.transAxes, fontsize=9, alpha=0.7, va='top', ha='right',
-            bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', alpha=0.3))
 
     plt.tight_layout()
     output = FIGURES_DIR / "oos_drawdown_underwater_20251103.png"
     plt.savefig(output, dpi=150, bbox_inches='tight')
     print(f"✓ Saved: {output}")
-    print(f"  Max Drawdown: {max_dd:.1f}%")
+    print(f"  Max Drawdown: {worst_dd:.1f}%")
     plt.close()
 
 def generate_baseline_comparison_figure():
