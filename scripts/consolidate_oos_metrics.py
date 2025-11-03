@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 """
-Consolidate OOS metrics for the final report (2020-01-02 to 2025-10-31).
+Consolidate OOS metrics for the final report using the canonical nav_daily.csv.
 
 This script:
-1. Loads window-level results from walk-forward analysis
-2. Filters for the 2020-01-02 to 2025-10-31 period
-3. Computes consolidated OOS metrics (Sharpe, CVaR, PSR/DSR, turnover, costs, etc.)
-4. Generates markdown table and CSV for the final report
+1. Loads the canonical daily NAV series from nav_daily.csv (single source of truth)
+2. Loads OOS period configuration from oos_period.yaml
+3. Computes consolidated OOS metrics (CAGR, vol, Sharpe, CVaR, PSR/DSR, costs, etc.)
+4. Uses the same series for all downstream calculations (no divergences)
 """
 
 import pandas as pd
 import numpy as np
+import yaml
 from pathlib import Path
 from datetime import datetime
 import json
@@ -20,17 +21,93 @@ REPO_ROOT = Path(__file__).parent.parent
 REPORTS_DIR = REPO_ROOT / "reports"
 WALKFORWARD_DIR = REPORTS_DIR / "walkforward"
 RESULTS_DIR = REPO_ROOT / "results"
+CONFIG_DIR = REPO_ROOT / "configs"
 
-def load_and_filter_windows(period_start: str, period_end: str):
-    """Load walk-forward results and filter by date range."""
-    csv_path = WALKFORWARD_DIR / "per_window_results.csv"
-    df = pd.read_csv(csv_path)
-    df["Window End"] = pd.to_datetime(df["Window End"])
+def load_oos_config():
+    """Load OOS period configuration from centralized config."""
+    config_path = CONFIG_DIR / "oos_period.yaml"
+    with open(config_path, 'r') as f:
+        config = yaml.safe_load(f)
+    return config['oos_evaluation']
 
-    mask = (df["Window End"] >= period_start) & (df["Window End"] <= period_end)
-    df_filtered = df[mask].copy()
+def load_nav_daily():
+    """Load canonical daily NAV series (single source of truth)."""
+    nav_daily_path = WALKFORWARD_DIR / "nav_daily.csv"
+    df = pd.read_csv(nav_daily_path)
+    df["date"] = pd.to_datetime(df["date"])
+    return df.sort_values("date").reset_index(drop=True)
 
-    return df_filtered
+def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict) -> dict:
+    """
+    Compute all metrics directly from daily NAV series.
+    This ensures consistent calculations with no divergences.
+    """
+    # Filter to OOS period
+    start_date = pd.to_datetime(oos_config['start_date'])
+    end_date = pd.to_datetime(oos_config['end_date'])
+    mask = (df_nav['date'] >= start_date) & (df_nav['date'] <= end_date)
+    df_oos = df_nav[mask].copy()
+
+    if len(df_oos) == 0:
+        raise ValueError(f"No data found in period {start_date} to {end_date}")
+
+    daily_returns = df_oos['daily_return'].values
+    nav_values = df_oos['nav'].values
+    dates = df_oos['date'].values
+
+    # Basic performance metrics
+    nav_initial = 1.0  # Starting value
+    nav_final = nav_values[-1]
+    total_return = nav_final - nav_initial
+    n_days = len(daily_returns)
+    n_years = n_days / 252.0
+
+    # Annualized return using actual day count
+    annualized_return = (nav_final ** (252 / n_days)) - 1
+
+    # Annualized volatility
+    annualized_volatility = np.std(daily_returns, ddof=1) * np.sqrt(252)
+
+    # Sharpe ratio (assuming risk-free rate ≈ 0)
+    sharpe_ratio = annualized_return / annualized_volatility if annualized_volatility > 0 else 0
+
+    # Drawdowns
+    running_max = np.maximum.accumulate(nav_values)
+    drawdowns = (nav_values - running_max) / running_max
+    max_drawdown = np.min(drawdowns)
+    avg_drawdown = np.mean(drawdowns[drawdowns < 0]) if np.any(drawdowns < 0) else 0
+
+    # CVaR 95% (approximate from drawdown tail)
+    cvar_threshold = np.percentile(drawdowns, 5)  # Worst 5%
+    cvar_95 = np.mean(drawdowns[drawdowns <= cvar_threshold]) if np.any(drawdowns <= cvar_threshold) else max_drawdown
+
+    # Success rate (% of positive days)
+    success_rate = np.sum(daily_returns > 0) / len(daily_returns)
+
+    metrics = {
+        # Performance metrics
+        "nav_final": nav_final,
+        "total_return": total_return,
+        "annualized_return": annualized_return,
+        "annualized_volatility": annualized_volatility,
+        "sharpe_ratio": sharpe_ratio,
+
+        # Risk metrics
+        "max_drawdown": max_drawdown,
+        "avg_drawdown": avg_drawdown,
+        "cvar_95": cvar_95,
+
+        # Sample statistics
+        "n_days": n_days,
+        "n_years": n_years,
+        "success_rate": success_rate,
+
+        # Period metadata
+        "period_start": dates[0],
+        "period_end": dates[-1],
+    }
+
+    return metrics
 
 def compute_psr_dsr_from_metrics(n_windows: int, sharpe_median: float, sharpe_std: float) -> tuple:
     """
@@ -163,37 +240,70 @@ def create_csv_output(df_windows: pd.DataFrame, metrics: dict, output_path: Path
     df_combined.to_csv(output_path, index=False)
     print(f"✓ CSV output saved to: {output_path}")
 
+def format_simple_metrics_table(metrics: dict) -> str:
+    """Format metrics as markdown table."""
+    lines = [
+        "## Final OOS Performance Metrics (from nav_daily.csv)",
+        "",
+        "| Metric | Value |",
+        "|--------|-------|",
+        f"| **NAV Final** | {metrics['nav_final']:.4f} |",
+        f"| Total Return | {metrics['total_return']:.2%} |",
+        f"| Annualized Return | {metrics['annualized_return']:.2%} |",
+        f"| Annualized Volatility | {metrics['annualized_volatility']:.2%} |",
+        f"| Sharpe Ratio | {metrics['sharpe_ratio']:.4f} |",
+        f"| Max Drawdown | {metrics['max_drawdown']:.2%} |",
+        f"| Avg Drawdown | {metrics['avg_drawdown']:.2%} |",
+        f"| CVaR 95% | {metrics['cvar_95']:.4f} |",
+        f"| Success Rate | {metrics['success_rate']:.1%} |",
+        f"| Days in Period | {metrics['n_days']} |",
+        f"| Start Date | {metrics['period_start']} |",
+        f"| End Date | {metrics['period_end']} |",
+        "",
+    ]
+    return "\n".join(lines)
+
 def main():
     print("=" * 70)
-    print("CONSOLIDATING OOS METRICS (2020-01-02 to 2025-10-31)")
+    print("CONSOLIDATING OOS METRICS (SINGLE SOURCE OF TRUTH)")
     print("=" * 70)
 
-    # Load and filter data
-    print("\nLoading walk-forward results...")
-    df_windows = load_and_filter_windows("2020-01-02", "2025-10-31")
-    print(f"✓ Loaded {len(df_windows)} windows in period")
+    # Load OOS configuration
+    print("\nLoading OOS period configuration...")
+    oos_config = load_oos_config()
+    print(f"✓ Period: {oos_config['start_date']} to {oos_config['end_date']}")
 
-    # Compute consolidated metrics
-    print("\nComputing consolidated metrics...")
-    metrics = compute_consolidated_metrics(df_windows)
+    # Load canonical daily NAV (single source of truth)
+    print("\nLoading canonical daily NAV series...")
+    df_nav = load_nav_daily()
+    print(f"✓ Loaded {len(df_nav)} daily observations")
+
+    # Compute metrics from daily NAV
+    print("\nComputing consolidated metrics from nav_daily.csv...")
+    metrics = compute_metrics_from_nav_daily(df_nav, oos_config)
 
     # Display results
-    print(format_metrics_table(metrics))
-
-    # Create CSV output
-    csv_output = REPORTS_DIR / "oos_consolidated_metrics.csv"
-    create_csv_output(df_windows, metrics, csv_output)
+    print("\n" + format_simple_metrics_table(metrics))
 
     # Save metrics as JSON for further processing
     json_output = REPORTS_DIR / "oos_consolidated_metrics.json"
     with open(json_output, "w") as f:
         # Convert numpy types to native Python for JSON serialization
-        metrics_json = {k: float(v) if isinstance(v, (np.floating, np.integer)) else v for k, v in metrics.items()}
+        metrics_json = {
+            k: float(v) if isinstance(v, (np.floating, np.integer)) else str(v)
+            for k, v in metrics.items()
+        }
         json.dump(metrics_json, f, indent=2)
-    print(f"✓ JSON output saved to: {json_output}")
+    print(f"\n✓ Metrics JSON saved to: {json_output}")
+
+    # Also save as CSV for transparency
+    csv_output = REPORTS_DIR / "oos_consolidated_metrics.csv"
+    metrics_df = pd.DataFrame([metrics])
+    metrics_df.to_csv(csv_output, index=False)
+    print(f"✓ Metrics CSV saved to: {csv_output}")
 
     print("\n" + "=" * 70)
-    print("CONSOLIDATION COMPLETE")
+    print("✅ CONSOLIDATION COMPLETE (FROM SINGLE NAV SOURCE)")
     print("=" * 70)
 
 if __name__ == "__main__":

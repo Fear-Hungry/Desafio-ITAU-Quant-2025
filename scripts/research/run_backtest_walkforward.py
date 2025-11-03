@@ -12,6 +12,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import yaml
 from itau_quant.data import get_arara_universe
 
 print("=" * 80)
@@ -24,12 +25,23 @@ print()
 # CONFIGURAÇÃO
 # ============================================================================
 
+# Load OOS period from centralized config
+CONFIG_PATH = Path(__file__).parent.parent.parent / "configs" / "oos_period.yaml"
+with open(CONFIG_PATH, 'r') as f:
+    oos_config = yaml.safe_load(f)
+
+oos_start = oos_config['oos_evaluation']['start_date']
+oos_end = oos_config['oos_evaluation']['end_date']
+START_DATE = datetime.strptime(oos_start, "%Y-%m-%d")
+END_DATE = datetime.strptime(oos_end, "%Y-%m-%d")
+
+print(f"📋 OOS Period (from {CONFIG_PATH.name}):")
+print(f"   • Start: {START_DATE.date()}")
+print(f"   • End:   {END_DATE.date()}")
+print()
+
 # Universo completo
 TICKERS = get_arara_universe()
-
-# Período de backtest
-END_DATE = datetime.today()
-START_DATE = END_DATE - timedelta(days=365 * 5)  # 5 anos
 
 # Walk-forward parameters
 TRAIN_WINDOW = 252  # 1 ano de treino
@@ -393,6 +405,32 @@ print("💾 Salvando resultados...")
 
 output_dir = Path("results")
 output_dir.mkdir(exist_ok=True)
+
+# Create canonical NAV daily export
+walkforward_dir = Path("reports") / "walkforward"
+walkforward_dir.mkdir(parents=True, exist_ok=True)
+
+# Build NAV daily series from returns
+nav_daily_list = []
+nav_value = 1.0
+for date, ret in zip(dates, portfolio_returns):
+    nav_value *= (1 + ret)
+    nav_daily_list.append({
+        'date': date,
+        'nav': nav_value,
+        'daily_return': ret,
+        'cumulative_return': cumulative_returns.loc[date] if date in cumulative_returns.index else nav_value - 1,
+    })
+
+nav_daily_df = pd.DataFrame(nav_daily_list)
+
+# Save canonical nav_daily.csv for all downstream processes
+nav_daily_file = walkforward_dir / "nav_daily.csv"
+nav_daily_df.to_csv(nav_daily_file, index=False)
+print(f"   ✅ NAV diário canônico (single source of truth): {nav_daily_file}")
+print(f"      • Linhas: {len(nav_daily_df)}")
+print(f"      • Período: {nav_daily_df['date'].min().date()} a {nav_daily_df['date'].max().date()}")
+print()
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 

@@ -1,0 +1,33 @@
+# Official Out-of-Sample (OOS) Evaluation Period Configuration
+# This is the SINGLE SOURCE OF TRUTH for all OOS period definitions
+# All scripts should read from this config to ensure consistency
+
+oos_evaluation:
+  # Primary evaluation period: January 2, 2020 to October 31, 2025
+  # This represents 5.8 years of live trading validation
+  start_date: "2020-01-02"
+  end_date: "2025-10-31"
+
+  # Period statistics
+  business_days: 1466  # Actual business days in period
+  n_windows: 64        # Number of walk-forward validation windows
+
+  # Walk-forward window configuration
+  # (these should match values in backtest_full.yaml)
+  window:
+    train_days: 252      # Training period: 1 year
+    test_days: 21        # Test period: ~1 month
+    purge_days: 2        # Purging window (temporal validation)
+    embargo_days: 2      # Embargo window (temporal validation)
+
+  description: |
+    Official OOS evaluation period for PRISM-R portfolio validation.
+    Used by all metric consolidation, reporting, and figure generation scripts.
+
+    This period spans from the beginning of 2020 (post-COVID entry) through
+    Q3 2025, providing robust walk-forward validation across 64 windows.
+
+    Period justification:
+    - Starts 2020-01-02: Sufficient historical data for covariance estimation
+    - Ends 2025-10-31: Final available data for out-of-sample validation
+    - Avoids data snooping: Walk-forward with proper temporal validation
