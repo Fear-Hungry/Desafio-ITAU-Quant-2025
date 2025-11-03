@@ -115,13 +115,13 @@ Período OOS usado:
 
 | Estratégia | Total Return | Annual Return | Volatility | Sharpe (mean) | Sharpe (median) | CVaR 95% | PSR | DSR | Max Drawdown | Turnover | Cost (bps) | Success Rate | Fonte |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
-| PRISM-R (Portfolio Optimization) | 2.89% | 0.50% | 8.60% | 0.0576 | — | -19.55% | — | — | -20.89% | — | — | 52.0% | oos_consolidated_metrics.json |
-| Minimum Variance (Ledoit-Wolf) | 7.02% | 1.67% | 2.45% | 0.6891 | — | -0.0036 | — | — | -3.44% | 8.62e-02 | 126.76 | — | strategy_comparison_final.csv |
-| Shrunk Mean-Variance | 38.73% | 8.35% | 12.90% | 0.6859 | — | -0.0194 | — | — | -21.72% | 5.80e-01 | 852.84 | — | strategy_comparison_final.csv |
-| Equal-Weight 1/N | 33.85% | 7.40% | 11.35% | 0.6859 | — | -0.0164 | — | — | -17.88% | 2.04e-02 | 30.00 | — | strategy_comparison_final.csv |
-| Risk Parity | 29.74% | 6.58% | 10.72% | 0.6485 | — | -0.0155 | — | — | -16.85% | 2.83e-02 | 41.56 | — | strategy_comparison_final.csv |
-| 60/40 Stocks/Bonds | 17.59% | 4.05% | 9.80% | 0.4541 | — | -0.0143 | — | — | -20.77% | 2.04e-02 | 30.00 | — | strategy_comparison_final.csv |
-| Hierarchical Risk Parity | 1.08% | 0.26% | 5.85% | 0.0742 | — | -0.0085 | — | — | -15.09% | 6.03e-01 | 886.02 | — | strategy_comparison_final.csv |
+| PRISM-R (Portfolio Optimization) | 2.89% | 0.50% | 8.60% | 1.2958 | 1.2341 | -0.1033 | 1.0000 | 0.9969 | -25.30% | 7.68e-06 | 15.57 | 59.9% | oos_consolidated_metrics.json |
+| Minimum Variance (Ledoit-Wolf) | 7.06% | 1.80% | 2.86% | 0.6365 | — | -0.0042 | — | — | -8.69% | 9.69e-02 | 133.68 | — | strategy_comparison_final.csv |
+| Shrunk Mean-Variance | 66.63% | 14.25% | 12.43% | 1.1342 | — | -0.0188 | — | — | -13.31% | 5.70e-01 | 785.95 | — | strategy_comparison_final.csv |
+| Equal-Weight 1/N | 60.38% | 13.11% | 11.17% | 1.1594 | — | -0.0159 | — | — | -13.85% | 2.17e-02 | 30.00 | — | strategy_comparison_final.csv |
+| Risk Parity | 56.51% | 12.40% | 10.61% | 1.1544 | — | -0.0150 | — | — | -13.35% | 3.01e-02 | 41.50 | — | strategy_comparison_final.csv |
+| 60/40 Stocks/Bonds | 36.33% | 8.42% | 9.69% | 0.8827 | — | -0.0141 | — | — | -15.92% | 2.17e-02 | 30.00 | — | strategy_comparison_final.csv |
+| Hierarchical Risk Parity | 13.21% | 3.29% | 6.39% | 0.5381 | — | -0.0093 | — | — | -14.13% | 5.09e-01 | 702.32 | — | strategy_comparison_final.csv |
 
 Notas:
 - O PRISM-R usa métricas consolidadas do JSON (série diária OOS).
