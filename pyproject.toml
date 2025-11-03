@@ -2,7 +2,7 @@
 name = "itau_quant"
 version = "0.1.0"
 description = "Quantitative asset allocation strategy for the ITAU-Quant challenge."
-authors = ["Marcus Vinícius Silva <marcusviny63@gmail.com>", "Anna Beatriz Cardoso <annacardoso9572@gmail.com>"]
+authors = ["Marcus Vinícius Silva", "Anna Beatriz Cardoso"]
 readme = "README.md"
 license = "MIT"
 packages = [{include = "itau_quant", from = "src"}]
@@ -68,3 +68,31 @@ target-version = ['py39']
 pythonpath = ["src"]
 testpaths = ["tests"]
 addopts = ["--import-mode=importlib"]
+
+[tool.coverage.run]
+source = ["src/itau_quant"]
+omit = [
+    "*/tests/*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+    "src/itau_quant/__init__.py",
+]
+
+[tool.coverage.report]
+precision = 2
+show_missing = true
+skip_covered = false
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+    "@overload",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
