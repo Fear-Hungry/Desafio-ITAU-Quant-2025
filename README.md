@@ -109,7 +109,23 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 |---------------------------------|-----------:|----------:|-------:|--------:|--------------:|-----------------:|---------|
 
 
-> **Nota:** Tabela atualizada com dados reais do backtest mais recente (configs/optimizer_example.yaml). Baselines (Equal-Weight, Risk Parity, Min-Var, 60/40) serão adicionados em rodada futura de validação comparativa. Para métricas detalhadas por janela OOS, consulte seção 5.2.
+Período OOS usado:
+- PRISM-R: 2020-01-02 a 2025-10-09 (1451 dias) — fonte: reports/oos_consolidated_metrics.json
+- Baselines: conforme reports/strategy_comparison_final.csv (podem usar período diferente; será padronizado em rodada futura)
+
+| Estratégia | Total Return | Annual Return | Volatility | Sharpe (mean) | Sharpe (median) | CVaR 95% | PSR | DSR | Max Drawdown | Turnover | Cost (bps) | Success Rate | Fonte |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| PRISM-R (Portfolio Optimization) | 2.89% | 0.50% | 8.60% | 0.0576 | — | -19.55% | — | — | -20.89% | — | — | 52.0% | oos_consolidated_metrics.json |
+| Minimum Variance (Ledoit-Wolf) | 7.02% | 1.67% | 2.45% | 0.6891 | — | -0.0036 | — | — | -3.44% | 8.62e-02 | 126.76 | — | strategy_comparison_final.csv |
+| Shrunk Mean-Variance | 38.73% | 8.35% | 12.90% | 0.6859 | — | -0.0194 | — | — | -21.72% | 5.80e-01 | 852.84 | — | strategy_comparison_final.csv |
+| Equal-Weight 1/N | 33.85% | 7.40% | 11.35% | 0.6859 | — | -0.0164 | — | — | -17.88% | 2.04e-02 | 30.00 | — | strategy_comparison_final.csv |
+| Risk Parity | 29.74% | 6.58% | 10.72% | 0.6485 | — | -0.0155 | — | — | -16.85% | 2.83e-02 | 41.56 | — | strategy_comparison_final.csv |
+| 60/40 Stocks/Bonds | 17.59% | 4.05% | 9.80% | 0.4541 | — | -0.0143 | — | — | -20.77% | 2.04e-02 | 30.00 | — | strategy_comparison_final.csv |
+| Hierarchical Risk Parity | 1.08% | 0.26% | 5.85% | 0.0742 | — | -0.0085 | — | — | -15.09% | 6.03e-01 | 886.02 | — | strategy_comparison_final.csv |
+
+Notas:
+- O PRISM-R usa métricas consolidadas do JSON (série diária OOS).
+- As baselines acima são do artefato de comparação atual e poderão ser reprocessadas para bater exatamente o mesmo período OOS.
 
 ### 5.2 Análise Walk-Forward Detalhada (64 janelas OOS)
 
