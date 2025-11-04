@@ -206,12 +206,7 @@ Os detalhes por janela (estatísticas, curvas e períodos de estresse) estão di
 As métricas consolidadas do período OOS canônico (2020-01-02 a 2025-10-09) são calculadas a partir de reports/walkforward/nav_daily.csv e publicadas em reports/oos_consolidated_metrics.json. O período é definido centralmente em configs/oos_period.yaml.
 
 ### 5.3 Gráficos
-![Curva de capital](reports/figures/tearsheet_cumulative_nav.png)
-![Drawdown](reports/figures/tearsheet_drawdown.png)
-![Risco por budget](reports/figures/tearsheet_risk_contribution_by_budget.png)
-![Custos](reports/figures/tearsheet_cost_decomposition.png)
-![Walk-forward NAV + Sharpe (destaque pandemia)](reports/figures/walkforward_nav_20251101.png)
-![Análise Walk-Forward Completa (parameter evolution, Sharpe por janela, consistency, turnover/cost)](reports/figures/walkforward_analysis_20251101.png)
+![Análise Walk-Forward Completa (parameter evolution, Sharpe por janela, consistency, turnover/cost)](reports/figures/walkforward_analysis_20251104.png)
 
 ### 5.4 Ablations e sensibilidade
 
