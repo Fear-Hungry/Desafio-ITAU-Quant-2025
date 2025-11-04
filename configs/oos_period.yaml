@@ -15,10 +15,10 @@ oos_evaluation:
   # Walk-forward window configuration
   # (these should match values in backtest_full.yaml)
   window:
-    train_days: 252      # Training period: 1 year
-    test_days: 21        # Test period: ~1 month
-    purge_days: 2        # Purging window (temporal validation)
-    embargo_days: 2      # Embargo window (temporal validation)
+    train_days: 252 # Training period: 1 year
+    test_days: 21 # Test period: ~1 month
+    purge_days: 2 # Purging window (temporal validation)
+    embargo_days: 2 # Embargo window (temporal validation)
 
   description: |
     Official OOS evaluation period for PRISM-R portfolio validation.

@@ -162,6 +162,13 @@ walkforward: ## Run walk-forward validation
 	@echo "$(BLUE)Running walk-forward validation...$(NC)"
 	poetry run python scripts/examples/run_walkforward_arara.py
 
+oos: ## Reproduce canonical OOS artifacts (nav_daily, consolidated metrics, figures)
+	@echo "$(BLUE)Reproducing canonical OOS pipeline...$(NC)"
+	poetry run python scripts/run_01_data_pipeline.py --force-download --start 2010-01-01
+	poetry run python scripts/research/run_backtest_walkforward.py
+	poetry run python scripts/consolidate_oos_metrics.py
+	poetry run python scripts/generate_oos_figures.py
+
 ##@ Reporting
 
 report: ## Generate performance report

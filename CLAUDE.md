@@ -141,7 +141,7 @@ Where:
 - `μᵀw`: Expected return
 - `λ wᵀΣw`: Risk penalty (λ calibrated to target volatility 10-12%)
 - `η ‖w - w_{t-1}‖₁`: Turnover penalty (keeps monthly turnover 5-20%)
-- `cᵀ|w - w_{t-1}|`: Linear transaction costs (10 bps + slippage)
+- `cᵀ|w - w_{t-1}|`: Linear transaction costs (30 bps per round-trip)
 
 **Constraint Blocks:**
 1. Budget: `1ᵀw = 1`, box: `0 ≤ w_i ≤ u_i`
@@ -391,7 +391,7 @@ The following targets drive design decisions:
 | Max Drawdown        | ≤ 15%        | Triggers defensive mode at 15%           |
 | CVaR (5%)           | ≤ 8%         | Tail risk control                        |
 | Volatility          | ≤ 12% annual | Annualized rolling std                   |
-| Monthly Turnover    | 5% - 20%     | Controlled via L1 penalty (η = 0.50)     |
+| Monthly Turnover    | 5% - 20%     | Controlled via transaction costs (c = 30 bps) in objective |
 | Annual Costs        | ≤ 50 bps     | Linear + slippage model                  |
 | Tracking Error      | Monitor      | vs MSCI ACWI (60%) + AGG (40%), unhedged |
 
