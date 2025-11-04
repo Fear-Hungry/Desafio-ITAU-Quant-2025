@@ -169,6 +169,21 @@ oos: ## Reproduce canonical OOS artifacts (nav_daily, consolidated metrics, figu
 	poetry run python scripts/consolidate_oos_metrics.py
 	poetry run python scripts/generate_oos_figures.py
 
+##@ OOS Utilities
+
+turnover-baselines: ## Export per-window turnover for baselines (per-window CSVs)
+	@echo "$(BLUE)Exporting per-window turnover for baselines...$(NC)"
+	poetry run python scripts/baselines/export_per_window_turnover.py --strategies equal_weight sixty_forty risk_parity
+
+update-readme-turnover: ## Update README Table 5.1 with turnover median/p95
+	@echo "$(BLUE)Updating README Turnover (mediana/p95)...$(NC)"
+	poetry run python scripts/update_readme_turnover_stats.py --force-overwrite
+
+turnover: ## Compute per-window turnover and update README
+	@echo "$(BLUE)Computing turnover distributions and updating README...$(NC)"
+	$(MAKE) turnover-baselines
+	$(MAKE) update-readme-turnover
+
 ##@ Reporting
 
 report: ## Generate performance report
