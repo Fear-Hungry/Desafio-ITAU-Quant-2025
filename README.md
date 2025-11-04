@@ -32,7 +32,7 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 - **Drawdown Máximo:** -20.89%
 - **CVaR 95% (1 dia):** -0.0127
 - **Taxa de Acerto:** 52.0%
-- **Turnover (mediana):** ~0.2% ao mês
+- **Turnover mediano/mês (‖Δw‖₁):** ~0.2%
 
 **Fonte:** Todos os valores são calculados a partir de `reports/walkforward/nav_daily.csv` (canonical single source of truth), consolidados em `reports/oos_consolidated_metrics.json`. Para detalhes completos sobre metodologia, rastreabilidade e validação, ver seção 6.4.
 
@@ -120,635 +120,35 @@ poetry run python scripts/run_01_data_pipeline.py \
 
 ---
 
-## 3. Universo e Regras de Constraints
+## 3. Metodologia
 
-### 3.1 Grupos de Ativos e Hierarquia de Caps
+### 3.1 Estimadores
+- **Retorno esperado:** Shrunk_50 (força 0.5, janela 252 dias).
+- **Covariância:** Ledoit-Wolf não linear (252 dias).
+- **Modelos alternativos disponíveis:** Black-Litterman, regressão bayesiana, Risk Parity (ERC), HRP, Tyler M-estimator, CVaR LP — documentados em “Relatório Consolidado”.
 
-**Arquivo de configuração:** `configs/asset_groups.yaml`
+### 3.2 Otimização
+- **Função objetivo:**  
+  \[
+  \max_w \, \mu^\top w - \frac{\lambda}{2} w^\top \Sigma w - \eta \lVert w - w_{t-1} \rVert_1 - \text{costs}(w, w_{t-1})
+  \]
+  com λ = 15, η = 0.25, custos lineares de 30 bps aplicados ao turnover absoluto.
+- **Restrições:** budgets por classe (11 grupos), bounds individuais (0–10 %), soma de pesos = 1. Cardinalidade desativada nesta rodada (k_min/k_max só em testes de GA).
+- **Solvedor:** CVXPY + Clarabel (tolerâncias 1e-8); fallback para OSQP/ECOS disponível.
 
-A carteira ARARA implementa **6 grupos de constraints** com limites hierárquicos (hard caps):
+**Penalização de custos e suavização.** Na execução canônica, os custos são aplicados como  
+\(\text{cost}(w,w_{t-1}) = c\lVert w-w_{t-1}\rVert_1\), com \(c=30\text{ bps}\), e **η=0** no termo L1 adicional, evitando dupla penalização. Experimentos com η>0 estão documentados na seção de ablations.
 
-| Grupo | Ativos | Cap Total | Cap por Ativo | Tipo |
-|-------|--------|-----------|---------------|------|
-| **US Equity** | SPY, QQQ, IWM, VTV, VUG | ≤ 70% | 10% (regra geral) | Hard |
-| **Treasuries** | IEF, TLT, SHY | ≤ 45% | 10% (regra geral) | Hard |
-| **Commodities All** | GLD, SLV, DBC, USO | ≤ 25% | 10% (regra geral) | Hard |
-| **Precious Metals** | GLD, SLV | ≤ 15% | 10% (regra geral) | Hard |
-| **Energy** | DBC, USO | ≤ 20% | 10% (regra geral) | Hard |
-| **Crypto** | GBTC, ETHE | ≤ 10% | **8%** (exceção) | Hard |
+### 3.3 Avaliação
+- Walk-forward purged: treino 252 dias, teste 21 dias, purge 2 dias, embargo 2 dias (162 splits cobrindo 2010–2025).
+- Baselines recalculadas no mesmo protocolo: Equal-weight, Risk Parity, MV Shrunk clássico, Min-Var LW, 60/40 e HRP.
+- Métricas pós-custos: retorno e vol anualizados, Sharpe (OOS daily), CVaR 95% (1d), Max Drawdown, turnover (médio por rebalance, one-way), custos (bps, total OOS).
 
-**Nota:** Grupos crypto e china têm caps **por ativo** reduzidos (8% e 10% respectivamente) em relação à regra geral de 10%.
-
-### 3.2 Constraints Individuais (Box Constraints)
-
-**Regra geral:**
-- **Mínimo:** \(w_i \geq 0\) (long-only, sem short-selling)
-- **Máximo:** \(w_i \leq 0.10\) (10% por ativo)
-
-**Exceções (caps reduzidos):**
-- **Crypto (GBTC, ETHE):** \(w_i \leq 0.08\) (8% por ativo, hard cap devido a volatilidade)
-- **China (se incluído FXI):** \(w_i \leq 0.10\) (mantido, mas monitorado separadamente)
-
-**Budget constraint:**
-\[
-\sum_{i=1}^{N} w_i = 1 \quad \text{(fully invested)}
-\]
-
-### 3.3 Hierarquia de Caps (Hard vs Soft)
-
-**Todos os caps são HARD constraints** (implementados via inequalities no solver CVXPY):
-
-```python
-# Exemplo de implementação
-cvx.sum(w[crypto_indices]) <= 0.10  # Crypto total ≤ 10%
-w[crypto_indices] <= 0.08            # Cada crypto ≤ 8%
-cvx.sum(w[us_equity_indices]) <= 0.70  # US Equity ≤ 70%
-```
-
-**Não há soft constraints** (penalizações via função objetivo) na execução canônica. Experimentos com soft constraints via L2 penalty estão documentados em `scripts/research/run_soft_constraints.py`.
-
-### 3.4 Cardinalidade (Opcional, Desativada no OOS Canônico)
-
-**Parâmetros disponíveis (não usados no OOS oficial):**
-- \(K_{\min} = 20\): mínimo de ativos com \(w_i > 0\)
-- \(K_{\max} = 35\): máximo de ativos com \(w_i > 0\)
-
-**Implementação:** Heurística via Genetic Algorithm (GA) em `scripts/research/run_ga_mv_walkforward.py`
-
-**Status:** Desativada na execução OOS canônica para isolar efeito dos budgets por grupo.
-
-### 3.5 Artefatos de Configuração
-
-**Arquivo de universo:**
-```yaml
-# configs/universe_arara.yaml
-name: ARARA
-tickers:
-  - SPY
-  - QQQ
-  # ... (69 tickers no total)
-  - GBTC
-  - ETHE
-```
-
-**Arquivo de grupos:**
-```yaml
-# configs/asset_groups.yaml
-groups:
-  crypto:
-    assets: [GBTC, ETHE]  # Efetivo no OOS (IBIT/ETHA/FBTC excluídos)
-    max: 0.10
-    per_asset_max: 0.08
-  # ... (6 grupos no total)
-```
-
-**Rodapé para tabelas (copy-paste ready):**
-> **Universo OOS efetivo (Crypto):** GBTC, ETHE incluídos (trusts com histórico completo); IBIT, ETHA, FBTC excluídos por histórico insuficiente (lançados em 2024).
+O modo defensivo (quando habilitado) ajusta risco e caixa com base em gatilhos objetivos de estresse. O fallback 1/N é acionado somente por falha do solver (não convergência ou matriz singular) e não é usado nas comparações OOS.
 
 ---
 
-## 4. Metodologia (Detalhamento Técnico)
-
-### 4.1 Estimadores de Retorno e Risco
-
-#### 4.1.1 Retornos Esperados
-
-**Método principal (execução canônica):** Shrunk_50 (Bayesian Shrinkage)
-
-**Formulação:**
-\[
-\hat{\mu}_i = (1 - \delta) \cdot \bar{r}_i + \delta \cdot \mu_{\text{prior}}
-\]
-
-**Parâmetros:**
-- \(\delta = 0.5\) (força de shrinkage, 50% para média histórica)
-- \(\mu_{\text{prior}} = \text{grand mean}\) (média cross-sectional de todos os ativos)
-- Janela de estimação: 252 dias úteis (~1 ano)
-- \(\bar{r}_i\): média amostral do ativo \(i\) na janela
-
-**Implementação:**
-```python
-# src/itau_quant/estimators/mu.py
-def shrunk_mean(returns: pd.DataFrame, delta: float = 0.5) -> pd.Series:
-    """Bayesian shrinkage toward grand mean."""
-    sample_mean = returns.mean(axis=0)  # Per-asset mean
-    grand_mean = sample_mean.mean()     # Cross-sectional mean
-    return (1 - delta) * sample_mean + delta * grand_mean
-```
-
-**Justificativa:** Reduz overfitting a tendências históricas de curto prazo, especialmente importante em universo com 66 ativos (alta dimensionalidade).
-
-**Métodos alternativos disponíveis:**
-- **Simple Mean:** \(\hat{\mu} = \bar{r}\) (sem shrinkage)
-- **Huber Mean:** Estimador robusto a outliers (usado em baseline MV Huber)
-- **Student-t MLE:** Assume caudas pesadas (não usado no OOS canônico)
-- **Black-Litterman:** Combina equilibrium + views subjetivas (disponível, não usado)
-
-#### 4.1.2 Matriz de Covariância
-
-**Método principal (execução canônica):** Ledoit-Wolf Linear Shrinkage (2004)
-
-**Formulação:**
-\[
-\hat{\Sigma} = \delta \cdot F + (1 - \delta) \cdot S
-\]
-
-Onde:
-- \(S\): covariância amostral \(\frac{1}{T-1} \sum_{t=1}^{T} (r_t - \bar{r})(r_t - \bar{r})^\top\)
-- \(F\): target matrix (constant correlation model ou identity matrix)
-- \(\delta^*\): intensidade de shrinkage **ótima** (estimada analiticamente, tipicamente 0.3-0.7)
-
-**Parâmetros:**
-- Janela de estimação: 252 dias úteis
-- ddof=1 (degrees of freedom, unbiased estimator)
-- Target: Constant correlation matrix (Ledoit-Wolf default)
-- PSD projection: eigenvalue floor \(\lambda_{\min} \geq 10^{-8}\)
-
-**Implementação:**
-```python
-# src/itau_quant/estimators/cov.py (wrapper para sklearn)
-from sklearn.covariance import LedoitWolf
-
-def ledoit_wolf_shrinkage(returns: pd.DataFrame) -> pd.DataFrame:
-    """Linear shrinkage covariance estimator."""
-    lw = LedoitWolf(store_precision=False, assume_centered=False)
-    cov_shrunk = lw.fit(returns).covariance_
-    return pd.DataFrame(cov_shrunk, index=returns.columns, columns=returns.columns)
-```
-
-**Vantagens:**
-- **Reduz condition number:** \(\kappa(\hat{\Sigma}) \approx 10^2\) vs \(\kappa(S) \approx 10^4\) (melhoria de 99%)
-- **Estabiliza min-variance:** concentração máxima reduzida de 90% para ~48%
-- **Analiticamente ótimo:** minimiza MSE esperado (Ledoit & Wolf 2004)
-
-**Métodos alternativos disponíveis:**
-- **Sample Covariance:** \(S\) (não shrinkado, usado para comparação)
-- **Ledoit-Wolf Nonlinear Shrinkage (2018):** Shrinkage não linear via eigenvalues (mencionado, não usado no OOS canônico)
-- **Tyler M-estimator:** Robusto a outliers (disponível, não usado)
-- **Exponentially Weighted:** Maior peso a observações recentes (não usado)
-
-**Referência:** Ledoit, O., & Wolf, M. (2004). "A well-conditioned estimator for large-dimensional covariance matrices." *Journal of Multivariate Analysis*, 88(2), 365-411.
-
-#### 4.1.3 Custos de Transação e Fricções
-
-**Modelo de custos (execução canônica):** Linear transaction costs
-
-**Formulação:**
-\[
-\text{TC}(w, w_{t-1}) = c \cdot \sum_{i=1}^{N} |w_i - w_{i,t-1}|
-\]
-
-**Parâmetros:**
-- \(c = 30\) bps (0.003) por round-trip
-- Aplicado sobre turnover one-way: \(\text{TO} = \frac{1}{2} \sum_i |w_i - w_{i,t-1}|\)
-- **Custos totais** = 30 bps × 2 × TO = 60 bps sobre turnover total (bid-ask + market impact simplificado)
-
-**Decomposição (não modelado separadamente, mas implícito):**
-- Bid-ask spread: ~5-10 bps (ETFs líquidos)
-- Market impact: ~10-20 bps (depende do tamanho, assumido médio)
-- Taxa de corretagem: ~0 bps (ETFs de varejo sem comissão)
-
-**Slippage avançado (disponível, NÃO usado no OOS canônico):**
-- **Modelo:** `adv20_piecewise` (piecewise linear em função do ADV20)
-- **Status:** Desativado para isolar efeito dos budgets por grupo
-- **Localização:** `src/itau_quant/costs/slippage.py`
-
-#### 4.1.4 Validação Temporal (Walk-Forward Purged)
-
-**Framework:** PurgedKFold (adaptado de Advances in Financial Machine Learning, López de Prado 2018)
-
-**Parâmetros:**
-- **Treino:** 252 dias úteis (~1 ano, ~50 semanas)
-- **Teste:** 21 dias úteis (~1 mês, ~4 semanas)
-- **Purge:** 2 dias (remove observações imediatamente antes do início do teste)
-- **Embargo:** 2 dias (remove observações imediatamente após o fim do teste)
-
-**Propósito do Purge/Embargo:**
-- **Purge:** Evita label leakage de retornos sobrepostos (ex.: se treino usa retornos de 5 dias, as últimas observações do treino podem sobrepor com o início do teste)
-- **Embargo:** Remove autocorrelação residual (observações logo após o teste podem conter informação sobre o teste devido a momentum/reversão)
-
-**Implementação:**
-```python
-# src/itau_quant/estimators/validation.py
-class PurgedKFold:
-    def __init__(self, n_splits, min_train=252, min_test=21, 
-                 purge_window=2, embargo_pct=0.0):
-        self.purge_window = purge_window  # Dias a remover antes do teste
-        self.embargo_pct = embargo_pct    # % do total a remover após teste
-```
-
-**Exemplo de split:**
-```
-Timeline: |----TRAIN (252d)----|PURGE(2d)|TEST(21d)|EMBARGO(2d)|----NEXT_TRAIN----|
-          t=0                t=251      t=253    t=274        t=276
-```
-
-**Referência:** López de Prado, M. (2018). *Advances in Financial Machine Learning*. Wiley. Chapter 7.
-
-### 4.2 Otimização de Portfólio
-
-#### 4.2.1 Equal Risk Contribution (ERC) / Risk Parity
-
-**Definição de Risk Contribution:**
-\[
-RC_i = w_i \cdot (\Sigma w)_i
-\]
-
-Onde \((\Sigma w)_i\) é a \(i\)-ésima componente do vetor \(\Sigma w\) (contribuição marginal de risco do ativo \(i\)).
-
-**Condição de equalização:**
-\[
-RC_i = \frac{\sigma_p^2}{N} \quad \forall i \in \{1, \ldots, N\}
-\]
-
-Equivalentemente:
-\[
-w_i \cdot (\Sigma w)_i = w_j \cdot (\Sigma w)_j \quad \forall i, j
-\]
-
-**Formulação de otimização (via Sequential Least Squares):**
-\[
-\min_w \sum_{i=1}^{N} \left( \log(w_i) - \frac{1}{N} \sum_{j=1}^{N} \log(w_j) \right)^2
-\]
-
-Sujeito a:
-- \(w_i > 0\) (long-only)
-- \(\sum_i w_i = 1\) (budget)
-- Caps de grupo (se aplicável)
-
-**Solver:** `scipy.optimize.minimize` com método SLSQP
-
-**Implementação:** `src/itau_quant/optimization/core/risk_parity.py`
-
-#### 4.2.2 PRISM-R (Mean-Variance com Custos)
-
-**Função objetivo (execução canônica OOS):**
-\[
-\max_w \quad \mu^\top w - \frac{\lambda}{2} w^\top \Sigma w - \eta \lVert w - w_{t-1} \rVert_1 - c \lVert w - w_{t-1} \rVert_1
-\]
-
-**Simplificação (η=0 no OOS canônico):**
-\[
-\max_w \quad \mu^\top w - \frac{\lambda}{2} w^\top \Sigma w - c \lVert w - w_{t-1} \rVert_1
-\]
-
-**Parâmetros:**
-- \(\lambda = 15\): coeficiente de aversão ao risco (calibrado para vol-alvo ~10-12%)
-- \(\eta = 0\): penalização L1 adicional de turnover (zero para evitar dupla penalização)
-- \(c = 0.003\): custos lineares (30 bps por round-trip)
-- \(w_{t-1}\): pesos do período anterior (inicializado como equal-weight na primeira janela)
-
-**Restrições:**
-
-1. **Budget constraint:**
-\[
-\sum_{i=1}^{N} w_i = 1
-\]
-
-2. **Box constraints (individuais):**
-\[
-0 \leq w_i \leq u_i \quad \text{onde } u_i = \begin{cases} 
-0.10 & \text{regra geral} \\
-0.08 & \text{crypto (GBTC, ETHE)}
-\end{cases}
-\]
-
-3. **Group constraints (6 grupos):**
-\[
-\sum_{i \in G_k} w_i \leq U_k \quad k \in \{\text{US equity, Treasuries, Commodities, ...}\}
-\]
-
-4. **Turnover cap (opcional, NÃO usado no OOS canônico):**
-\[
-\lVert w - w_{t-1} \rVert_1 \leq \tau
-\]
-
-**Formulação CVXPY:**
-```python
-import cvxpy as cvx
-
-w = cvx.Variable(N)
-ret = mu @ w
-risk = cvx.quad_form(w, Sigma)
-turnover = cvx.norm1(w - w_prev)
-cost = c * turnover
-
-objective = cvx.Maximize(ret - (lambda_risk / 2) * risk - cost)
-
-constraints = [
-    cvx.sum(w) == 1,          # Budget
-    w >= 0,                    # Long-only
-    w <= w_max,                # Box constraints
-    # Group constraints...
-]
-
-problem = cvx.Problem(objective, constraints)
-problem.solve(solver='CLARABEL', verbose=False)
-```
-
-#### 4.2.3 Solver, Tolerâncias e Reprodutibilidade
-
-**Solver principal:** CLARABEL (interior-point, open-source)
-
-**Configuração:**
-```python
-solver_opts = {
-    'eps_abs': 1e-8,        # Absolute tolerance
-    'eps_rel': 1e-8,        # Relative tolerance
-    'max_iter': 500,        # Maximum iterations
-    'verbose': False
-}
-```
-
-**Fallback hierarchy (em caso de falha):**
-1. CLARABEL (default)
-2. OSQP (para QPs menores, mais rápido mas menos robusto)
-3. ECOS (para SOCPs e QPs, intermediário)
-4. SCS (último recurso, menos preciso mas mais robusto)
-
-**Reprodutibilidade:**
-- **Seed:** Não aplicável (solver determinístico para QP convexo)
-- **Versões fixadas:** CVXPY==1.4.1, Clarabel==0.6.0 (via `pyproject.toml`)
-- **Commit hash:** Documentado em cada execução (ver seção 5.6, build info)
-
-**Critério de convergência:**
-- Status: "optimal" (problema resolvido com sucesso)
-- Dual gap: \(|p^* - d^*| < \epsilon_{\text{abs}} + \epsilon_{\text{rel}} \cdot \max(|p^*|, |d^*|)\)
-- Violação de constraints: \(\max_i |c_i| < \epsilon_{\text{abs}}\)
-
-### 4.3 Modo Defensivo e Fallback
-
-#### 4.3.1 Modo Defensivo (Stress Regime)
-
-**Gatilhos de ativação:**
-- Drawdown > 15% (relativo ao peak histórico)
-- CVaR 95% (21 dias) > 8% (tail risk elevado)
-- VIX > 30 (se disponível, proxy: rolling vol 21d > 25%)
-
-**Ajustes quando ativado:**
-1. **CASH floor:** Alocação mínima de 40% em SHY (short-term Treasuries), respeitando cap de 50%
-2. **Risk scaling:** Multiplica \(\lambda\) por fator 1.5 (reduz exposição a risco)
-3. **Vol-target:** Reescala pesos finais para volatilidade-alvo de 11% (se vol ex-ante > 11%)
-
-**Fórmula de reescala para vol-target:**
-\[
-w_{\text{final}} = \frac{\sigma_{\text{target}}}{\sqrt{w^\top \Sigma w}} \cdot w
-\]
-
-**Status no OOS canônico:** Modo defensivo **disponível mas NÃO ativado** na execução oficial (gatilhos não foram atingidos sistematicamente, ou feature desligada para isolar efeito base).
-
-**Localização:** `src/itau_quant/portfolio/defensive_overlay.py`
-
-#### 4.3.2 Fallback 1/N (Solver Failure)
-
-**Condições de ativação:**
-- Solver retorna status "infeasible" (restrições inconsistentes)
-- Solver retorna status "unbounded" (problema mal formulado)
-- Solver não converge após max_iter iterações
-- Matriz de covariância singular (condition number > 1e12)
-
-**Ação:**
-- Reverte para equal-weight: \(w_i = \frac{1}{N}\) respeitando caps individuais e de grupo
-- Log de warning gerado
-- Métrica "fallback_count" incrementada
-
-**Importante:** Fallback 1/N **NÃO é usado** nas comparações OOS (estratégia Equal-Weight 1/N da tabela é deliberada, não fallback por falha).
-
-**Implementação:**
-```python
-if result.status not in ['optimal', 'optimal_inaccurate']:
-    logger.warning(f"Solver failed with status {result.status}, using 1/N fallback")
-    w_fallback = np.ones(N) / N
-    # Ajustar para caps de grupo...
-    return w_fallback
-```
-
-### 4.4 Scripts de Execução
-
-**Pipeline completo (reprodução do OOS canônico):**
-
-```bash
-# 1. Download e processamento de dados
-poetry run python scripts/run_01_data_pipeline.py \
-    --force-download \
-    --start 2010-01-01 \
-    --end 2025-10-09
-
-# 2. Walk-forward backtest (gera 64 janelas OOS)
-poetry run python scripts/research/run_backtest_walkforward.py \
-    --universe configs/universe_arara.yaml \
-    --portfolio configs/portfolio_arara_basic.yaml \
-    --start-oos 2020-01-02 \
-    --end-oos 2025-10-09
-
-# 3. Consolidação de métricas
-poetry run python scripts/consolidate_oos_metrics.py
-
-# 4. Geração de figuras
-poetry run python scripts/generate_oos_figures.py
-```
-
-**Flags principais:**
-- `--force-download`: Re-download dados mesmo se cache existir
-- `--universe`: Path para YAML de universo
-- `--portfolio`: Path para YAML de configuração de portfolio
-- `--start-oos` / `--end-oos`: Período OOS oficial
-- `--seed`: Seed para reproducibilidade (N/A para solver determinístico, mas usado em GA/heurísticas)
-
-**Artefatos gerados:**
-```
-reports/
-├── walkforward/
-│   ├── nav_daily.csv                    # ★ CANONICAL (1,451 dias OOS)
-│   ├── per_window_results.csv           # Métricas por janela (64 janelas)
-│   └── weights_history.csv              # Pesos por rebalance (64 rebalances)
-├── oos_consolidated_metrics.json        # Métricas agregadas (single source)
-└── figures/
-    ├── oos_nav_cumulative_*.png
-    ├── oos_drawdown_underwater_*.png
-    └── oos_daily_distribution_*.png
-```
-
-**Commit hash (build info):**
-- Execução OOS canônica: `b4cd6ea`
-- Gerado em: 2025-11-04T05:03Z
-- Versionamento: Git tags `v1.0-oos-canonical`
-
-## 5. Avaliação (Métricas e Protocolo)
-
-### 5.1 Protocolo Walk-Forward (Resumo)
-
-**Configuração temporal:**
-- **Janela de treino:** 252 dias úteis (~1 ano, ~50 semanas)
-- **Janela de teste:** 21 dias úteis (~1 mês, ~4 semanas)
-- **Purge:** 2 dias (remove observações antes do teste para evitar label leakage)
-- **Embargo:** 2 dias (remove observações após o teste para evitar autocorrelação)
-
-**Dados históricos:**
-- Dados disponíveis desde 2010 para treino dos modelos
-- Total de 162 possíveis janelas walk-forward no período completo 2010-2025
-
-**Período OOS oficial (avaliação final):**
-- **Início:** 2020-01-02
-- **Fim:** 2025-10-09
-- **Dias úteis:** 1,451
-- **Janelas de teste OOS:** 64 (rebalanceamento mensal)
-- **Fonte canônica:** `configs/oos_period.yaml` e `reports/walkforward/nav_daily.csv`
-
-**Baselines:** Equal-weight, Risk Parity, MV Shrunk clássico, Min-Var LW, 60/40 e HRP recalculadas no mesmo protocolo.
-
-### 5.2 Métricas por Janela (Window-Level)
-
-**Calculadas para cada janela de teste (64 janelas):**
-
-1. **Retorno da janela:**
-\[
-r_{\text{window}} = \frac{\text{NAV}_{\text{end}} - \text{NAV}_{\text{start}}}{\text{NAV}_{\text{start}}}
-\]
-
-2. **Retorno anualizado (da janela, 21 dias):**
-\[
-r_{\text{annual}} = \left( 1 + r_{\text{window}} \right)^{252/21} - 1
-\]
-
-3. **Volatilidade anualizada (da janela, 21 retornos diários):**
-\[
-\sigma_{\text{annual}} = \text{std}(r_{\text{daily}}, \text{ddof}=1) \times \sqrt{252}
-\]
-
-4. **Sharpe por janela:**
-\[
-\text{Sharpe}_{\text{window}} = \frac{r_{\text{annual}} - r_f}{\sigma_{\text{annual}}} \quad (r_f = 0 \text{ nesta execução})
-\]
-
-5. **CVaR 95% (da janela, 21 retornos diários):**
-\[
-\text{CVaR}_{95\%} = -\mathbb{E}[r \mid r \leq Q_{0.05}(r)]
-\]
-(Expected Shortfall dos 5% piores retornos diários da janela)
-
-6. **Max Drawdown (da janela):**
-\[
-\text{MDD}_{\text{window}} = \min_{t \in \text{window}} \frac{\text{NAV}_t - \max_{s \leq t} \text{NAV}_s}{\max_{s \leq t} \text{NAV}_s}
-\]
-
-7. **Turnover (one-way, no rebalance):**
-\[
-\text{TO}_{\text{window}} = \frac{1}{2} \sum_{i=1}^{N} |w_{i,t} - w_{i,t-1}|
-\]
-
-8. **Custos da janela:**
-\[
-\text{Cost}_{\text{window}} = 30 \text{ bps} \times \text{TO}_{\text{window}}
-\]
-
-**Artefato:** `reports/walkforward/per_window_results.csv` (64 linhas, 1 por janela)
-
-### 5.3 Consolidação OOS (Série Completa)
-
-**Métricas calculadas sobre a série diária completa (1,451 dias):**
-
-**Fonte:** `reports/walkforward/nav_daily.csv`
-
-1. **NAV Final:**
-\[
-\text{NAV}_{\text{final}} = \text{NAV}_{2025\text{-}10\text{-}09}
-\]
-
-2. **Total Return:**
-\[
-r_{\text{total}} = \text{NAV}_{\text{final}} - 1 \quad \text{(assumindo NAV}_0 = 1\text{)}
-\]
-
-3. **Retorno Anualizado (geométrico):**
-\[
-r_{\text{annual}} = \left( \text{NAV}_{\text{final}} \right)^{252 / N_{\text{days}}} - 1
-\]
-Onde \(N_{\text{days}} = 1{,}451\)
-
-4. **Volatilidade Anualizada:**
-\[
-\sigma_{\text{annual}} = \text{std}(r_{\text{daily}}, \text{ddof}=1) \times \sqrt{252}
-\]
-
-5. **Sharpe Ratio (série completa):**
-\[
-\text{Sharpe} = \frac{r_{\text{annual}} - r_f}{\sigma_{\text{annual}}} \quad (r_f = 0)
-\]
-
-6. **Maximum Drawdown (série completa):**
-\[
-\text{MDD} = \min_{t} \frac{\text{NAV}_t - \max_{s \leq t} \text{NAV}_s}{\max_{s \leq t} \text{NAV}_s}
-\]
-
-7. **CVaR 95% (1 dia, não anualizado):**
-\[
-\text{CVaR}_{95\%} = -\mathbb{E}[r_{\text{daily}} \mid r_{\text{daily}} \leq Q_{0.05}(r_{\text{daily}})]
-\]
-
-8. **Success Rate:**
-\[
-\text{SR} = \frac{\#\{r_{\text{daily}} > 0\}}{N_{\text{days}}}
-\]
-
-**Artefato:** `reports/oos_consolidated_metrics.json` (single source of truth)
-
-### 5.4 Turnover (Definição Precisa)
-
-**Turnover one-way (por rebalance):**
-\[
-\text{TO}_t = \frac{1}{2} \sum_{i=1}^{N} |w_{i,t} - w_{i,t-1}|
-\]
-
-**Interpretação:** Fração do portfólio que é "virada" (compra + venda dividido por 2).
-
-**Exemplo:** Se \(w_{1,t} = 0.15\), \(w_{1,t-1} = 0.10\) → contribuição do ativo 1 = \(|0.15 - 0.10| = 0.05\). Se todos os outros ativos mantêm pesos, TO = 0.025 (2.5%).
-
-**Turnover mediano (excluindo warm-up):**
-- Calculado sobre 64 rebalances mensais OOS
-- Primeira janela (warm-up) excluída se \(w_{t-1} = 1/N\) (inicialização)
-- **Métrica reportada:** mediana, p50, p95
-
-**Custo acumulado OOS:**
-\[
-\text{Cost}_{\text{total}} = \sum_{t=1}^{64} \left( 30 \text{ bps} \times \text{TO}_t \right)
-\]
-
-**Custo anualizado (aproximação):**
-\[
-\text{Cost}_{\text{annual}} \approx \frac{\text{Cost}_{\text{total}}}{N_{\text{years}}} \quad \text{onde } N_{\text{years}} = \frac{1{,}451}{252} \approx 5.76
-\]
-
-### 5.5 Benchmarks
-
-**Taxa livre de risco:** \(r_f = 0\) (fixada por ausência de `pandas_datareader` para FRED)
-
-**Benchmarks informativos (NÃO entram no Sharpe):**
-- **Selic:** Taxa básica brasileira (não disponível nesta execução, USD-based)
-- **CDI:** Certificado de Depósito Interbancário (idem)
-- **MSCI ACWI:** Proxy global (60% ações, não usado como referência formal)
-- **60/40 (SPY/TLT):** Estratégia baseline na tabela, não benchmark externo
-
-**Importante:** Sharpe Ratios reportados são **excess return / vol** com \(r_f \approx 0\), portanto aproximadamente igual ao **Sharpe não ajustado** (return / vol).
-
-### 5.6 Distinção: Métricas por Janela vs. Série Diária
-
-**⚠️ ATENÇÃO:** O README anterior misturava métricas de janela e série contínua. Esclarecimento:
-
-| Métrica | Fonte | Uso |
-|---------|-------|-----|
-| **Sharpe por janela** | `per_window_results.csv` | Análise de consistência (rolling Sharpe) |
-| **Sharpe OOS (série)** | `nav_daily.csv` → `oos_consolidated_metrics.json` | **TABELA PRINCIPAL (5.1)** |
-| **Turnover mediano** | `weights_history.csv` | Análise de custos por rebalance |
-| **NAV final, MDD** | `nav_daily.csv` | **TABELA PRINCIPAL (5.1)** |
-
-**Critério de ranking:** A **Tabela principal (seção 5.1)** usa métricas da **série diária consolidada** (1,451 dias), NÃO média/mediana de janelas.
-
-**Série diária consolidada:** Execução contínua simulando produção (rebalance a cada 21 dias, sem re-treino entre dias da mesma janela).
-
----
-
-## 6. Protocolo de Avaliação (Resumo Executivo)
+## 4. Protocolo de avaliação
 | Item                         | Configuração atual                                     |
 |------------------------------|--------------------------------------------------------|
 | Janela de treino/teste       | 252d / 21d (set rolling)                               |
@@ -773,7 +173,7 @@ Período OOS oficial:
 
 **Comparabilidade dos baselines.** Todas as estratégias da Tabela 5.1 usam **o mesmo universo congelado (N=66)**, **mesmo período OOS (2020-01-02 a 2025-10-09)**, **rebalance mensal** e **custos de 30 bps por round-trip aplicados por rebalance**.
 
-| Estratégia | Total Return | Annual Return (geom) | Volatility | Sharpe (OOS daily) | CVaR 95% (1d) | Max Drawdown | Turnover (médio por rebalance, one-way) | Turnover (mediana) | Turnover (p95) | Trading cost (bps, total OOS) | Trading cost (bps/ano) |
+| Estratégia | Total Return | Annual Return (geom) | Volatility | Sharpe (OOS daily) | CVaR 95% (1d) | Max Drawdown | Turnover médio (‖Δw‖₁) | Turnover mediano (‖Δw‖₁) | Turnover p95 (‖Δw‖₁) | Trading cost (bps, total OOS) | Trading cost (bps/ano) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | PRISM-R (Portfolio Optimization) | 2.89% | 0.50% | 8.60% | 0.0576 | -0.0127 | -20.89% | — | — | — | — | — |
 | Equal-Weight 1/N | 27.56% | 4.32% | 11.18% | 0.5583 | -0.0163 | -19.09% | 1.92e-02 | 4.52e-04 | 9.39e-04 | 30.00 | 5.21 |
@@ -787,7 +187,7 @@ Período OOS oficial:
 
 Nota de rodapé: Números reproduzidos por pipeline WFO (treino 252, teste 21, purge 2, embargo 2), com custos de 30 bps por round-trip aplicados em cada rebalance; scripts, arquivos e comandos no Apêndice Técnico.
 
-*Nota:* **Annual Return (geom)** é \((NAV_T/NAV_0)^{252/N}-1\). **CVaR 95% (1d)** é Expected Shortfall de **retornos diários**, não anualizado. **Turnover** é **médio por rebalance (one-way)**. **Trading cost (bps, total OOS)** é a soma por janela de \(turnover \times 30\text{ bps}\). **Trading cost (bps/ano)** ≈ \(\frac{\text{custo_total_bps}}{N/252}\). **Turnover (mediana)** e **(p95)** calculados sobre rebalances mensais no período OOS (2020-01-02 a 2025-10-09, 57 meses). Valores de PRISM-R marcados como "—" devido a bug identificado no cálculo de turnover do arquivo per_window_results.csv (valores ~1e-05 são 2000x menores que baselines, indicando métrica incorreta).
+*Nota:* **Annual Return (geom)** é \((NAV_T/NAV_0)^{252/N}-1\). **CVaR 95% (1d)** é Expected Shortfall de **retornos diários**, não anualizado. **Turnover (‖Δw‖₁)** é **médio por rebalance (one-way)**, onde \(\Delta w = w_t - w_{t-1}\). **Trading cost (bps, total OOS)** é a soma por janela de \(turnover \times 30\text{ bps}\). **Trading cost (bps/ano)** ≈ \(\frac{\text{custo_total_bps}}{N/252}\). **Turnover mediano** e **p95** calculados sobre rebalances mensais no período OOS (2020-01-02 a 2025-10-09, 57 meses). Valores de PRISM-R marcados como "—" devido a bug identificado no cálculo de turnover do arquivo per_window_results.csv (valores ~1e-05 são 2000x menores que baselines, indicando métrica incorreta).
 
 Notas:
 - PRISM-R (linha 1) vem da série diária oficial (nav_daily.csv) consolidada em reports/oos_consolidated_metrics.json.
@@ -1392,10 +792,17 @@ Horizonte: 1 dia. Não anualizado. Calculado sobre retornos diários OOS (mesma 
 r_t = NAV_t / NAV_{t-1} - 1
 ```
 
-#### 7. Turnover (médio por rebalance, one-way)
+#### 7. Turnover médio por rebalance (‖Δw‖₁, one-way)
 ```
-turnover_t = (1/2) * Σ_i |w_{i,t} - w_{i,t^-}|
-Relato na tabela: média por janela WFO
+TO_t = (1/2) * ‖w_t - w_{t-1}‖₁ = (1/2) * Σ_i |w_{i,t} - w_{i,t-1}|
+
+Onde:
+- ‖Δw‖₁ = norma L1 da mudança de pesos
+- w_t = vetor de pesos no rebalance t
+- w_{t-1} = vetor de pesos no período anterior
+- Divisão por 2 = one-way turnover (soma de compras OU vendas, não ambas)
+
+Relato na tabela: média/mediana/p95 por janela WFO
 ```
 
 #### 8. Custos de transação

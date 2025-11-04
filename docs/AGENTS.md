@@ -1,23 +1,38 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-Core code lives in `src/itau_quant/`, split into `data`, `optimization`, `backtesting`, and `utils` to isolate ETL, modeling, and orchestration concerns. Tests mirror this layout under `tests/` so every module pairs with a `test_*.py`. Store immutable inputs in `data/raw`, write derived tables to `data/processed`, and keep exploratory work in `notebooks/` with polished outputs archived in `reports/`.
+- Core library lives under `src/itau_quant/` with thematic packages (`backtesting/`, `optimization/`, `risk/`, `utils/`) mirroring the investment workflow.
+- Configuration schemas reside in `configs/` and `src/configs/`; runtime-sensitive overrides belong in `secrets/` (keep this out of version control).
+- Datasets are split into `data/raw/`, `data/processed/`, and experiment outputs under `results/`; notebooks for exploratory analysis stay in `notebooks/`.
+- Tests target each domain module from `tests/`, while docs, PRD, and quick-start materials sit in `docs/` and the root Markdown files.
 
 ## Build, Test, and Development Commands
-- `poetry install` — bootstrap the virtualenv with runtime and dev dependencies.
-- `poetry run pytest` — run the unit suite and halt on regressions.
-- `poetry run ruff check src tests` — lint code style and imports.
-- `poetry run black src tests` — apply canonical formatting.
-- `poetry run python -m itau_quant.backtesting.engine` — smoke-test manual backtest entry points when introduced.
+```bash
+poetry install                     # bootstrap a local dev environment
+poetry run pytest                  # run the entire test suite (PYTHONPATH already set)
+poetry run pytest tests/estimators # focus on estimator validation
+poetry run ruff check src tests    # lint for both style and static analysis
+poetry run black --check src tests # enforce formatting before pushing
+make test                          # alternative for CI-like pytest execution
+```
 
 ## Coding Style & Naming Conventions
-Target Python 3.9+, annotate public functions, and prefer small helpers over deeply nested logic. `black` and `ruff` share an 88-character limit; let them dictate layout and import order. Use `snake_case` for modules and functions, `PascalCase` for classes, and ALL_CAPS for config toggles. Rely on `itau_quant.utils.logging_config` for structured logging instead of ad-hoc prints.
+- Target Python 3.11 with `ruff` and `black`; adopt Black’s default formatting (4-space indents, double quotes, trailing commas where applicable).
+- Follow snake_case for functions, methods, and local variables; PascalCase for classes; ALL_CAPS for constants and env keys.
+- Locate reusable config keys in `itau_quant.config`; prefer `Path` objects over plain strings when handling filesystem paths.
+- Keep CLI commands and user-facing strings in English; domain documentation may remain bilingual when already so in the repo.
 
 ## Testing Guidelines
-Name new files `test_<module>.py` beside their subject package. Favor parametrized pytest cases for estimator and solver scenarios, asserting portfolio constraints (weights sum to one, bounds respected) and numerical tolerances. Run `poetry run pytest` before pushing and keep fixtures lightweight unless reuse clearly reduces boilerplate.
+- All new features require `pytest` coverage with fixtures or factories colocated in `tests/conftest.py` or module-level fixtures.
+- Name test files `test_<module>.py` and structure cases using Arrange-Act-Assert comments when logic is complex.
+- For stochastic components, seed via `itau_quant.utils.random` helpers to ensure deterministic runs.
+- Execute `poetry run pytest` before opening a PR; include targeted commands (e.g., `pytest tests/risk/test_cvar.py`) in the PR discussion for complex areas.
 
 ## Commit & Pull Request Guidelines
-Use conventional commits such as `feat:`, `fix:`, or `chore:` and keep subjects imperative under 72 characters. Capture impacted data sources or notebooks in the body for reproducibility. Pull requests need a concise summary, evidence of local tests, and—when strategy behavior shifts—a link to the validating notebook or report snippet.
+- Mirror the existing history: prefer Conventional Commit prefixes (`feat:`, `fix:`, `chore:`) alongside concise, action-oriented subjects; Portuguese context is acceptable in the body.
+- Each PR should outline scope, validation commands, and references to `PRD.md` tasks or GitHub issues; attach CLI output or screenshots when UI/report artifacts change.
+- Keep branches focused; rebase on `main` before requesting review, and ensure CI (lint + tests) passes locally.
 
-## Data Handling & Reproducibility
-Avoid committing proprietary datasets; instead document retrieval steps or store them under ignored paths. Version generated artefacts only when they accelerate reviews, otherwise regenerate via scripts or notebooks. When notebook logic matures, migrate reusable pieces into `src/` and leave the notebook focused on narrative insight.
+## Security & Configuration Tips
+- Never commit credentials or raw client data—store them in `.env` or `secrets/` and document usage in `docs/SECURITY_NOTES.md` if updates are required.
+- Validate new YAML configs with `poetry run itau-quant show-settings --json` before publishing to avoid runtime schema regressions.
