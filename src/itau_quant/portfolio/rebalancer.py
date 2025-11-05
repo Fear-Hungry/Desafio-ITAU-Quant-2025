@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+import logging
 from typing import Any, Mapping, Sequence
 
 import numpy as np
@@ -18,7 +19,14 @@ from itau_quant.optimization.core.mv_qp import (
 from itau_quant.optimization.heuristics.hrp import heuristic_allocation
 from itau_quant.portfolio.cardinality_pipeline import apply_cardinality_constraint
 from itau_quant.portfolio.rounding import RoundingResult, rounding_pipeline
-from itau_quant.risk.budgets import RiskBudget, load_budgets, validate_budgets
+from itau_quant.risk.budgets import (
+    BudgetViolationError,
+    RiskBudget,
+    find_budget_violations,
+    load_budgets,
+    project_weights_to_budget_feasible,
+    validate_budgets,
+)
 from itau_quant.risk.regime import detect_regime, regime_multiplier
 
 __all__ = [
@@ -34,6 +42,8 @@ __all__ = [
     "build_rebalance_log",
     "rebalance",
 ]
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -474,6 +484,82 @@ def apply_postprocessing(
     return rounding_pipeline(weights, prices, capital, rounding_config)
 
 
+def _enforce_budgets_after_rounding(
+    rounding_result: RoundingResult,
+    *,
+    budgets: Sequence[RiskBudget] | None,
+    prices: pd.Series,
+    capital: float,
+    rounding_config: Mapping[str, Any] | None,
+    lower_bounds: pd.Series | None,
+    upper_bounds: pd.Series | None,
+    tolerance: float,
+    strict: bool,
+    max_passes: int,
+) -> tuple[RoundingResult, dict[str, Any] | None]:
+    """Ensure rounded weights honour group budgets via projection + re-rounding."""
+
+    if not budgets:
+        return rounding_result, None
+
+    current = rounding_result
+    enforcement_log: dict[str, Any] | None = None
+
+    for attempt in range(1, max_passes + 1):
+        violations = find_budget_violations(
+            current.rounded_weights, budgets, tol=tolerance
+        )
+        if not violations:
+            return current, enforcement_log
+        try:
+            projected = project_weights_to_budget_feasible(
+                current.rounded_weights,
+                budgets,
+                lower_bounds=lower_bounds,
+                upper_bounds=upper_bounds,
+                tolerance=tolerance,
+            )
+        except BudgetViolationError as exc:
+            if strict:
+                raise
+            logger.error(
+                "Budget enforcement failed on pass %s: %s",
+                attempt,
+                exc,
+            )
+            return current, {
+                "status": "failed",
+                "passes": attempt,
+                "violations": [v.as_dict() for v in getattr(exc, "violations", [])],
+            }
+        enforcement_log = {
+            "status": "projected",
+            "passes": attempt,
+            "violations": [v.as_dict() for v in violations],
+        }
+        current = rounding_pipeline(projected, prices, capital, rounding_config)
+
+    trailing_violations = find_budget_violations(
+        current.rounded_weights, budgets, tol=tolerance
+    )
+    if trailing_violations:
+        if strict:
+            raise BudgetViolationError(
+                "Unable to satisfy budgets after maximum enforcement passes.",
+                trailing_violations,
+            )
+        logger.error(
+            "Budgets remain violated after %s passes.",
+            max_passes,
+        )
+        enforcement_log = {
+            "status": "violations_remain",
+            "passes": max_passes,
+            "violations": [v.as_dict() for v in trailing_violations],
+        }
+    return current, enforcement_log
+
+
 def compute_costs(
     target_weights: pd.Series,
     previous_weights: pd.Series,
@@ -543,6 +629,7 @@ def rebalance(
     cost_cfg = dict(config.get("costs", {}) or {})
     estimator_cfg = config.get("estimators", {})
     risk_cfg: dict[str, Any] = {}
+    budget_enforcement_cfg: dict[str, Any] = {}
 
     if cost_cfg and "costs" not in optimizer_cfg:
         optimizer_cfg["costs"] = cost_cfg
@@ -556,10 +643,16 @@ def rebalance(
 
     nested_risk = optimizer_cfg.pop("risk", None)
     if isinstance(nested_risk, Mapping):
+        enforcement_section = nested_risk.get("budget_enforcement")
+        if isinstance(enforcement_section, Mapping):
+            budget_enforcement_cfg.update(enforcement_section)
         risk_cfg.update({k: v for k, v in nested_risk.items()})
 
     portfolio_risk = config.get("risk")
     if isinstance(portfolio_risk, Mapping):
+        enforcement_section = portfolio_risk.get("budget_enforcement")
+        if isinstance(enforcement_section, Mapping):
+            budget_enforcement_cfg.update(enforcement_section)
         risk_cfg.update({k: v for k, v in portfolio_risk.items()})
 
     returns_window = int(config.get("returns_window", 252))
@@ -577,6 +670,10 @@ def rebalance(
     allocation_method = "optimizer"
     solver_summary: Any | None = None
     solver_extra: dict[str, Any] = {}
+
+    active_budgets: Sequence[RiskBudget] | None = None
+    lower_bound_series: pd.Series | None = None
+    upper_bound_series: pd.Series | None = None
 
     if baseline_cfg_raw:
         if isinstance(baseline_cfg_raw, Mapping):
@@ -661,6 +758,9 @@ def rebalance(
             risk_config=risk_cfg or None,
         )
         target_weights = opt_weights.reindex(mu.index, fill_value=0.0).astype(float)
+        active_budgets = mv_config.budgets
+        lower_bound_series = mv_config.lower_bounds
+        upper_bound_series = mv_config.upper_bounds
         if mv_config.turnover_cap is not None and mv_config.turnover_cap > 0:
             from itau_quant.backtesting.risk_monitor import apply_turnover_cap
 
@@ -747,6 +847,25 @@ def rebalance(
     rounding_result = apply_postprocessing(
         target_weights, prices_at_date, capital, rounding_cfg
     )
+
+    tolerance = float(budget_enforcement_cfg.get("tolerance", 1e-4))
+    strict_budgets = bool(budget_enforcement_cfg.get("strict", True))
+    max_budget_passes = int(budget_enforcement_cfg.get("max_rounding_passes", 3))
+
+    rounding_result, enforcement_meta = _enforce_budgets_after_rounding(
+        rounding_result,
+        budgets=active_budgets,
+        prices=prices_at_date,
+        capital=capital,
+        rounding_config=rounding_cfg,
+        lower_bounds=lower_bound_series,
+        upper_bounds=upper_bound_series,
+        tolerance=tolerance,
+        strict=strict_budgets,
+        max_passes=max(1, max_budget_passes),
+    )
+    if enforcement_meta:
+        solver_extra["budget_enforcement"] = enforcement_meta
 
     rounded_weights = rounding_result.rounded_weights.reindex(
         target_weights.index, fill_value=0.0

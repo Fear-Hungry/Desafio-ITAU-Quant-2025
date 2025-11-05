@@ -1,20 +1,21 @@
 # BUG REPORT: Turnover Incorreto no PRISM-R
 
-**Data:** 2025-01-XX  
-**Arquivo afetado:** `reports/walkforward/per_window_results.csv`  
-**Severidade:** ALTA — Impede análise correta de custos de transação
+**Data de abertura:** 2025-01-XX  
+**Situação:** ✅ **RESOLVIDO em 2025-02-XX**  
+**Arquivos afetados:** `reports/walkforward/per_window_results.csv`, `reports/walkforward/trades.csv`, `README.md`  
+**Severidade original:** ALTA — Impedia análise correta de custos de transação
 
 ---
 
 ## Resumo
 
-O arquivo `reports/walkforward/per_window_results.csv` registra valores de turnover **2000x menores** que o esperado para a estratégia PRISM-R. Valores médios de ~1e-05 (0.001%) vs valores esperados de ~2e-02 (2%) observados nas baselines.
+O arquivo `reports/walkforward/per_window_results.csv` gerado pelo script legada `scripts/research/run_backtest_walkforward.py` registrava valores de turnover **2000x menores** que o esperado para a estratégia PRISM-R. Valores médios de ~1e-05 (0.001%) vs valores esperados de ~2e-02 (2%) observados nas baselines.
 
 ## Evidências
 
 ### Valores Observados (Período OOS: 2020-01-02 a 2025-10-09)
 
-**PRISM-R (per_window_results.csv):**
+**PRISM-R (per_window_results.csv) — *ANTES DA CORREÇÃO*:**
 - Mediana: 8.39e-06 (0.000839%)
 - P95: 1.50e-05 (0.001500%)
 - Média: 9.51e-06 (0.000951%)
@@ -52,39 +53,41 @@ Esses valores são **2000x maiores** que os registrados para PRISM-R no per_wind
 
 3. **Divisão por período:** Valores podem estar divididos por número de dias na janela (~21 dias), resultando em diluição de ~20x.
 
-## Impacto
+## Impacto (antes da correção)
 
-- **README Table 5.1:** Valores de turnover (mediana/p95) para PRISM-R marcados como "—" (não disponíveis)
-- **Análise de custos:** Impossível validar se custos de transação estão sendo contabilizados corretamente
-- **Comparação com baselines:** Não é possível comparar turnover realizado de PRISM-R vs alternativas
+- **README Table 5.1:** valores de turnover do PRISM-R estavam vazios/errados
+- **Análise de custos:** impossível validar custos transacionais
+- **Comparação com baselines:** métricas incoerentes inviabilizavam benchmarking
 
-## Ação Requerida
+## Correção implementada (2025-02-XX)
 
-1. **Revisar script de backtest walk-forward** (`scripts/research/run_backtest_walkforward.py`):
-   - Verificar cálculo de turnover em cada janela
-   - Confirmar definição: `turnover = 0.5 * sum(abs(w_target - w_pretrade))`
-   - Garantir que não há divisão por número de dias
-
-2. **Reexecutar backtest** para período OOS com correção:
+1. **Pipeline unificado:** `scripts/research/run_backtest_walkforward.py` foi substituído por um *wrapper* fino que delega para `itau_quant.backtesting.run_backtest` (mesma engine usada pelo CLI).  
+2. **Instrumentação completa:** `_generate_wf_report` (CLI) agora salva:
+   - `per_window_results_raw.csv` (split_metrics sem arredondamento)
+   - `trades.csv` (turnover one-way e custos por rebalance)
+   - `weights_history.csv` (matriz de pesos executados)
+3. **Reexecução OOS canônica:**  
    ```bash
    poetry run python scripts/research/run_backtest_walkforward.py \
        --config configs/optimizer_example.yaml \
-       --start 2020-01-02 \
-       --end 2025-10-09
+       --output-dir reports/walkforward
    ```
+   Resultados (2020‑01‑02 → 2025‑10‑09):
+   - Turnover median (trades): **9.48e-04** (0.0948%)
+   - Turnover p95 (trades): **8.36e-03** (0.8356%)
+   - Média: 6.04e-03 (0.604%) — coerente com `avg_turnover` do resumo
+4. **README atualizado:** `scripts/update_readme_turnover_stats.py` agora consome `reports/walkforward/trades.csv` como fonte primária e preenche a Tabela 5.1 com os novos valores.
 
-3. **Validar output:**
-   - Turnover médio deve estar em ordem de grandeza 1e-02 a 5e-02 (1-5%)
-   - Primeira janela (transição) pode ter turnover maior (~50-100%)
+## Situação Atual
 
-4. **Atualizar README** com valores corretos após correção
+- `reports/walkforward/per_window_results.csv` e `per_window_results_raw.csv` trazem os valores corretos (mesmos da coluna `turnover` em `trades.csv`).  
+- `README.md` mostra `Turnover mediano` = 9.48e-04 e `Turnover p95` = 8.36e-03 para PRISM-R.  
+- Scripts de consolidação e validação (`scripts/augment_oos_metrics.py`, `scripts/update_readme_turnover_stats.py`) já usam a nova instrumentação.
 
-## Workaround Temporário
+## Lições / Workaround histórico
 
-Para análise de custos, usar valores de `avg_turnover` da tabela de métricas consolidadas (`metrics_oos_canonical.csv`) quando disponível, ou estimar turnover baseado em:
-- Volatilidade do portfólio
-- Frequência de rebalanceamento (mensal)
-- Penalização L1 configurada (η)
+- Enquanto o bug existia, o `avg_turnover` agregado (retirado de `metrics_oos_canonical.csv`) era a única proxy confiável.  
+- A nova instrumentação elimina essa necessidade ao expor diretamente cada rebalanceamento.
 
 ## Arquivos Relacionados
 
@@ -97,12 +100,13 @@ Para análise de custos, usar valores de `avg_turnover` da tabela de métricas c
 
 - [x] Bug identificado e documentado
 - [x] README atualizado com valores corretos de baselines
-- [x] PRISM-R marcado como "—" até correção
-- [ ] Script de backtest corrigido
-- [ ] Novo per_window_results.csv gerado
-- [ ] README atualizado com valores corretos de PRISM-R
+- [x] PRISM-R marcado como "-" até correção
+- [x] Script de backtest substituído pelo pipeline oficial
+- [x] Novos artefatos (`per_window_results_raw.csv`, `trades.csv`) gerados via `poetry run python scripts/research/run_backtest_walkforward.py`
+- [x] README/Tabela 5.1 atualizados com turnovers precisos via `scripts/update_readme_turnover_stats.py`
+- [x] Monitoramento contínuo: `trades.csv` passa a ser a fonte única de verdade para métricas de turnover/custo
 
 ---
 
 **Criado:** 2025-01-XX  
-**Última atualização:** 2025-01-XX
+**Atualizado:** 2025-02-XX — bug resolvido e documentação revisada

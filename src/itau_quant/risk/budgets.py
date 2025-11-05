@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Mapping, Sequence
+from typing import Iterable, Literal, Mapping, Sequence
 
 import cvxpy as cp
 import numpy as np
@@ -16,6 +16,10 @@ __all__ = [
     "budgets_to_constraints",
     "budget_slack",
     "aggregate_by_budget",
+    "BudgetViolation",
+    "BudgetViolationError",
+    "find_budget_violations",
+    "project_weights_to_budget_feasible",
 ]
 
 
@@ -135,3 +139,159 @@ def aggregate_by_budget(
             }
         )
     return pd.DataFrame(records)
+
+
+@dataclass(frozen=True)
+class BudgetViolation:
+    """Simple container describing a budget violation."""
+
+    name: str
+    bound: Literal["min", "max"]
+    limit: float
+    exposure: float
+    tolerance: float
+
+    def as_dict(self) -> dict[str, float | str]:
+        return {
+            "name": self.name,
+            "bound": self.bound,
+            "limit": float(self.limit),
+            "exposure": float(self.exposure),
+            "tolerance": float(self.tolerance),
+        }
+
+
+class BudgetViolationError(RuntimeError):
+    """Raised when portfolio weights cannot satisfy the configured budgets."""
+
+    def __init__(
+        self,
+        message: str,
+        violations: Sequence[BudgetViolation] | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.violations = list(violations or [])
+
+
+def _budget_exposure(weights: pd.Series, budget: RiskBudget) -> float:
+    return float(weights.reindex(budget.tickers).fillna(0.0).sum())
+
+
+def find_budget_violations(
+    weights: pd.Series,
+    budgets: Iterable[RiskBudget],
+    *,
+    tol: float = 1e-6,
+) -> list[BudgetViolation]:
+    """Return all budget violations for the provided weight vector."""
+
+    violations: list[BudgetViolation] = []
+    for budget in budgets:
+        exposure = _budget_exposure(weights, budget)
+        if budget.max_weight is not None and exposure > float(budget.max_weight) + tol:
+            violations.append(
+                BudgetViolation(
+                    name=budget.name,
+                    bound="max",
+                    limit=float(budget.max_weight),
+                    exposure=exposure,
+                    tolerance=tol,
+                )
+            )
+        if budget.min_weight is not None and exposure < float(budget.min_weight) - tol:
+            violations.append(
+                BudgetViolation(
+                    name=budget.name,
+                    bound="min",
+                    limit=float(budget.min_weight),
+                    exposure=exposure,
+                    tolerance=tol,
+                )
+            )
+    return violations
+
+
+def _resolve_bound_array(
+    bounds: pd.Series | Sequence[float] | float | None,
+    asset_index: Sequence[str],
+    *,
+    default: float | None,
+) -> np.ndarray | None:
+    if bounds is None:
+        if default is None:
+            return None
+        return np.full(len(asset_index), float(default), dtype=float)
+    if isinstance(bounds, pd.Series):
+        return bounds.reindex(asset_index).astype(float).to_numpy()
+    if isinstance(bounds, (list, tuple)):
+        return np.asarray(bounds, dtype=float)
+    return np.full(len(asset_index), float(bounds), dtype=float)
+
+
+def project_weights_to_budget_feasible(
+    weights: pd.Series,
+    budgets: Sequence[RiskBudget],
+    *,
+    lower_bounds: pd.Series | Sequence[float] | float | None = None,
+    upper_bounds: pd.Series | Sequence[float] | float | None = None,
+    tolerance: float = 1e-6,
+) -> pd.Series:
+    """Project ``weights`` onto the feasible region defined by ``budgets``."""
+
+    if not budgets:
+        return weights.copy().astype(float)
+
+    asset_index = list(weights.index)
+    target = weights.reindex(asset_index).fillna(0.0).astype(float)
+    target_total = float(target.sum())
+    if not np.isfinite(target_total) or abs(target_total) < tolerance:
+        target_total = 1.0
+
+    w_var = cp.Variable(len(asset_index))
+    objective = cp.Minimize(cp.sum_squares(w_var - target.to_numpy(dtype=float)))
+    constraints: list[cp.Constraint] = [cp.sum(w_var) == target_total]
+
+    lower_array = _resolve_bound_array(lower_bounds, asset_index, default=None)
+    if lower_array is not None:
+        constraints.append(w_var >= lower_array)
+
+    upper_array = _resolve_bound_array(upper_bounds, asset_index, default=None)
+    if upper_array is not None:
+        constraints.append(w_var <= upper_array)
+
+    constraints.extend(budgets_to_constraints(w_var, budgets, asset_index))
+
+    problem = cp.Problem(objective, constraints)
+
+    last_error: Exception | None = None
+    for solver in ("CLARABEL", "OSQP", "ECOS"):
+        try:
+            problem.solve(solver=solver, verbose=False)
+        except Exception as exc:  # pragma: no cover - solver specific
+            last_error = exc
+            continue
+        if problem.status in (cp.OPTIMAL, cp.OPTIMAL_INACCURATE):
+            break
+    else:
+        raise BudgetViolationError(
+            f"Failed to enforce budgets; solver status={problem.status}",
+            find_budget_violations(target, budgets, tol=tolerance),
+        ) from last_error
+
+    solution = pd.Series(w_var.value, index=asset_index, dtype=float).fillna(0.0)
+    total = float(solution.sum())
+    if not np.isclose(total, 1.0, atol=tolerance):
+        if total == 0:
+            raise BudgetViolationError(
+                "Projection produced zero total weight.",
+                find_budget_violations(solution, budgets, tol=tolerance),
+            )
+        solution /= total
+
+    violations = find_budget_violations(solution, budgets, tol=tolerance)
+    if violations:
+        raise BudgetViolationError(
+            "Unable to satisfy budgets after projection.", violations
+        )
+
+    return solution

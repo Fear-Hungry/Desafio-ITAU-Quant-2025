@@ -11,6 +11,7 @@ What this script does:
     reports/walkforward/per_window_results.csv
   filtered to the canonical OOS period defined in:
     configs/oos_period.yaml
+  (falls back to per_window_results.csv when trades.csv unavailable)
 - Locates the Table 5.1 in README.md and fills the columns
   "Turnover (mediana)" and "Turnover (p95)" for each strategy that has data.
 
@@ -43,6 +44,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_README = REPO_ROOT / "README.md"
 DEFAULT_SUMMARY = REPO_ROOT / "results" / "oos_canonical" / "turnover_dist_stats.csv"
 DEFAULT_PER_WINDOW_PRISM = REPO_ROOT / "reports" / "walkforward" / "per_window_results.csv"
+DEFAULT_PRISM_TRADES = REPO_ROOT / "reports" / "walkforward" / "trades.csv"
 DEFAULT_OOS_CONFIG = REPO_ROOT / "configs" / "oos_period.yaml"
 
 
@@ -90,7 +92,38 @@ def load_baseline_summary(summary_csv: Path) -> Dict[str, Tuple[float, float]]:
     return out
 
 
-def compute_prism_turnover(per_window_csv: Path, oos: OOSPeriod) -> Optional[Tuple[float, float]]:
+def compute_prism_turnover_from_trades(
+    trades_csv: Path, oos: OOSPeriod
+) -> Optional[Tuple[float, float]]:
+    """
+    Compute PRISM turnover (median, p95) directly from trade-level exports.
+    Expected columns: date, turnover
+    """
+    if not trades_csv.exists():
+        print(f"[DEBUG] PRISM trades CSV not found: {trades_csv}")
+        return None
+    df = pd.read_csv(trades_csv)
+    if "date" not in df.columns or "turnover" not in df.columns:
+        print(f"[DEBUG] Trades CSV missing required columns. Found: {list(df.columns)}")
+        return None
+    df["date"] = pd.to_datetime(df["date"])
+    mask = (df["date"] >= oos.start) & (df["date"] <= oos.end)
+    filtered = df.loc[mask, "turnover"].astype(float)
+    if filtered.empty:
+        print(f"[DEBUG] Trades CSV rows after OOS filter: 0")
+        return None
+    med = float(filtered.median())
+    p95 = float(filtered.quantile(0.95))
+    print(
+        f"[DEBUG] PRISM turnover (trades) med={med:.6e}, p95={p95:.6e} "
+        f"(rows_oos={len(filtered)})"
+    )
+    return med, p95
+
+
+def compute_prism_turnover_from_windows(
+    per_window_csv: Path, oos: OOSPeriod
+) -> Optional[Tuple[float, float]]:
     """
     Compute PRISM-R turnover (mediana, p95) from per-window CSV filtered to OOS period.
     Expected columns: Window End, Turnover
@@ -128,12 +161,21 @@ def find_table_block(lines: List[str]) -> Tuple[int, int, List[str]]:
     print(f"[DEBUG] Scanning README for table header (total lines={len(lines)})")
     start = -1
     for i, ln in enumerate(lines):
-        if ln.strip().startswith("| Estratégia") and "Turnover (mediana)" in ln and "Turnover (p95)" in ln:
+        s = ln.strip()
+        if not s.startswith("| Estratégia"):
+            continue
+        # Accept multiple header variants, e.g. "Turnover mediano (‖Δw‖₁)" or "Turnover (mediana)"
+        has_turnover = ("Turnover" in s)
+        has_med = ("mediana" in s) or ("mediano" in s) or ("median" in s)
+        has_p95 = ("p95" in s)
+        if has_turnover and has_med and has_p95:
             start = i
             break
     if start == -1:
         print("[DEBUG] Table 5.1 header not found with required columns.")
-        raise RuntimeError("Could not find the Table 5.1 header with Turnover (mediana) and (p95)")
+        raise RuntimeError(
+            "Could not find the Table 5.1 header with Turnover columns (mediana/mediano) and p95"
+        )
     print(f"[DEBUG] Found table header at line {start}: {lines[start]}")
     # Find table end: first line after start that doesn't start with '|' (skip code fences)
     end = start + 1
@@ -205,13 +247,32 @@ def update_readme_table(
     start, end, tbl = find_table_block(text)
     header, rows = parse_table(tbl)
 
-    # Column indices to update
+    # Column indices to update (robust matching against header variants)
+    def _find_col(name_parts: List[str]) -> int:
+        for idx, col in enumerate(header):
+            s = col.lower()
+            if all(part in s for part in name_parts):
+                return idx
+        raise ValueError(f"Column with parts {name_parts} not found in header: {header}")
+
     try:
         col_strategy = header.index("Estratégia")
-        col_turn_med = header.index("Turnover (mediana)")
-        col_turn_p95 = header.index("Turnover (p95)")
     except ValueError as e:
-        raise RuntimeError("Expected columns not found in the table header") from e
+        raise RuntimeError("Expected 'Estratégia' column not found in the table header") from e
+
+    try:
+        # Match either "Turnover (mediana)" or "Turnover mediano (‖Δw‖₁)"
+        col_turn_med = _find_col(["turnover", "median"])
+    except ValueError:
+        try:
+            col_turn_med = _find_col(["turnover", "mediana"])  # pt-BR
+        except ValueError as e:
+            raise RuntimeError("Turnover median column not found (mediana/mediano)") from e
+
+    try:
+        col_turn_p95 = _find_col(["turnover", "p95"])
+    except ValueError as e:
+        raise RuntimeError("Turnover p95 column not found") from e
 
     # Mapping from README display names to summary strategy keys
     display_to_key = {
@@ -290,6 +351,12 @@ def main() -> None:
         help="CSV with PRISM-R per-window results (Window End, Turnover)",
     )
     ap.add_argument(
+        "--prism-trades",
+        type=Path,
+        default=DEFAULT_PRISM_TRADES,
+        help="CSV with PRISM-R trade-level turnover (date, turnover)",
+    )
+    ap.add_argument(
         "--oos-config",
         type=Path,
         default=DEFAULT_OOS_CONFIG,
@@ -305,7 +372,9 @@ def main() -> None:
     # Load inputs
     oos = load_oos_period(args.oos_config)
     summary_map = load_baseline_summary(args.summary)
-    prism_stats = compute_prism_turnover(args.per_window_prism, oos)
+    prism_stats = compute_prism_turnover_from_trades(args.prism_trades, oos)
+    if prism_stats is None:
+        prism_stats = compute_prism_turnover_from_windows(args.per_window_prism, oos)
 
     print(f"[DEBUG] README path: {args.readme}")
     print(f"[DEBUG] Summary CSV: {args.summary} (exists={args.summary.exists()})")

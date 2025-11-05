@@ -212,7 +212,12 @@ def _generate_wf_report(
             f.write(summary_md)
         print(f"✓ Summary statistics: {summary_file}")
 
-    # 2. Export per-window results table
+    # 2. Export raw per-window metrics for downstream processing
+    raw_per_window = output_path / "per_window_results_raw.csv"
+    result.split_metrics.to_csv(raw_per_window, index=False)
+    print(f"✓ Raw per-window metrics: {raw_per_window}")
+
+    # 3. Export formatted per-window results table
     per_window_table_csv = build_per_window_table(result.split_metrics, format="csv")
     csv_file = output_path / "per_window_results.csv"
     with open(csv_file, "w", encoding="utf-8") as f:
@@ -228,7 +233,20 @@ def _generate_wf_report(
         f.write(per_window_table_md)
     print(f"✓ Per-window results (markdown): {md_file}")
 
-    # 3. Identify and export stress periods
+    # 4. Persist trade-level diagnostics for turnover/cost analysis
+    if result.trades is not None and not result.trades.empty:
+        trades_path = output_path / "trades.csv"
+        result.trades.to_csv(trades_path, index=False)
+        print(f"✓ Trade diagnostics: {trades_path}")
+
+    if result.weights is not None and not result.weights.empty:
+        weights_path = output_path / "weights_history.csv"
+        weights_export = result.weights.reset_index()
+        weights_export.rename(columns={"index": "date"}, inplace=True)
+        weights_export.to_csv(weights_path, index=False)
+        print(f"✓ Weights history: {weights_path}")
+
+    # 5. Identify and export stress periods
     stress_periods = identify_stress_periods(result.split_metrics)
     if stress_periods:
         stress_lines = ["# Identified Stress Periods\n"]
@@ -243,7 +261,7 @@ def _generate_wf_report(
             f.writelines(stress_lines)
         print(f"✓ Stress periods: {stress_file}")
 
-    # 4. Generate visualizations
+    # 6. Generate visualizations
     try:
         fig = plot_walkforward_summary(result.split_metrics)
         fig_file = output_path / "walkforward_analysis.png"
@@ -255,10 +273,15 @@ def _generate_wf_report(
     print(f"\nWalk-forward report saved to: {output_path}/")
     print("Files generated:")
     print("  - summary_stats.md")
+    print("  - per_window_results_raw.csv")
     print("  - per_window_results.csv")
     print("  - per_window_results.md")
     if stress_periods:
         print("  - stress_periods.md")
+    if result.trades is not None and not result.trades.empty:
+        print("  - trades.csv")
+    if result.weights is not None and not result.weights.empty:
+        print("  - weights_history.csv")
     print("  - walkforward_analysis.png")
     print()
 

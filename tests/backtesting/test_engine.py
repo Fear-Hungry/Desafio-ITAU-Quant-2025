@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 from itau_quant.backtesting import run_backtest
 from itau_quant.config import Settings, reset_settings_cache
 
@@ -161,5 +162,8 @@ def test_run_backtest_applies_risk_budgets(tmp_path: Path) -> None:
     weights = weights.reindex(columns=["AAA", "BBB", "CCC"]).astype(float)
     growth_band = weights[["AAA", "BBB"]].sum(axis=1)
     defensive_weight = weights["CCC"]
-    assert (growth_band <= 0.35 + 1e-3).all()
-    assert (defensive_weight >= 0.65 - 1e-3).all()
+    assert (growth_band <= 0.35 + 1e-6).all()
+    assert (defensive_weight >= 0.65 - 1e-6).all()
+    for _, row in weights.iterrows():
+        assert row[["AAA", "BBB"]].sum() <= 0.35 + 1e-6
+        assert row["CCC"] >= 0.65 - 1e-6

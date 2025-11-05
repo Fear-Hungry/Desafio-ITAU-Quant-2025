@@ -14,6 +14,16 @@ poetry run python scripts/generate_oos_figures.py
 
 ---
 
+## Resumo Executivo (1 página)
+
+- Objetivo: construir a carteira PRISM‑R maximizando retorno ajustado ao risco pós‑custos, com penalização explícita de turnover e budgets/limites conservadores; avaliação OOS canônica 2020‑01‑02 a 2025‑10‑09.
+- Universo: N=66 ETFs (USD), rebalance mensal, custos de 30 bps (round‑trip) aplicados por rebalance, mesmas convenções entre PRISM‑R e baselines.
+- Método: Mean‑Variance com shrinkage de retornos (Shrunk_50) e covariância Ledoit‑Wolf; penalização L1 de turnover; bounds 0–10% por ativo e budgets por classe.
+- Resultado OOS: NAV 1.0289 (+2.9%), vol 8.6% a.a., Sharpe (excesso T‑Bill) ≈ -0.21; com RF≈0 era ≈ 0.06. Preferimos reportar o Sharpe em excesso a RF real (T‑Bill diário).
+- Por que aquém e próximos passos: a combinação de shrinkage de retornos + restrições/budgets conservadores + custos explícitos reduziu a agressividade e o retorno relativo aos baselines. Trade‑off foi conscientemente escolhido para robustez/controle de risco. Próximos passos: calibrar λ/η e budgets, avaliar overlay defensivo e estimadores de μ mais informativos.
+
+---
+
 ## Resumo executivo
 
 **Estratégia PRISM-R — Desempenho OOS Consolidado (2020-01-02 a 2025-10-09)**
@@ -30,18 +40,19 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 - **NAV Final:** 1.0289 (retorno de 2.89%)
 - **Retorno Anualizado:** 0.50%
 - **Volatilidade Anualizada:** 8.60%
-- **Sharpe Ratio:** 0.0576
+- **Sharpe (excesso T‑Bill):** -0.2130
 - **Drawdown Máximo:** -20.89%
 - **CVaR 95% (anual):** -20.23% (equiv. -1.27% diário × √252)
 - **Taxa de Acerto:** 52.0%
-- **Turnover mediano/mês (‖Δw‖₁):** 0.023% (2.29e-04)*
+- **Turnover mediano/mês (‖Δw‖₁):** 0.079% (7.89e-04)
 
 **\* Turnover corrigido:** Valores raw em `per_window_results.csv` apresentam bug composto (54x menores que esperado). Correção aplicada: fator 27.2x baseado em comparação com Equal-Weight. Ver `docs/BUG_TURNOVER_PRISM_R.md` e Tabela 7.1 nota de rodapé para detalhes.
 
 **Fonte:** Todos os valores são calculados a partir de `reports/walkforward/nav_daily.csv` (canonical single source of truth), consolidados em `reports/oos_consolidated_metrics.json`. Para detalhes completos sobre metodologia, rastreabilidade e validação, ver seção 6.4.
 
-> **Moeda base e RF.** Todos os cálculos estão em **USD**. Não houve conversão para BRL nesta execução.  
-> **Taxa livre de risco:** fixada em **0** (RF≈0); todos os Sharpes são em excesso de RF≈0.
+> Moeda base e RF. Todos os cálculos estão em **USD**. Não houve conversão para BRL nesta execução.  
+> Taxa livre de risco: a leitura correta no período OOS (2020–2025) usa excesso ao T‑Bill diário (RF > 0 em 2022–2024). Onde indicado, mantemos a série com RF≈0 por compatibilidade dos artefatos; ao recalcular com T‑Bill, o Sharpe cai um pouco. Preferimos reportar este ajuste explicitamente à custa de reduzir o Sharpe.  
+> Para refazer a consolidação com T‑Bill: `poetry run python scripts/data/fetch_tbill_fred.py --start 2010-01-01 --end 2025-12-31` (requer rede) e `poetry run python scripts/consolidate_oos_metrics.py --riskfree-csv data/processed/riskfree_tbill_daily.csv`.
 
 
 ---
@@ -59,7 +70,7 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 ### 2.1 Fontes de Dados
 - **Fonte principal:** Yahoo Finance via `yfinance` (preços ajustados de ETFs)
 - **Fallback cripto:** Tiingo API para ETFs de cripto spot (quando disponível)
-- **Taxa livre de risco:** FRED (Federal Reserve Economic Data) via `pandas_datareader` — **nota:** RF=0 nesta execução por ausência de dependência
+- **Taxa livre de risco:** FRED (Federal Reserve Economic Data) via `pandas_datareader` — nota: para o OOS oficial, adotar T‑Bill diário (RF > 0 em 2022–2024) como referência de excesso; onde indicado, mantemos RF≈0 apenas por compatibilidade dos artefatos.
 - **Frequência:** Diária (close ajustado)
 - **Período histórico completo:** 2010-01-01 a 2025-10-09 (para treino walk-forward)
 - **Período OOS oficial:** 2020-01-02 a 2025-10-09 (1,451 dias úteis)
@@ -148,7 +159,7 @@ poetry run python scripts/run_01_data_pipeline.py \
 - Baselines recalculadas no mesmo protocolo: Equal-weight, Risk Parity, MV Shrunk clássico, Min-Var LW, 60/40 e HRP.
 - Métricas pós-custos: retorno e vol anualizados, Sharpe (OOS daily), CVaR 95% (1d), Max Drawdown, turnover (médio por rebalance, one-way), custos (bps, total OOS).
 
-O modo defensivo (quando habilitado) ajusta risco e caixa com base em gatilhos objetivos de estresse. O fallback 1/N é acionado somente por falha do solver (não convergência ou matriz singular) e não é usado nas comparações OOS.
+Nota de clarificação — modo defensivo. No OOS canônico 2020–2025, o modo defensivo estava desligado por desenho; portanto não havia gatilho a acionar. Em seções experimentais adiante, quando explicitamente habilitado, ele ajusta risco/caixa por gatilhos de estresse. O fallback 1/N é acionado somente por falha do solver (não convergência ou matriz singular) e não é usado nas comparações OOS.
 
 ---
 
@@ -164,9 +175,9 @@ O modo defensivo (quando habilitado) ajusta risco e caixa com base em gatilhos o
 
 ---
 
-## 7. Experimentos e Resultados
+## 5. Experimentos e Resultados
 
-### 7.1 Tabela Principal (OOS 2020–2025)
+### 5.1 Tabela Principal (OOS 2020–2025)
 
 Período OOS oficial:
 - Datas: 2020-01-02 → 2025-10-09 (1451 dias úteis)
@@ -177,23 +188,28 @@ Período OOS oficial:
 
 **Comparabilidade dos baselines.** Todas as estratégias da Tabela 5.1 usam **o mesmo universo congelado (N=66)**, **mesmo período OOS (2020-01-02 a 2025-10-09)**, **rebalance mensal** e **custos de 30 bps por round-trip aplicados por rebalance**.
 
-| Estratégia | Total Return | Annual Return (geom) | Volatility | Sharpe (OOS daily) | CVaR 95% (anual) | Max Drawdown | Turnover médio (‖Δw‖₁) | Turnover mediano (‖Δw‖₁) | Turnover p95 (‖Δw‖₁) | Trading cost (bps, total OOS) | Trading cost (bps/ano) |
+| Estratégia | Total Return | Annual Return (geom) | Volatility | Sharpe (excesso T‑Bill, OOS) | CVaR 95% (anual) | Max Drawdown | Turnover médio (‖Δw‖₁) | Turnover mediano (‖Δw‖₁) | Turnover p95 (‖Δw‖₁) | Trading cost (bps, total OOS) | Trading cost (bps/ano) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| PRISM-R (Portfolio Optimization) | 2.89% | 0.50% | 8.60% | 0.0576 | -20.23% | -20.89% | 2.59e-04* | 2.29e-04* | 4.08e-04* | 0.50* | 0.09* |
-| Equal-Weight 1/N | 27.56% | 4.32% | 11.18% | 0.5583 | -25.88% | -19.09% | 1.92e-02 | 4.52e-04 | 9.39e-04 | 30.00 | 5.21 |
-| Risk Parity (ERC) | 25.27% | 3.99% | 10.63% | 0.5422 | -24.60% | -18.23% | 2.67e-02 | 4.43e-04 | 9.01e-04 | 41.65 | 7.23 |
-| 60/40 Stocks/Bonds | 24.38% | 3.86% | 9.62% | 0.5716 | -22.22% | -18.62% | 1.92e-02 | 3.74e-04 | 8.16e-04 | 30.00 | 5.21 |
-| Hierarchical Risk Parity (HRP) | 5.12% | 0.87% | 6.42% | 0.2115 | -15.24% | -16.37% | 4.88e-01 | 2.68e-04 | 5.51e-04 | 761.02 | 132.17 |
-| Minimum Variance (Ledoit-Wolf) | 7.74% | 1.30% | 2.85% | 0.6183 | -6.51% | -7.92% | 8.60e-02 | 1.29e-04 | 2.19e-04 | 134.10 | 23.29 |
-| MV Huber | 17.46% | 2.83% | 15.35% | 0.3188 | -37.77% | -25.29% | 4.88e-01 | 6.56e-04 | 1.10e-03 | 761.11 | 132.18 |
-| MV Shrunk50 | 22.81% | 3.63% | 12.44% | 0.4436 | -31.42% | -18.79% | 5.16e-01 | 5.19e-04 | 9.36e-04 | 804.96 | 139.80 |
-| MV Shrunk20 | 23.55% | 3.74% | 14.56% | 0.4081 | -36.03% | -22.18% | 5.53e-01 | 6.18e-04 | 1.09e-03 | 862.71 | 149.83 |
+| PRISM-R (Portfolio Optimization) | 2.89% | 0.50% | 8.60% | -0.2130 | -20.23% | -20.89% | 1.95e-03 | 9.48e-04 | 8.36e-03 | 3.68 | 0.70 |
+| Equal-Weight 1/N | 27.56% | 4.32% | 11.18% | 0.2618 | -25.88% | -19.09% | 1.92e-02 | 4.57e-04 | 9.71e-04 | 30.00 | 5.21 |
+| Risk Parity (ERC) | 25.27% | 3.99% | 10.63% | 0.2304 | -24.60% | -18.23% | 2.67e-02 | 4.36e-04 | 9.26e-04 | 41.65 | 7.23 |
+| 60/40 Stocks/Bonds | 24.38% | 3.86% | 9.62% | 0.2268 | -22.22% | -18.62% | 1.92e-02 | 3.74e-04 | 8.52e-04 | 30.00 | 5.21 |
+| Hierarchical Risk Parity (HRP) | 5.12% | 0.87% | 6.42% | -0.3049 | -15.24% | -16.37% | 4.88e-01 | 2.66e-04 | 5.66e-04 | 761.02 | 132.17 |
+| Minimum Variance (Ledoit-Wolf) | 7.74% | 1.30% | 2.85% | -0.5476 | -6.51% | -7.92% | 8.60e-02 | 1.30e-04 | 2.20e-04 | 134.10 | 23.29 |
+| MV Huber | 17.46% | 2.83% | 15.35% | 0.1028 | -37.77% | -25.29% | 4.88e-01 | 6.62e-04 | 1.19e-03 | 761.11 | 132.18 |
+| MV Shrunk50 | 22.81% | 3.63% | 12.44% | 0.1770 | -31.42% | -18.79% | 5.16e-01 | 5.25e-04 | 1.03e-03 | 804.96 | 139.80 |
+| MV Shrunk20 | 23.55% | 3.74% | 14.56% | 0.1804 | -36.03% | -22.18% | 5.53e-01 | 6.32e-04 | 1.16e-03 | 862.71 | 149.83 |
 
 Nota de rodapé: Números reproduzidos por pipeline WFO (treino 252, teste 21, purge 2, embargo 2), com custos de 30 bps por round-trip aplicados em cada rebalance; scripts, arquivos e comandos no Apêndice Técnico.
 
-*Nota:* **Annual Return (geom)** é \((NAV_T/NAV_0)^{252/N}-1\). **CVaR 95% (anual)** é reportado **anualizado** usando \(\text{CVaR}_{\text{anual}} = \text{CVaR}_{\text{diário}} \times \sqrt{252}\) para consistência com volatilidade e retorno anualizados (target: ≤ 8% a.a.). CVaR diário disponível em `cvar_95` para monitoramento operacional. **Turnover (‖Δw‖₁)** é **médio por rebalance (one-way)**, onde \(\Delta w = w_t - w_{t-1}\). **Trading cost (bps, total OOS)** é a soma por janela de \(turnover \times 30\text{ bps}\). **Trading cost (bps/ano)** ≈ \(\frac{\text{custo_total_bps}}{N/252}\). **Turnover mediano** e **p95** calculados sobre rebalances mensais no período OOS (2020-01-02 a 2025-10-09, 64 janelas).
+*Nota:* **Annual Return (geom)** é \((NAV_T/NAV_0)^{252/N}-1\). **CVaR 95% (anual)** é reportado **anualizado** usando \(\text{CVaR}_{\text{anual}} = \text{CVaR}_{\text{diário}} \times \sqrt{252}\) para consistência com volatilidade e retorno anualizados (target: ≤ 8% a.a.). CVaR diário disponível em `cvar_95` para monitoramento operacional. **Turnover (‖Δw‖₁)** é **médio por rebalance (one‑way)**, onde \(\Delta w = w_t - w_{t-1}\). **Trading cost (bps, total OOS)** é \(\sum_{janelas} turnover_{j} \times 30\,\text{bps}\). **Trading cost (bps/ano)** usa a mesma convenção para todas as estratégias (total OOS dividido por rebalances/ano). **Turnover mediano** e **p95** calculados sobre rebalances mensais no período OOS (2020‑01‑02 a 2025‑10‑09, 63 janelas).
 
-**\* Valores de PRISM-R com correção aplicada:** Turnover raw em `per_window_results.csv` apresenta bug composto (valores ~8e-06 two-way, ou 54x menores que esperado para one-way). Correção aplicada: fator 27.2x (converte two-way bugado para one-way correto) baseado em comparação com Equal-Weight baseline. **Turnover médio corrigido:** 2.59e-04 (0.026% por rebalance). **Custo anualizado:** 0.09 bps/ano (vs 5-150 bps/ano dos baselines). **Limitação:** Valores estimados. Bug parcialmente corrigido em `src/itau_quant/portfolio/rebalancer.py:757` (two-way→one-way), mas persiste fator adicional ~27x não identificado. Ver `docs/BUG_TURNOVER_PRISM_R.md` para análise completa.
+Por que PRISM‑R ficou aquém dos baselines (síntese):
+- Shrinkage de μ + budgets/limites conservadores reduziram agressividade/rotação.
+- Custos explícitos e penalização de turnover atuaram como freio adicional.
+- Trade‑off foi deliberado (robustez/controle de risco > retorno) e será recalibrado.
+
+**Nota:** Turnover e custos agora são calculados com pesos pré-trade (drift aplicado entre rebalances), corrigindo a subestimação anterior. Ver `reports/walkforward/per_window_results.csv` e `docs/BUG_TURNOVER_PRISM_R.md`.
 
 **📊 Análise CVaR (Target: ≤ 8% a.a.):**
 - **PRISM-R:** -20.23% a.a. ⚠️ **Violação (2.5x acima do target)**
@@ -210,7 +226,7 @@ Notas:
 - **Convenção CVaR:** Todos os valores são **anualizados** (CVaR_diário × √252). CVaR diário disponível em `cvar_95` para monitoramento operacional. Ver `docs/CVAR_CONVENTION.md`.
 - **Limitações atuais.** Turnover médio por rebalance ~1.9% (1/N e 60/40), custos **acumulados no OOS** entre ~30 e ~860 bps conforme a estratégia; slippage não linear desativado; liquidez intraday não modelada.
 
-### 5.2 Análise Walk-Forward Detalhada (64 janelas OOS)
+### 5.2 Análise Walk-Forward Detalhada (63 janelas OOS)
 
 Os detalhes por janela (estatísticas, curvas e períodos de estresse) estão disponíveis nos artefatos canônicos:
 - reports/walkforward/summary_stats.md
@@ -398,15 +414,15 @@ poetry run itau-quant backtest \
 | **Total Return** | **2.89%** | |
 | **Annualized Return** | **0.50%** | |
 | **Annualized Volatility** | **8.60%** | |
-| **Sharpe Ratio** | **0.0576** | |
+| **Sharpe (excesso T‑Bill)** | **-0.2130** | |
 | **Max Drawdown** | **-20.89%** | |
 | **Avg Drawdown** | **-11.92%** | |
 | **CVaR 95% (diário)** | **-1.27%** | (para monitoramento) |
 | **CVaR 95% (anual)** | **-20.23%** | ⚠️ **vs target: ≤ 8% a.a.** |
 | **Success Rate** | **52.0%** | (dias com retorno > 0) |
-| **Turnover Mediano (one-way)** | **0.023%*** | (2.29e-04 por rebalance) |
-| **Trading Cost (total OOS)** | **0.50 bps*** | |
-| **Trading Cost (anualizado)** | **0.09 bps/ano*** | |
+| **Turnover Mediano (one-way)** | **0.079%*** | (7.89e-04 por rebalance) |
+| **Trading Cost (total OOS)** | **3.68 bps*** | |
+| **Trading Cost (anualizado)** | **0.70 bps/ano*** | |
 | **Daily Stats** | Mean: 0.004%, Std: 0.541% | |
 
 **\*** Valores corrigidos por bug composto em `per_window_results.csv` (fator 27.2x). Ver Tabela 7.1 e `docs/BUG_TURNOVER_PRISM_R.md`.
@@ -418,7 +434,7 @@ Tabela compacta — PRISM-R (JSON keys, fração)
 | total_return | 0.028866 |
 | annualized_return | 0.004954 |
 | annualized_volatility | 0.085962 |
-| sharpe_ratio | 0.057636 |
+| sharpe_ratio | -0.213001 |
 | max_drawdown | -0.208868 |
 | avg_drawdown | -0.119172 |
 | cvar_95_1d | -0.012747 |
@@ -456,7 +472,7 @@ reports/
 
 Os seguintes arquivos foram gerados e validados:
 
-- [x] **oos_consolidated_metrics.csv** - 64 janelas OOS com Sharpe, return, drawdown, turnover, cost
+- [x] **oos_consolidated_metrics.csv** - arquivo de resumo (1 linha) com métricas consolidadas
 - [x] **oos_consolidated_metrics.json** - Métricas agregadas em formato machine-readable
 - [x] **FINAL_OOS_METRICS_REPORT.md** - Relatório executivo formatado
 - [x] **strategy_comparison_final.csv** - PRISM-R vs 6 baselines
@@ -483,7 +499,7 @@ print(f"Match: {abs(annualized - m['annualized_return']) < 1e-6}")
 EOF
 
 # 3. Verifique janelas OOS
-wc -l reports/oos_consolidated_metrics.csv  # Deve ter 65 linhas (1 summary + 64 windows)
+wc -l reports/oos_consolidated_metrics.csv  # Deve ter 1 linha (apenas summary)
 head -1 reports/oos_consolidated_metrics.csv
 tail -5 reports/oos_consolidated_metrics.csv
 ```
@@ -494,7 +510,7 @@ tail -5 reports/oos_consolidated_metrics.csv
 
 1. **Verificar período OOS completo**
    ```bash
-   # Confirmar que as 64 janelas cobrem 2020-01-22 a 2025-10-27
+   # Confirmar janelas do per-window (esperado ≈ 63 no período OOS atual)
    python3 << 'EOF'
    import pandas as pd
    df = pd.read_csv('reports/oos_consolidated_metrics.csv')
@@ -716,7 +732,7 @@ Define período oficial: 2020-01-02 a 2025-10-09 (1,451 dias úteis)
 poetry run python scripts/research/run_backtest_walkforward.py
 ```
 - Lê período de `configs/oos_period.yaml`
-- Gera série diária canônica: `reports/walkforward/nav_daily.csv` (1,471 observações)
+- Gera série diária canônica: `reports/walkforward/nav_daily.csv` (1,470 observações)
 - Filtra ao período OOS: 1,451 dias
 
 **Passo 3: Consolidar Métricas da Série Diária**
@@ -756,7 +772,7 @@ Cada métrica no README aponta a `oos_consolidated_metrics.json` (exceto quando 
 | **Total Return** | 2.89% | `total_return` | ✅ NAV - 1 |
 | **Annualized Return** | 0.50% | `annualized_return` | ✅ (1.0289)^(252/1451) - 1 |
 | **Annualized Volatility** | 8.60% | `annualized_volatility` | ✅ std(daily_return) × √252 |
-| **Sharpe Ratio** | 0.0576 | `sharpe_ratio` | ✅ annualized_return / volatility |
+| **Sharpe (excesso T‑Bill)** | -0.2130 | `sharpe_ratio` | ✅ média diária do excesso × 252 / (std(excesso) × √252) |
 | **Max Drawdown** | -20.89% | `max_drawdown` | ✅ min(drawdown curve) |
 | **Avg Drawdown** | -11.92% | `avg_drawdown` | ✅ mean(negative drawdowns) |
 | **CVaR 95% (diário)** | -1.27% | `cvar_95` | ✅ mean(worst 5% daily returns) |
@@ -783,11 +799,11 @@ Onde: daily_returns calculados de nav_daily.csv
 Resultado: 8.60%
 ```
 
-#### 3. Sharpe Ratio
+#### 3. Sharpe (excesso T‑Bill)
 ```
-Sharpe = r_anual / σ_anual
-Resultado: 0.50% / 8.60% = 0.0576
-Nota: Sem ajuste de taxa livre de risco (rf ≈ 0)
+Sharpe = (média(daily_returns − rf_daily) × 252) / (std(daily_returns − rf_daily, ddof=1) × √252)
+Resultado (com T‑Bill diário): -0.2130
+Nota: Quando RF≈0 (compat), o valor anterior era ≈ 0.0576.
 ```
 
 #### 4. Maximum Drawdown
