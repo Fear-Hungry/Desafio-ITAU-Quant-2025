@@ -2,7 +2,7 @@
 
 import numpy as np
 import pandas as pd
-from itau_quant.estimators import mu as mu_estimators
+from arara_quant.estimators import mu as mu_estimators
 
 
 def _toy_returns() -> pd.DataFrame:

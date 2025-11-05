@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from itau_quant.optimization.heuristics import hrp as hrp_mod
+from arara_quant.optimization.heuristics import hrp as hrp_mod
 
 
 def test_equal_weight_allocation():

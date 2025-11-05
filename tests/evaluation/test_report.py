@@ -4,7 +4,7 @@ matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from itau_quant.evaluation import (
+from arara_quant.evaluation import (
     AdvancedTearsheetData,
     ReportArtifacts,
     ReportBundle,
@@ -14,12 +14,12 @@ from itau_quant.evaluation import (
     export_pdf,
     render_html,
 )
-from itau_quant.evaluation.stats import (
+from arara_quant.evaluation.stats import (
     RiskContributionResult,
     RiskSummary,
     aggregate_risk_metrics,
 )
-from itau_quant.risk.budgets import RiskBudget
+from arara_quant.risk.budgets import RiskBudget
 
 
 def _bundle_components():

@@ -4,7 +4,7 @@ import pytest
 
 pd = pytest.importorskip("pandas")
 
-from itau_quant.data.sources.yf import download_prices
+from arara_quant.data.sources.yf import download_prices
 
 
 @pytest.mark.skip(reason="evita chamadas de rede em CI; rodar manualmente")

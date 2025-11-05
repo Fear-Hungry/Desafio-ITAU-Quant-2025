@@ -277,7 +277,7 @@ class ValidationOrchestrator:
             cmd = [
                 "poetry",
                 "run",
-                "itau-quant",
+                "arara-quant",
                 "backtest",
                 "--config",
                 config,
@@ -315,7 +315,7 @@ class ValidationOrchestrator:
         cmd = [
             "poetry",
             "run",
-            "itau-quant",
+            "arara-quant",
             "compare-baselines",
         ]
 

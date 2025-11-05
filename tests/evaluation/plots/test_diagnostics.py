@@ -4,7 +4,7 @@ matplotlib.use("Agg")
 
 import numpy as np
 import pandas as pd
-from itau_quant.evaluation.plots import (
+from arara_quant.evaluation.plots import (
     plot_drawdown_contributors,
     plot_parameter_sensitivity,
     plot_signal_distribution,

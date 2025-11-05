@@ -219,9 +219,9 @@ def plot_walkforward_nav(output_name: str = "walkforward_nav_20251101.png"):
 
     # Sharpe per window
     ax2.bar(df.index, df["Sharpe (OOS)"], color="#6A994E", alpha=0.7)
-    ax2.set_title("Sharpe Ratio per OOS Window", fontsize=14, fontweight="bold")
+    ax2.set_title("Sharpe por Janela (OOS, RF≈0)", fontsize=14, fontweight="bold")
     ax2.set_xlabel("Window Index")
-    ax2.set_ylabel("Sharpe Ratio")
+    ax2.set_ylabel("Sharpe (janela, RF≈0)")
     ax2.axhline(y=0, color="black", linewidth=1)
     ax2.grid(True, alpha=0.3, axis="y")
 

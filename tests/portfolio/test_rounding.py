@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
-from itau_quant.portfolio.rounding import rounding_pipeline
+from arara_quant.portfolio.rounding import rounding_pipeline
 
 
 def test_rounding_pipeline_nearest_method():

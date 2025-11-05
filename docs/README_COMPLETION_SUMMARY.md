@@ -72,7 +72,7 @@ poetry run python scripts/generate_oos_figures.py
 **Outputs:**
 - ✅ `reports/figures/oos_nav_cumulative_20251103.png`
 - ✅ `reports/figures/oos_drawdown_underwater_20251103.png`
-- ✅ `reports/figures/oos_baseline_comparison_20251103.png`
+- ✅ `reports/figures/oos_baseline_comparison_20251103.png` (Sharpe em excesso ao T‑Bill)
 - ✅ `reports/figures/oos_daily_distribution_20251103.png`
 
 #### C. Final Report (scripts/generate_final_report.py) — NEW
@@ -221,8 +221,8 @@ cat reports/oos_consolidated_metrics.json | jq '
 1. ✅ `PRD.md` — Lines 56, 258: "CVaR(5%): ≤ 8% a.a. (anualizado √252 × CVaR diário)"
 2. ✅ `CLAUDE.md` — Line 392: "CVaR (5%) ≤ 8% annual" with formula note
 3. ✅ `README.md` — Lines 24, 35, 179-189, 198-206, 405, 763, 790-816
-4. ✅ `src/itau_quant/evaluation/oos.py` — Added `cvar_95_annual` metric
-5. ✅ `src/itau_quant/utils/production_monitor.py` — Documented trigger equivalence
+4. ✅ `src/arara_quant/evaluation/oos.py` — Added `cvar_95_annual` metric
+5. ✅ `src/arara_quant/utils/production_monitor.py` — Documented trigger equivalence
 6. ✅ `scripts/consolidate_oos_metrics.py` — Fixed CVaR calculation + annualization
 7. ✅ `docs/MONITORING_CHECKLIST.md` — Line 241: Updated expected CVaR range
 8. ✅ `docs/report/REPORT_OUTLINE.md` — Lines 6, 42, 50, 58: All CVaR annualized

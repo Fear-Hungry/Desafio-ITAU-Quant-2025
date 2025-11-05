@@ -59,7 +59,7 @@ Implementamos com sucesso um sistema completo de proteção de cauda e ajuste di
 
 ## Componentes Implementados
 
-### 1. Defensive Mode (`src/itau_quant/portfolio/rebalancer.py`)
+### 1. Defensive Mode (`src/arara_quant/portfolio/rebalancer.py`)
 
 **Função:** `apply_defensive_mode(weights, portfolio_state, config)`
 
@@ -91,7 +91,7 @@ defensive_mode:
 
 ---
 
-### 2. Regime-Aware Lambda (`src/itau_quant/risk/regime.py` + `rebalancer.py`)
+### 2. Regime-Aware Lambda (`src/arara_quant/risk/regime.py` + `rebalancer.py`)
 
 **Já Existia:** Módulo `regime.py` com `detect_regime()` e `regime_multiplier()`
 
@@ -117,7 +117,7 @@ if regime_cfg:
 
 ---
 
-### 3. Adaptive Tail Hedge (`src/itau_quant/portfolio/adaptive_hedge.py`)
+### 3. Adaptive Tail Hedge (`src/arara_quant/portfolio/adaptive_hedge.py`)
 
 **Funções Principais:**
 
@@ -154,7 +154,7 @@ Avalia efetividade do hedge:
 
 ---
 
-### 4. Production Logger com Regime (`src/itau_quant/utils/production_logger.py`)
+### 4. Production Logger com Regime (`src/arara_quant/utils/production_logger.py`)
 
 **Campos Adicionados:**
 ```python
@@ -281,7 +281,7 @@ poetry run python scripts/research/run_adaptive_hedge_experiment.py
 ### Exemplo 1: Backtest com Regime-Aware
 
 ```bash
-poetry run itau-quant backtest \
+poetry run arara-quant backtest \
   --config configs/optimizer_regime_aware.yaml \
   --no-dry-run \
   --json > reports/backtest_regime_aware.json
@@ -395,7 +395,7 @@ assert 0.14 <= alloc_crash <= 0.15  # 14-15%
 
 1. **Executar Backtest Completo**
    ```bash
-   poetry run itau-quant backtest \
+   poetry run arara-quant backtest \
      --config configs/optimizer_regime_aware.yaml \
      --no-dry-run
    ```
@@ -480,10 +480,10 @@ regime_detection:
 ## Referências
 
 **Código:**
-- `src/itau_quant/portfolio/rebalancer.py` (linhas 352-461, 707-743)
-- `src/itau_quant/portfolio/adaptive_hedge.py`
-- `src/itau_quant/risk/regime.py`
-- `src/itau_quant/utils/production_logger.py`
+- `src/arara_quant/portfolio/rebalancer.py` (linhas 352-461, 707-743)
+- `src/arara_quant/portfolio/adaptive_hedge.py`
+- `src/arara_quant/risk/regime.py`
+- `src/arara_quant/utils/production_logger.py`
 
 **Configs:**
 - `configs/optimizer_regime_aware.yaml`

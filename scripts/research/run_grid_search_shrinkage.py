@@ -19,7 +19,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import yfinance as yf
-from itau_quant.data import get_arara_universe
+from arara_quant.data import get_arara_universe
 
 print("=" * 80)
 print("  PRISM-R - Grid Search: Shrinkage + Regularization")
@@ -104,10 +104,10 @@ print()
 
 print("⚙️  [3/4] Preparando backtest walk-forward...")
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.estimators.mu import huber_mean
-from itau_quant.estimators.mu_robust import combined_shrinkage
-from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.estimators.mu import huber_mean
+from arara_quant.estimators.mu_robust import combined_shrinkage
+from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 
 def run_backtest(

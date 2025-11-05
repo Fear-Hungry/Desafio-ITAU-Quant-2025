@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import textwrap
 
-from itau_quant.utils import yaml_loader
+from arara_quant.utils import yaml_loader
 
 
 def test_load_yaml_parses_mapping(tmp_path):

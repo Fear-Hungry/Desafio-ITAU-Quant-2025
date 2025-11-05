@@ -20,7 +20,7 @@
 The PRISM-R project provides a comprehensive orchestration system for portfolio validation:
 
 - **Master Orchestrator** (`scripts/run_master_validation.py`) - Coordinates 7-stage validation pipeline
-- **Unified CLI** (`itau-quant`) - 11 commands for backtesting, comparison, optimization
+- **Unified CLI** (`arara-quant`) - 11 commands for backtesting, comparison, optimization
 - **Research Scripts** (15 scripts) - Sensitivity analyses and experimentation
 - **Validation Suite** (4 scripts) - Constraint and estimator validation
 
@@ -65,13 +65,13 @@ poetry run python scripts/run_master_validation.py --mode production
 
 ```bash
 # Run single backtest
-poetry run itau-quant backtest --config configs/optimizer_example.yaml --no-dry-run
+poetry run arara-quant backtest --config configs/optimizer_example.yaml --no-dry-run
 
 # Compare baseline strategies
-poetry run itau-quant compare-baselines
+poetry run arara-quant compare-baselines
 
 # Run full pipeline (data + backtest)
-poetry run itau-quant run-full-pipeline --config configs/optimizer_example.yaml
+poetry run arara-quant run-full-pipeline --config configs/optimizer_example.yaml
 ```
 
 ---
@@ -190,7 +190,7 @@ poetry run python scripts/run_01_data_pipeline.py \
 
 **Command (single config):**
 ```bash
-poetry run itau-quant backtest \
+poetry run arara-quant backtest \
     --config configs/optimizer_example.yaml \
     --no-dry-run \
     --wf-report \
@@ -223,7 +223,7 @@ poetry run itau-quant backtest \
 
 **Command:**
 ```bash
-poetry run itau-quant compare-baselines
+poetry run arara-quant compare-baselines
 ```
 
 **Outputs:**
@@ -446,16 +446,16 @@ results/
 
 ```bash
 # Show current configuration
-poetry run itau-quant show-settings [--json]
+poetry run arara-quant show-settings [--json]
 
 # Optimize portfolio (dry-run)
-poetry run itau-quant optimize --config <yaml>
+poetry run arara-quant optimize --config <yaml>
 
 # Run backtest
-poetry run itau-quant backtest --config <yaml> --no-dry-run [--wf-report] [--json]
+poetry run arara-quant backtest --config <yaml> --no-dry-run [--wf-report] [--json]
 
 # Full pipeline (data + backtest)
-poetry run itau-quant run-full-pipeline \
+poetry run arara-quant run-full-pipeline \
     --config <yaml> \
     --start YYYY-MM-DD \
     --end YYYY-MM-DD \
@@ -469,33 +469,33 @@ poetry run itau-quant run-full-pipeline \
 
 ```bash
 # Compare baseline strategies
-poetry run itau-quant compare-baselines
+poetry run arara-quant compare-baselines
 
 # Compare estimators
-poetry run itau-quant compare-estimators
+poetry run arara-quant compare-estimators
 
 # Grid search hyperparameters
-poetry run itau-quant grid-search
+poetry run arara-quant grid-search
 
 # Test forecast skill
-poetry run itau-quant test-skill
+poetry run arara-quant test-skill
 
 # Walk-forward validation
-poetry run itau-quant walkforward
+poetry run arara-quant walkforward
 ```
 
 ### Production Commands
 
 ```bash
 # Deploy production portfolio
-poetry run itau-quant production-deploy [--version {v1|v2}]
+poetry run arara-quant production-deploy [--version {v1|v2}]
 ```
 
 ### Example Commands
 
 ```bash
 # Run example portfolios
-poetry run itau-quant run-example {arara|robust}
+poetry run arara-quant run-example {arara|robust}
 ```
 
 ---
@@ -569,7 +569,7 @@ poetry run python scripts/run_master_validation.py \
 
 2. **Test different estimators:**
    ```bash
-   poetry run itau-quant compare-estimators
+   poetry run arara-quant compare-estimators
    ```
 
 3. **Review constraint tightness:**
@@ -689,10 +689,10 @@ For debugging, run stages individually:
 poetry run python scripts/run_01_data_pipeline.py --force-download
 
 # Stage 2: Backtest
-poetry run itau-quant backtest --config configs/optimizer_example.yaml --no-dry-run
+poetry run arara-quant backtest --config configs/optimizer_example.yaml --no-dry-run
 
 # Stage 3: Baselines
-poetry run itau-quant compare-baselines
+poetry run arara-quant compare-baselines
 
 # Stage 4: Sensitivity (example)
 poetry run python scripts/research/run_cost_sensitivity.py
@@ -819,7 +819,7 @@ After running validation:
 4. **Deploy to Production:**
    ```bash
    make validate-production
-   poetry run itau-quant production-deploy --version v2
+   poetry run arara-quant production-deploy --version v2
    ```
 
 ---

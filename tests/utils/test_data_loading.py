@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from itau_quant.utils import data_loading
+from arara_quant.utils import data_loading
 
 
 def test_to_datetime_index_converts_series_index() -> None:

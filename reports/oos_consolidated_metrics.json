@@ -3,7 +3,8 @@
   "total_return": 0.02886571880015021,
   "annualized_return": 0.004954446381679967,
   "annualized_volatility": 0.08596241615802391,
-  "sharpe_ratio": 0.05763502938973067,
+  "sharpe_ratio": -0.21300083657353924,
+  "sharpe_excess_rf": -0.21300083657353924,
   "max_drawdown": -0.20886843865285545,
   "avg_drawdown": -0.11917215346729178,
   "cvar_95": -0.012746570427993225,
@@ -13,5 +14,6 @@
   "success_rate": 0.5203308063404548,
   "period_start": "2020-01-02T00:00:00.000000000",
   "period_end": "2025-10-09T00:00:00.000000000",
+  "risk_free_note": "Sharpe computed on daily excess returns vs provided T-Bill series",
   "baseline_alignment_note": "Baselines must be recomputed with the same OOS period defined in configs/oos_period.yaml; do not mix window-level Sharpe with daily-series Sharpe."
 }

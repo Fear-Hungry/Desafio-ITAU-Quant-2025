@@ -125,7 +125,7 @@ except Exception as e:
 # ============================================================================
 print("📊 [2/4] Estimando Σ (Ledoit-Wolf, comum para todos)...")
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
 
 sigma, shrinkage = ledoit_wolf_shrinkage(recent_returns)
 sigma_annual = sigma * 252
@@ -138,8 +138,8 @@ print()
 # ============================================================================
 print("📈 [3/4] Estimando μ com 4 métodos diferentes...")
 
-from itau_quant.estimators.bl import black_litterman, reverse_optimization
-from itau_quant.estimators.mu import bayesian_shrinkage_mean, huber_mean, mean_return
+from arara_quant.estimators.bl import black_litterman, reverse_optimization
+from arara_quant.estimators.mu import bayesian_shrinkage_mean, huber_mean, mean_return
 
 # Método 1: Sample mean (baseline)
 print("   [1/4] Sample mean (baseline overfit)...")
@@ -187,7 +187,7 @@ print()
 # ============================================================================
 print("⚙️  [4/4] Otimizando portfolio com cada estimador...")
 
-from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
+from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 ESTIMATORS = {
     "sample": mu_sample,

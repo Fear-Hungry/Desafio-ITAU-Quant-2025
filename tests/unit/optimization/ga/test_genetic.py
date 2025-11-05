@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from itau_quant.optimization.ga import genetic
+from arara_quant.optimization.ga import genetic
 
 SCORES = {"A": 0.1, "B": 0.2, "C": 0.3, "D": 0.5}
 

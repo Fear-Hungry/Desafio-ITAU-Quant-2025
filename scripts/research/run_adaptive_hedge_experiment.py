@@ -31,12 +31,12 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from itau_quant.portfolio.adaptive_hedge import (
+from arara_quant.portfolio.adaptive_hedge import (
     compute_hedge_allocation,
     apply_hedge_rebalance,
     evaluate_hedge_performance,
 )
-from itau_quant.risk.regime import detect_regime
+from arara_quant.risk.regime import detect_regime
 
 print("=" * 80)
 print("  PRISM-R - Adaptive Tail Hedge Experiment")

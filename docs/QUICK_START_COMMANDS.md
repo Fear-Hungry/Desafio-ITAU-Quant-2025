@@ -7,7 +7,7 @@ Este guia fornece os comandos essenciais para trabalhar com o projeto PRISM-R (C
 ```bash
 # Clone o repositório
 git clone <repository-url>
-cd Desafio-ITAU-Quant
+cd arara-quant-lab
 
 # Instale dependências com Poetry
 poetry install
@@ -28,7 +28,7 @@ poetry run pytest tests/estimators/
 poetry run pytest tests/optimization/
 
 # Com verbose e cobertura
-poetry run pytest -v --cov=src/itau_quant
+poetry run pytest -v --cov=src/arara_quant
 ```
 
 ## CLI (Interface de Linha de Comando)
@@ -37,10 +37,10 @@ O projeto oferece uma CLI unificada para todos os comandos:
 
 ```bash
 # Ver ajuda geral
-poetry run itau-quant --help
+poetry run arara-quant --help
 
 # Ver ajuda de um comando específico
-poetry run itau-quant run-example --help
+poetry run arara-quant run-example --help
 ```
 
 ### Comandos Principais
@@ -48,53 +48,53 @@ poetry run itau-quant run-example --help
 #### 1. Configurações
 ```bash
 # Mostrar configurações do sistema
-poetry run itau-quant show-settings
-poetry run itau-quant show-settings --json
+poetry run arara-quant show-settings
+poetry run arara-quant show-settings --json
 ```
 
 #### 2. Exemplos (Demonstração)
 ```bash
 # Executar portfolio ARARA básico
-poetry run itau-quant run-example arara
+poetry run arara-quant run-example arara
 
 # Executar portfolio ARARA robusto
-poetry run itau-quant run-example robust
+poetry run arara-quant run-example robust
 ```
 
 #### 3. Pesquisa e Análise
 ```bash
 # Comparar estratégias baseline (1/N, Minimum Variance, Risk Parity)
-poetry run itau-quant compare-baselines
+poetry run arara-quant compare-baselines
 
 # Comparar estimadores de μ e Σ
-poetry run itau-quant compare-estimators
+poetry run arara-quant compare-estimators
 
 # Grid search de hiperparâmetros (shrinkage)
-poetry run itau-quant grid-search
+poetry run arara-quant grid-search
 
 # Testar skill de forecast de μ
-poetry run itau-quant test-skill
+poetry run arara-quant test-skill
 
 # Backtest walk-forward com validação temporal
-poetry run itau-quant walkforward
+poetry run arara-quant walkforward
 ```
 
 #### 4. Produção
 ```bash
 # Deploy sistema de produção (ERC v2 - recomendado)
-poetry run itau-quant production-deploy --version v2
+poetry run arara-quant production-deploy --version v2
 
 # Deploy sistema de produção (ERC v1 - básico)
-poetry run itau-quant production-deploy --version v1
+poetry run arara-quant production-deploy --version v1
 ```
 
 #### 5. Otimização e Backtest
 ```bash
 # Otimização com arquivo de configuração
-poetry run itau-quant optimize --config configs/optimizer_example.yaml
+poetry run arara-quant optimize --config configs/optimizer_example.yaml
 
 # Backtest com arquivo de configuração
-poetry run itau-quant backtest --config configs/backtest_example.yaml
+poetry run arara-quant backtest --config configs/backtest_example.yaml
 ```
 
 ## Executar Scripts Diretamente
@@ -131,7 +131,7 @@ poetry run mypy src
 
 ```
 .
-├── src/itau_quant/     # Código-fonte principal (package)
+├── src/arara_quant/     # Código-fonte principal (package)
 ├── scripts/            # Scripts executáveis
 │   ├── examples/       # Demonstrações
 │   ├── research/       # Análises
@@ -152,7 +152,7 @@ poetry run mypy src
 
 ## Solução de Problemas
 
-### Erro: "Command not found: itau-quant"
+### Erro: "Command not found: arara-quant"
 ```bash
 # Reinstale o pacote
 poetry install
@@ -161,7 +161,7 @@ poetry install
 ### Erro: "Module not found"
 ```bash
 # Verifique se está no diretório correto
-pwd  # Deve ser /path/to/Desafio-ITAU-Quant
+pwd  # Deve ser /path/to/arara-quant-lab
 
 # Reinstale dependências
 poetry install --no-cache

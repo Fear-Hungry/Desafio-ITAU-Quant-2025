@@ -5,7 +5,7 @@ from typing import Sequence
 
 import pandas as pd
 import pytest
-from itau_quant.data.sources import crypto
+from arara_quant.data.sources import crypto
 
 
 def _fake_frame(symbols: Sequence[str], fields: Sequence[str]) -> pd.DataFrame:

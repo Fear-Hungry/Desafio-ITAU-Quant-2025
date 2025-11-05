@@ -6,7 +6,7 @@ import stat
 from unittest.mock import patch
 
 import pytest
-from itau_quant.pipeline.orchestrator import (
+from arara_quant.pipeline.orchestrator import (
     PipelineError,
     run_full_pipeline,
     validate_write_permissions,
@@ -47,10 +47,10 @@ class TestValidateWritePermissions:
 class TestRunFullPipeline:
     """Tests for full pipeline orchestration."""
 
-    @patch("itau_quant.pipeline.orchestrator.download_and_prepare_data")
-    @patch("itau_quant.pipeline.orchestrator.estimate_parameters")
-    @patch("itau_quant.pipeline.orchestrator.optimize_portfolio")
-    @patch("itau_quant.pipeline.orchestrator.run_backtest")
+    @patch("arara_quant.pipeline.orchestrator.download_and_prepare_data")
+    @patch("arara_quant.pipeline.orchestrator.estimate_parameters")
+    @patch("arara_quant.pipeline.orchestrator.optimize_portfolio")
+    @patch("arara_quant.pipeline.orchestrator.run_backtest")
     def test_run_full_pipeline_executes_all_stages(
         self,
         mock_backtest,
@@ -107,9 +107,9 @@ class TestRunFullPipeline:
         assert mock_optimize.called
         assert mock_backtest.called
 
-    @patch("itau_quant.pipeline.orchestrator.download_and_prepare_data")
-    @patch("itau_quant.pipeline.orchestrator.estimate_parameters")
-    @patch("itau_quant.pipeline.orchestrator.optimize_portfolio")
+    @patch("arara_quant.pipeline.orchestrator.download_and_prepare_data")
+    @patch("arara_quant.pipeline.orchestrator.estimate_parameters")
+    @patch("arara_quant.pipeline.orchestrator.optimize_portfolio")
     def test_run_full_pipeline_skips_backtest_when_requested(
         self,
         mock_optimize,
@@ -144,8 +144,8 @@ class TestRunFullPipeline:
         assert result["status"] == "completed"
         assert result["stages"]["backtest"]["status"] == "skipped"
 
-    @patch("itau_quant.pipeline.orchestrator.download_and_prepare_data")
-    @patch("itau_quant.pipeline.orchestrator.estimate_parameters")
+    @patch("arara_quant.pipeline.orchestrator.download_and_prepare_data")
+    @patch("arara_quant.pipeline.orchestrator.estimate_parameters")
     def test_run_full_pipeline_handles_optimization_failure(
         self,
         mock_estimate,
@@ -167,7 +167,7 @@ class TestRunFullPipeline:
 
         # Make optimization fail
         with patch(
-            "itau_quant.pipeline.orchestrator.optimize_portfolio",
+            "arara_quant.pipeline.orchestrator.optimize_portfolio",
             side_effect=ValueError("Optimization failed"),
         ):
             with pytest.raises(PipelineError, match="Pipeline execution failed"):
@@ -176,9 +176,9 @@ class TestRunFullPipeline:
                     output_dir=tmp_path,
                 )
 
-    @patch("itau_quant.pipeline.orchestrator.download_and_prepare_data")
-    @patch("itau_quant.pipeline.orchestrator.estimate_parameters")
-    @patch("itau_quant.pipeline.orchestrator.optimize_portfolio")
+    @patch("arara_quant.pipeline.orchestrator.download_and_prepare_data")
+    @patch("arara_quant.pipeline.orchestrator.estimate_parameters")
+    @patch("arara_quant.pipeline.orchestrator.optimize_portfolio")
     def test_run_full_pipeline_returns_expected_structure(
         self,
         mock_optimize,
@@ -227,7 +227,7 @@ class TestRunFullPipeline:
         for stage_name in ["data", "estimation", "optimization"]:
             assert "duration_seconds" in result["stages"][stage_name]
 
-    @patch("itau_quant.pipeline.orchestrator.download_and_prepare_data")
+    @patch("arara_quant.pipeline.orchestrator.download_and_prepare_data")
     def test_run_full_pipeline_passes_parameters_correctly(
         self,
         mock_data,
@@ -241,8 +241,8 @@ class TestRunFullPipeline:
             "returns_file": "returns_cache.parquet",
         }
 
-        with patch("itau_quant.pipeline.orchestrator.estimate_parameters"):
-            with patch("itau_quant.pipeline.orchestrator.optimize_portfolio"):
+        with patch("arara_quant.pipeline.orchestrator.estimate_parameters"):
+            with patch("arara_quant.pipeline.orchestrator.optimize_portfolio"):
                 run_full_pipeline(
                     config_path="test_config.yaml",
                     start="2020-01-01",

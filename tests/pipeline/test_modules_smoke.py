@@ -9,7 +9,7 @@ from __future__ import annotations
 import inspect
 
 import pytest
-from itau_quant.pipeline import (
+from arara_quant.pipeline import (
     download_and_prepare_data,
     estimate_parameters,
     optimize_portfolio,
@@ -125,7 +125,7 @@ class TestOptimizationModule:
         mu = pd.Series([0.1, 0.2], index=["A", "B"], name="mu")
         mu.to_frame().to_parquet(mu_path)
 
-        from itau_quant.config import Settings
+        from arara_quant.config import Settings
 
         settings = Settings.from_env(overrides={"PROCESSED_DATA_DIR": str(tmp_path)})
 
@@ -142,7 +142,7 @@ class TestModuleIntegration:
 
     def test_all_modules_importable(self):
         """Verify all pipeline modules can be imported."""
-        from itau_quant.pipeline import (
+        from arara_quant.pipeline import (
             download_and_prepare_data,
             estimate_parameters,
             optimize_portfolio,

@@ -4,7 +4,7 @@ matplotlib.use("Agg")
 
 import numpy as np
 import pandas as pd
-from itau_quant.evaluation.plots import (
+from arara_quant.evaluation.plots import (
     TearsheetFigure,
     generate_tearsheet,
     plot_cumulative_returns,

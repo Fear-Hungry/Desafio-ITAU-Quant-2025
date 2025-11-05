@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**PRISM-R (Portfolio Risk Intelligence System)** - Carteira ARARA is a quantitative multi-asset portfolio optimization platform designed for the ITAU Quant Challenge. The system implements robust portfolio optimization with real transaction costs, turnover constraints, and walk-forward validation.
+**PRISM-R (Portfolio Risk Intelligence System)** - Carteira ARARA is a quantitative multi-asset portfolio optimization platform developed at **Arara Quant Lab**. The system implements robust portfolio optimization with real transaction costs, turnover constraints, and walk-forward validation.
 
 **Core Mission:** Deliver risk-adjusted returns (target CDI + 4% annually) with strict risk control (volatility ≤ 12%, max drawdown ≤ 15%) across a global ETF universe of 40+ assets.
 
@@ -38,7 +38,7 @@ poetry run pytest tests/estimators/test_bl.py::test_reverse_optimization_infers_
 poetry run pytest -v
 
 # Run with coverage
-poetry run pytest --cov=src/itau_quant
+poetry run pytest --cov=src/arara_quant
 ```
 
 ### Code Quality
@@ -56,7 +56,7 @@ poetry run mypy src
 ### Data Pipeline
 ```bash
 # Download and process data (when implemented)
-poetry run python -m itau_quant.data.loader --universe configs/universe_arara.yaml
+poetry run python -m arara_quant.data.loader --universe configs/universe_arara.yaml
 ```
 
 ## Architecture Overview
@@ -81,7 +81,7 @@ The codebase follows a layered architecture designed for modularity and testabil
 
 ### Key Module Responsibilities
 
-**`src/itau_quant/estimators/`** - Statistical estimation layer
+**`src/arara_quant/estimators/`** - Statistical estimation layer
 - **`bl.py`**: Complete Black-Litterman framework (reverse optimization, view projection, posterior returns)
 - **`cov.py`**: Covariance estimators (sample, Ledoit-Wolf, nonlinear shrinkage, Tyler M-estimator, Student-t)
 - **`mu.py`**: Expected return estimators (Huber mean, Student-t, Bayesian shrinkage, confidence intervals)
@@ -90,7 +90,7 @@ The codebase follows a layered architecture designed for modularity and testabil
 
 **Critical Design Pattern:** All estimators accept pandas DataFrames/Series and return the same, preserving asset labels throughout the pipeline. This ensures end-to-end traceability.
 
-**`src/itau_quant/optimization/`** - Portfolio optimization
+**`src/arara_quant/optimization/`** - Portfolio optimization
 - **`core/mv_qp.py`**: Mean-variance QP with turnover penalties and transaction costs
 - **`core/cvar_lp.py`**: CVaR-based optimization (LP/SOCP formulations)
 - **`core/risk_parity.py`**: Risk parity allocation
@@ -99,7 +99,7 @@ The codebase follows a layered architecture designed for modularity and testabil
 
 **Design Constraint:** The optimizer incorporates costs and turnover **inside** the objective function, not as post-processing. This is critical for realistic performance.
 
-**`src/itau_quant/backtesting/`** - Walk-forward validation
+**`src/arara_quant/backtesting/`** - Walk-forward validation
 - **`engine.py`**: Main backtest orchestrator
 - **`walk_forward.py`**: Temporal splitting with purging/embargo
 - **`execution.py`**: Order execution simulation with slippage
@@ -107,7 +107,7 @@ The codebase follows a layered architecture designed for modularity and testabil
 
 **Anti-Pattern to Avoid:** Never use future data in training (look-ahead bias). The `validation.py` module enforces temporal ordering with purging (remove training samples too close to test start) and embargo (remove training samples after test end).
 
-**`src/itau_quant/data/`** - Data management
+**`src/arara_quant/data/`** - Data management
 - **`sources/`**: Connectors for yfinance, FRED, CSV, crypto APIs
 - **`processing/`**: Return calculation, corporate actions, calendar handling
 - **`storage.py`**: Parquet-based persistence with versioning
@@ -159,7 +159,7 @@ Where:
 
 **Usage Pattern:**
 ```python
-from itau_quant.estimators.validation import PurgedKFold
+from arara_quant.estimators.validation import PurgedKFold
 
 splitter = PurgedKFold(
     n_splits=5,
@@ -208,7 +208,7 @@ The project uses a **Pydantic + YAML** configuration system for type-safe, valid
 
 ### Configuration Schemas
 
-All configs are validated using Pydantic models in `src/itau_quant/config/schemas.py`:
+All configs are validated using Pydantic models in `src/arara_quant/config/schemas.py`:
 
 - **`UniverseConfig`**: Asset universe (name, tickers, description)
 - **`PortfolioConfig`**: Portfolio optimization parameters (risk_aversion, position limits, turnover)
@@ -220,7 +220,7 @@ All configs are validated using Pydantic models in `src/itau_quant/config/schema
 ### Loading Configurations
 
 ```python
-from itau_quant.config import load_config, UniverseConfig, PortfolioConfig
+from arara_quant.config import load_config, UniverseConfig, PortfolioConfig
 
 # Load and validate configs
 universe = load_config("configs/universe_arara.yaml", UniverseConfig)
@@ -277,7 +277,7 @@ poetry run python scripts/examples/run_portfolio_arara.py \
 
 ## Testing Philosophy
 
-**Test Structure:** Mirrors `src/` hierarchy (e.g., `tests/estimators/test_bl.py` tests `src/itau_quant/estimators/bl.py`)
+**Test Structure:** Mirrors `src/` hierarchy (e.g., `tests/estimators/test_bl.py` tests `src/arara_quant/estimators/bl.py`)
 
 **Test Categories:**
 1. **Unit tests:** Pure function logic with synthetic data
@@ -438,12 +438,12 @@ The following targets drive design decisions:
 **For understanding the system:**
 1. `README.md` - Project overview and universe description
 2. `PRD.md` - Detailed product requirements and formulation
-3. `src/itau_quant/estimators/bl.py` - Black-Litterman reference implementation
+3. `src/arara_quant/estimators/bl.py` - Black-Litterman reference implementation
 4. `configs/optimizer_example.yaml` - Complete config example (when created)
 
 **For contributing:**
 1. `tests/estimators/` - Test patterns and fixtures
-2. `src/itau_quant/estimators/README.md` - Estimator module conventions
+2. `src/arara_quant/estimators/README.md` - Estimator module conventions
 3. `pyproject.toml` - Dependencies and tool configs
 
 ## Debugging Tips

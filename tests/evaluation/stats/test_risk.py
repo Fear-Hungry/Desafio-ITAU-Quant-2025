@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.evaluation.stats import (
+from arara_quant.evaluation.stats import (
     RiskSummary,
     aggregate_risk_metrics,
     conditional_value_at_risk,

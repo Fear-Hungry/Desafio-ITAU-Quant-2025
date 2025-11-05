@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.estimators import validation
+from arara_quant.estimators import validation
 
 
 def _build_index(n: int = 30) -> pd.DatetimeIndex:

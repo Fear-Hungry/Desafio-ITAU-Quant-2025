@@ -17,9 +17,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.utils.production_logger import ProductionLogger
-from itau_quant.utils.production_monitor import (
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.utils.production_logger import ProductionLogger
+from arara_quant.utils.production_monitor import (
     should_fallback_to_1N,
 )
 
@@ -391,7 +391,7 @@ else:
 
     # Passo 1: Resolver ERC unconstrained para selecionar top-K
     print(f"   📐 Selecionando top-{CARDINALITY_K} ativos...")
-    from itau_quant.optimization.erc_calibrated import solve_erc_core
+    from arara_quant.optimization.erc_calibrated import solve_erc_core
 
     w_unconstrained, _ = solve_erc_core(
         cov=cov_annual.values,

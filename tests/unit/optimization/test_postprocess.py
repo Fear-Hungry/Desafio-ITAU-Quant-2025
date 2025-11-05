@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from itau_quant.optimization.core import postprocess as post_mod
+from arara_quant.optimization.core import postprocess as post_mod
 
 
 def test_project_to_simplex_returns_non_negative_and_unit_sum():

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
-from itau_quant.portfolio.scheduler import (
+from arara_quant.portfolio.scheduler import (
     generate_schedule,
     next_rebalance_date,
     scheduler,

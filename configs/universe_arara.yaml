@@ -3,7 +3,7 @@
 name: ARARA
 description: |
   Universo multiativos completo da carteira ARARA, alinhado ao metadata oficial
-  (`src/itau_quant/data/universe_metadata.yaml`). Inclui ETFs de ações EUA,
+  (`src/arara_quant/data/universe_metadata.yaml`). Inclui ETFs de ações EUA,
   internacionais, emergentes, fatores/setores, renda fixa, real assets,
   commodities, FX e cripto spot.
 

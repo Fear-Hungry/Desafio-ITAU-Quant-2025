@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 import pytest
-from itau_quant.data.sources.csv import CSVSchemaError, load_price_panel
+from arara_quant.data.sources.csv import CSVSchemaError, load_price_panel
 
 
 def _write_csv(tmp_path: Path, filename: str, rows: list[dict[str, object]]) -> Path:

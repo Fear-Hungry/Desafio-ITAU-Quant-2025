@@ -5,7 +5,7 @@ import pytest
 
 pd = pytest.importorskip("pandas")
 
-from itau_quant.data.processing.returns import compute_excess_returns
+from arara_quant.data.processing.returns import compute_excess_returns
 
 
 def test_compute_excess_returns_alignment_and_broadcast():

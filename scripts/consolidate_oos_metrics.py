@@ -9,6 +9,7 @@ This script:
 4. Uses the same series for all downstream calculations (no divergences)
 """
 
+import argparse
 import pandas as pd
 import numpy as np
 import yaml
@@ -37,7 +38,63 @@ def load_nav_daily():
     df["date"] = pd.to_datetime(df["date"])
     return df.sort_values("date").reset_index(drop=True)
 
-def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict) -> dict:
+def _load_riskfree_daily(rf_csv: Path) -> pd.DataFrame:
+    """Load a risk-free daily series from CSV.
+
+    Expected schema (flexible):
+      - Must contain a date column named 'date' (YYYY-MM-DD or ISO).
+      - Must contain one of the following columns:
+          * 'rf_daily'  → daily decimal return (e.g., 0.0001)
+          * 'rf_annual' → annualized decimal rate; converted to daily as rate/252
+          * 'rf_rate'   → same as rf_annual
+          * 'yield'     → annualized rate; if > 1, assume percentage and divide by 100
+
+    Returns a DataFrame with columns: ['date', 'rf_daily'] sorted by date.
+    """
+    if not rf_csv.exists():
+        raise FileNotFoundError(f"Risk-free CSV not found: {rf_csv}")
+    df = pd.read_csv(rf_csv)
+    if 'date' not in df.columns:
+        # Try common alternatives
+        for alt in ('Date', 'DATE', 'timestamp'):
+            if alt in df.columns:
+                df = df.rename(columns={alt: 'date'})
+                break
+    if 'date' not in df.columns:
+        raise ValueError("Risk-free CSV must contain a 'date' column")
+    df['date'] = pd.to_datetime(df['date'])
+
+    rf_col = None
+    for c in ('rf_daily', 'rf_annual', 'rf_rate', 'yield', 'YIELD', 'RATE'):
+        if c in df.columns:
+            rf_col = c
+            break
+    if rf_col is None:
+        # Fallback: first non-date numeric column
+        candidates = [c for c in df.columns if c != 'date']
+        if not candidates:
+            raise ValueError("Risk-free CSV has no numeric columns besides 'date'")
+        rf_col = candidates[0]
+
+    s = pd.to_numeric(df[rf_col], errors='coerce')
+    # Detect whether this is daily decimal or annualized
+    # Heuristic: if median > 0.02 or any > 0.2, likely annualized
+    med = float(s.dropna().median()) if s.notna().any() else 0.0
+    is_annual_like = med > 0.02 or float(s.dropna().max()) > 0.2
+    if is_annual_like:
+        # If values look like percentages (e.g., 5.0 for 5%), convert to decimal
+        if med > 1.0:
+            s = s / 100.0
+        rf_daily = s / 252.0
+    else:
+        rf_daily = s
+
+    out = pd.DataFrame({'date': df['date'], 'rf_daily': rf_daily})
+    out = out.sort_values('date').dropna(subset=['rf_daily']).reset_index(drop=True)
+    return out
+
+
+def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict, rf_daily: pd.DataFrame | None = None) -> dict:
     """
     Compute all metrics directly from daily NAV series.
     This ensures consistent calculations with no divergences.
@@ -65,11 +122,28 @@ def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict) -> di
     # Annualized return using actual day count
     annualized_return = (nav_final ** (252 / n_days)) - 1
 
-    # Annualized volatility
+    # Annualized volatility (total returns)
     annualized_volatility = np.std(daily_returns, ddof=1) * np.sqrt(252)
 
-    # Sharpe ratio (assuming risk-free rate ≈ 0)
-    sharpe_ratio = annualized_return / annualized_volatility if annualized_volatility > 0 else 0
+    # Sharpe ratio: if rf_daily provided, compute on excess returns
+    sharpe_ratio: float
+    sharpe_excess: float | None = None
+    rf_note: str | None = None
+    if rf_daily is not None and not rf_daily.empty:
+        # Align RF to dates and fill missing with 0
+        rf_aligned = pd.merge(
+            pd.DataFrame({'date': df_oos['date'].values}),
+            rf_daily[['date', 'rf_daily']], on='date', how='left'
+        )['rf_daily'].fillna(0.0).values
+        excess = daily_returns - rf_aligned
+        ann_excess_mean = np.mean(excess) * 252.0
+        ann_excess_vol = np.std(excess, ddof=1) * np.sqrt(252.0)
+        sharpe_ratio = (ann_excess_mean / ann_excess_vol) if ann_excess_vol > 0 else 0.0
+        sharpe_excess = sharpe_ratio
+        rf_note = "Sharpe computed on daily excess returns vs provided T-Bill series"
+    else:
+        # Fallback to RF≈0 (compatibility)
+        sharpe_ratio = annualized_return / annualized_volatility if annualized_volatility > 0 else 0
 
     # Drawdowns
     running_max = np.maximum.accumulate(nav_values)
@@ -95,6 +169,7 @@ def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict) -> di
         "annualized_return": annualized_return,
         "annualized_volatility": annualized_volatility,
         "sharpe_ratio": sharpe_ratio,
+        "sharpe_excess_rf": sharpe_excess if sharpe_excess is not None else sharpe_ratio,
 
         # Risk metrics
         "max_drawdown": max_drawdown,
@@ -110,6 +185,8 @@ def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict) -> di
         # Period metadata
         "period_start": dates[0],
         "period_end": dates[-1],
+        # Meta / notes
+        "risk_free_note": rf_note if rf_note is not None else "Sharpe computed with RF≈0 (compat mode)",
     }
 
     return metrics
@@ -274,6 +351,11 @@ def main():
     print("CONSOLIDATING OOS METRICS (SINGLE SOURCE OF TRUTH)")
     print("=" * 70)
 
+    parser = argparse.ArgumentParser(description="Consolidate OOS metrics from nav_daily.csv")
+    parser.add_argument("--riskfree-csv", type=str, default=None,
+                        help="Optional CSV with daily or annual risk-free (T-Bill) series. Columns: date + rf_daily OR rf_annual/rf_rate/yield")
+    args = parser.parse_args()
+
     # Load OOS configuration
     print("\nLoading OOS period configuration...")
     oos_config = load_oos_config()
@@ -284,9 +366,18 @@ def main():
     df_nav = load_nav_daily()
     print(f"✓ Loaded {len(df_nav)} daily observations")
 
+    # Optional: load risk-free series
+    rf_df = None
+    if args.riskfree_csv:
+        try:
+            rf_df = _load_riskfree_daily(Path(args.riskfree_csv))
+            print(f"✓ Loaded risk-free series: {len(rf_df)} rows from {args.riskfree_csv}")
+        except Exception as e:
+            print(f"⚠️  Could not load risk-free series: {e}. Proceeding with RF≈0.")
+
     # Compute metrics from daily NAV
     print("\nComputing consolidated metrics from nav_daily.csv...")
-    metrics = compute_metrics_from_nav_daily(df_nav, oos_config)
+    metrics = compute_metrics_from_nav_daily(df_nav, oos_config, rf_daily=rf_df)
 
     # Display results
     print("\n" + format_simple_metrics_table(metrics))

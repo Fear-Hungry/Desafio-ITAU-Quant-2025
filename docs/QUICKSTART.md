@@ -128,10 +128,10 @@ SHRINKAGE_METHOD = 'ledoit_wolf'  # ou 'nonlinear', 'tyler'
 ### Exemplo: Otimização Customizada
 
 ```python
-from itau_quant.data.loader import DataLoader
-from itau_quant.estimators.mu import mean_return
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
+from arara_quant.data.loader import DataLoader
+from arara_quant.estimators.mu import mean_return
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.optimization.core.mv_qp import solve_mean_variance, MeanVarianceConfig
 import pandas as pd
 
 # 1. Carregar dados
@@ -165,7 +165,7 @@ print(result.weights)
 ### Exemplo: Black-Litterman com Views
 
 ```python
-from itau_quant.estimators.bl import black_litterman
+from arara_quant.estimators.bl import black_litterman
 import numpy as np
 
 # Market equilibrium (equal-weight como prior)
@@ -192,7 +192,7 @@ result = solve_mean_variance(mu_bl, sigma_bl, config)
 ### Exemplo: Risk Parity
 
 ```python
-from itau_quant.optimization.core.risk_parity import risk_parity
+from arara_quant.optimization.core.risk_parity import risk_parity
 
 weights_rp = risk_parity(
     cov=sigma,
@@ -219,7 +219,7 @@ poetry run pytest tests/backtesting/
 poetry run pytest -v
 
 # Com coverage (se pytest-cov instalado)
-poetry run pytest --cov=src/itau_quant
+poetry run pytest --cov=src/arara_quant
 ```
 
 ---
@@ -318,7 +318,7 @@ REBALANCE_FREQ = 63  # rebalancear trimestralmente
 ### Usar Genetic Algorithm
 
 ```python
-from itau_quant.optimization.ga.genetic import run_genetic_algorithm
+from arara_quant.optimization.ga.genetic import run_genetic_algorithm
 
 result = run_genetic_algorithm(
     universe=tickers,
@@ -341,7 +341,7 @@ poetry run python scripts/compare_strategies.py
 ### Gerar Relatório Completo
 
 ```python
-from itau_quant.evaluation.report import build_and_export_report
+from arara_quant.evaluation.report import build_and_export_report
 
 build_and_export_report(
     returns=portfolio_returns,

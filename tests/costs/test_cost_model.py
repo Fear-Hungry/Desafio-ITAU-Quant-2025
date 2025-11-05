@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pandas as pd
-from itau_quant.costs.cost_model import (
+from arara_quant.costs.cost_model import (
     CostModel,
     classify_asset,
     estimate_costs_by_class,

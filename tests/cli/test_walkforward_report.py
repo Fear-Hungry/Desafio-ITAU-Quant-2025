@@ -5,8 +5,8 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from itau_quant.backtesting.engine import BacktestResult
-from itau_quant.cli import _generate_wf_report
+from arara_quant.backtesting.engine import BacktestResult
+from arara_quant.cli import _generate_wf_report
 
 
 def _build_result(tmp_path: Path) -> BacktestResult:

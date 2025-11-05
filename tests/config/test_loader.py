@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from itau_quant.config.loader import (
+from arara_quant.config.loader import (
     ConfigError,
     _resolve_config_path,
     load_config,

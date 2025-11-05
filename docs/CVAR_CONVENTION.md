@@ -43,7 +43,7 @@ CVaR_anual = CVaR_diário × √252
 
 ## Referências no Código
 
-### 1. Cálculo (src/itau_quant/evaluation/oos.py)
+### 1. Cálculo (src/arara_quant/evaluation/oos.py)
 
 ```python
 cvar_daily = float(_cvar(daily_returns, alpha=0.95))
@@ -197,7 +197,7 @@ A: Sempre usar CVaR anualizado. Benchmarks de mercado reportam CVaR em base anua
 
 - [x] PRD.md atualizado com "CVaR ≤ 8% a.a."
 - [x] CLAUDE.md atualizado com "CVaR ≤ 8% annual"
-- [x] src/itau_quant/evaluation/oos.py adiciona `cvar_95_annual`
+- [x] src/arara_quant/evaluation/oos.py adiciona `cvar_95_annual`
 - [x] README.md reporta CVaR anualizado com fórmula
 - [x] production_monitor.py documenta equivalência diário ↔ anual
 - [x] REPORT_OUTLINE.md usa CVaR anualizado

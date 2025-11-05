@@ -8,8 +8,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from itau_quant.utils.production_logger import ProductionLogger
-from itau_quant.utils.production_monitor import (
+from arara_quant.utils.production_logger import ProductionLogger
+from arara_quant.utils.production_monitor import (
     should_fallback_to_1N,
 )
 
@@ -58,8 +58,8 @@ print()
 # Otimizar portfolio
 print("⚙️  Otimizando portfolio...")
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.optimization.core.risk_parity import iterative_risk_parity
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.optimization.core.risk_parity import iterative_risk_parity
 
 # Estimar covariância
 cov, shrinkage = ledoit_wolf_shrinkage(recent_returns)

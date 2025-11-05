@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from itau_quant.optimization.ga import evaluation
-from itau_quant.optimization.ga.population import Individual
+from arara_quant.optimization.ga import evaluation
+from arara_quant.optimization.ga.population import Individual
 
 
 def _core_solver(candidate: dict[str, object]) -> dict[str, object]:

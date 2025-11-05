@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from itau_quant.optimization.heuristics import cardinality as card
+from arara_quant.optimization.heuristics import cardinality as card
 
 
 def _stub_solver(mu: pd.Series, cov: pd.DataFrame, **_) -> dict[str, pd.Series]:

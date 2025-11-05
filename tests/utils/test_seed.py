@@ -1,7 +1,7 @@
 import random
 
 import numpy as np
-from itau_quant.utils import seed as seed_utils
+from arara_quant.utils import seed as seed_utils
 
 
 def test_set_global_seeds_invokes_solver_seed(monkeypatch):

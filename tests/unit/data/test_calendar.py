@@ -4,7 +4,7 @@ import pytest
 
 pd = pytest.importorskip("pandas")
 
-from itau_quant.data.processing.calendar import (
+from arara_quant.data.processing.calendar import (
     business_month_ends,
     business_month_starts,
     clamp_to_index,

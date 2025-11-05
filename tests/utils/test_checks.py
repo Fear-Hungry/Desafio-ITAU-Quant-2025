@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.utils import checks
+from arara_quant.utils import checks
 
 
 def test_assert_no_nans_raises_on_nan_dataframe() -> None:

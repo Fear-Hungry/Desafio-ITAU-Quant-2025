@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from itau_quant.data.loader import DataBundle, DataLoader
+from arara_quant.data.loader import DataBundle, DataLoader
 
 
 def _mock_prices() -> pd.DataFrame:
@@ -37,7 +37,7 @@ def test_dataloader_applies_corporate_actions(monkeypatch):
     prices = _mock_prices()
     returns = prices.pct_change().fillna(0.0)
 
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
     monkeypatch.setattr(
@@ -76,7 +76,7 @@ def test_dataloader_applies_dividend_event(monkeypatch):
     prices = pd.DataFrame({"AAA": [100.0, 100.0, 100.0]}, index=idx)
     returns = prices.pct_change().fillna(0.0)
 
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
     monkeypatch.setattr(
@@ -117,7 +117,7 @@ def test_dataloader_applies_spinoff_event(monkeypatch):
     prices = pd.DataFrame({"AAA": [100.0, 80.0, 85.0]}, index=idx)
     returns = prices.pct_change().fillna(0.0)
 
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
     monkeypatch.setattr(
@@ -158,7 +158,7 @@ def test_dataloader_applies_multiple_sequential_events(monkeypatch):
     prices = pd.DataFrame({"AAA": [100.0, 50.0, 50.0, 40.0]}, index=idx)
     returns = prices.pct_change().fillna(0.0)
 
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
     monkeypatch.setattr(
@@ -208,7 +208,7 @@ def test_dataloader_applies_events_on_same_date(monkeypatch):
     prices = pd.DataFrame({"AAA": [100.0, 50.0, 55.0]}, index=idx)
     returns = prices.pct_change().fillna(0.0)
 
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
     monkeypatch.setattr(
@@ -254,7 +254,7 @@ def test_dataloader_applies_events_to_different_tickers(monkeypatch):
     prices = _mock_multi_ticker_prices()
     returns = prices.pct_change().fillna(0.0)
 
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
 
@@ -307,7 +307,7 @@ def test_dataloader_with_no_actions_provided(monkeypatch):
     prices = pd.DataFrame({"AAA": [100.0, 110.0, 120.0]}, index=idx)
     returns = prices.pct_change().fillna(0.0)
 
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
     monkeypatch.setattr(
@@ -336,7 +336,7 @@ def test_dataloader_with_empty_actions_list(monkeypatch):
     prices = pd.DataFrame({"AAA": [100.0, 110.0, 120.0]}, index=idx)
     returns = prices.pct_change().fillna(0.0)
 
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
     monkeypatch.setattr(

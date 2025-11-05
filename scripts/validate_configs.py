@@ -4,7 +4,7 @@
 import sys
 from pathlib import Path
 
-from itau_quant.config import UniverseConfig, PortfolioConfig, load_config
+from arara_quant.config import UniverseConfig, PortfolioConfig, load_config
 
 
 def main():

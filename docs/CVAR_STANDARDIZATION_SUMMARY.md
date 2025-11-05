@@ -75,7 +75,7 @@ Where:
 
 | File | Function/Section | Change |
 |------|-----------------|--------|
-| `src/itau_quant/evaluation/oos.py` (L171-180) | `_compute_metrics()` | Added `cvar_95_annual = cvar_daily * np.sqrt(252)` |
+| `src/arara_quant/evaluation/oos.py` (L171-180) | `_compute_metrics()` | Added `cvar_95_annual = cvar_daily * np.sqrt(252)` |
 | | Return dict | Added `"cvar_95_annual": cvar_annual` field |
 
 **Before:**
@@ -115,7 +115,7 @@ metrics = {
 
 | File | Section | Change |
 |------|---------|--------|
-| `src/itau_quant/utils/production_monitor.py` (L8-15) | Module docstring | Added note: daily triggers with annual equivalents documented |
+| `src/arara_quant/utils/production_monitor.py` (L8-15) | Module docstring | Added note: daily triggers with annual equivalents documented |
 | | Trigger documentation | `-2%` daily now shows `(equiv. ~-32% anual)` |
 | | Function docstrings | Updated to clarify daily vs annual usage |
 

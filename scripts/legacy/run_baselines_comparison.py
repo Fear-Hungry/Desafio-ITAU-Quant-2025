@@ -136,10 +136,10 @@ except Exception as e:
 # ============================================================================
 print("🔧 [2/3] Definindo estratégias...")
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
-from itau_quant.optimization.core.risk_parity import risk_parity
-from itau_quant.optimization.heuristics.hrp import hierarchical_risk_parity
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
+from arara_quant.optimization.core.risk_parity import risk_parity
+from arara_quant.optimization.heuristics.hrp import hierarchical_risk_parity
 
 
 def equal_weight(train_returns):
@@ -229,7 +229,7 @@ def hrp_portfolio(train_returns):
 
 def mv_robust_shrunk(train_returns):
     """Mean-Variance com Bayesian Shrinkage 20% (equilibrado)"""
-    from itau_quant.estimators.mu import bayesian_shrinkage_mean
+    from arara_quant.estimators.mu import bayesian_shrinkage_mean
 
     mu_daily = bayesian_shrinkage_mean(train_returns, prior=0.0, strength=0.2)
     mu = mu_daily * 252
@@ -275,7 +275,7 @@ print()
 # ============================================================================
 print("🔄 [3/3] Rodando walk-forward backtest...")
 
-from itau_quant.backtesting.walk_forward import generate_walk_forward_splits
+from arara_quant.backtesting.walk_forward import generate_walk_forward_splits
 
 splits = list(
     generate_walk_forward_splits(

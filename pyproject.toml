@@ -1,14 +1,14 @@
 [tool.poetry]
-name = "itau_quant"
+name = "arara-quant-lab"
 version = "0.1.0"
-description = "Quantitative asset allocation strategy for the ITAU-Quant challenge."
+description = "Arara Quant Lab's multi-asset portfolio research toolkit for the PRISM-R strategy."
 authors = ["Marcus Vinícius Silva", "Anna Beatriz Cardoso"]
 readme = "README.md"
 license = "MIT"
-packages = [{include = "itau_quant", from = "src"}]
+packages = [{include = "arara_quant", from = "src"}]
 
 [tool.poetry.scripts]
-itau-quant = "itau_quant.cli:main"
+arara-quant = "arara_quant.cli:main"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.14"
@@ -70,12 +70,12 @@ testpaths = ["tests"]
 addopts = ["--import-mode=importlib"]
 
 [tool.coverage.run]
-source = ["src/itau_quant"]
+source = ["src/arara_quant"]
 omit = [
     "*/tests/*",
     "*/__pycache__/*",
     "*/site-packages/*",
-    "src/itau_quant/__init__.py",
+    "src/arara_quant/__init__.py",
 ]
 
 [tool.coverage.report]

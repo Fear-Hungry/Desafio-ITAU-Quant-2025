@@ -3,8 +3,8 @@
 import textwrap
 import pytest
 from pathlib import Path
-from itau_quant.utils import yaml_loader
-from itau_quant.utils.yaml_loader import load_yaml_text, read_yaml
+from arara_quant.utils import yaml_loader
+from arara_quant.utils.yaml_loader import load_yaml_text, read_yaml
 
 
 def test_load_yaml_parses_mapping(tmp_path):

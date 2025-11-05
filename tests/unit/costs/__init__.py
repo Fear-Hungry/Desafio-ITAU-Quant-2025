@@ -1,1 +1,1 @@
-"""Testes do módulo itau_quant.costs."""
+"""Testes do módulo arara_quant.costs."""

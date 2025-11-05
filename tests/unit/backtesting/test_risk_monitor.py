@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.backtesting.risk_monitor import (
+from arara_quant.backtesting.risk_monitor import (
     apply_turnover_cap,
     evaluate_turnover_band,
 )

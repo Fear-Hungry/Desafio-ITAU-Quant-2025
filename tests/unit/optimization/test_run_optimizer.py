@@ -4,8 +4,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from itau_quant.config import Settings, reset_settings_cache
-from itau_quant.optimization.solvers import run_optimizer
+from arara_quant.config import Settings, reset_settings_cache
+from arara_quant.optimization.solvers import run_optimizer
 
 
 def _make_settings(tmp_path: Path) -> Settings:

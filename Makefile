@@ -48,11 +48,11 @@ test-fast: ## Run tests without slow markers
 
 test-cov: ## Run tests with coverage report
 	@echo "$(BLUE)Running tests with coverage...$(NC)"
-	poetry run pytest --cov=src/itau_quant --cov-report=html --cov-report=term-missing -v
+	poetry run pytest --cov=src/arara_quant --cov-report=html --cov-report=term-missing -v
 
 test-cov-xml: ## Run tests with coverage XML (for CI)
 	@echo "$(BLUE)Running tests with XML coverage...$(NC)"
-	poetry run pytest --cov=src/itau_quant --cov-report=xml --cov-report=term
+	poetry run pytest --cov=src/arara_quant --cov-report=xml --cov-report=term
 
 test-watch: ## Run tests in watch mode
 	@echo "$(BLUE)Running tests in watch mode...$(NC)"
@@ -148,15 +148,15 @@ data-clean: ## Download and clean data from 2010
 
 optimize: ## Run portfolio optimization
 	@echo "$(BLUE)Running portfolio optimization...$(NC)"
-	poetry run itau-quant optimize --config configs/portfolio_arara_basic.yaml
+	poetry run arara-quant optimize --config configs/portfolio_arara_basic.yaml
 
 backtest: ## Run backtest with default config
 	@echo "$(BLUE)Running backtest...$(NC)"
-	poetry run itau-quant backtest --config configs/optimizer_example.yaml --no-dry-run
+	poetry run arara-quant backtest --config configs/optimizer_example.yaml --no-dry-run
 
 backtest-dry: ## Run backtest in dry-run mode
 	@echo "$(BLUE)Running backtest (dry-run)...$(NC)"
-	poetry run itau-quant backtest --config configs/optimizer_example.yaml
+	poetry run arara-quant backtest --config configs/optimizer_example.yaml
 
 walkforward: ## Run walk-forward validation
 	@echo "$(BLUE)Running walk-forward validation...$(NC)"
@@ -270,7 +270,7 @@ docker-run: ## Run Docker container
 
 show-config: ## Display current configuration
 	@echo "$(BLUE)Project Configuration:$(NC)"
-	@poetry run itau-quant show --format json
+	@poetry run arara-quant show --format json
 
 tree: ## Show project directory tree
 	@echo "$(BLUE)Project Structure:$(NC)"

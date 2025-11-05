@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 PRISM-R - Portfolio Risk Intelligence System
-Carteira ARARA ROBUSTA - ITAU Quant Challenge
+Carteira ARARA ROBUSTA - Arara Quant Lab
 
 Script ROBUSTO para otimização de portfolio com:
 - Estimação robusta de retornos (Shrunk_50 - mais conservador)
@@ -21,7 +21,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from itau_quant.config import PortfolioConfig, UniverseConfig, load_config
+from arara_quant.config import PortfolioConfig, UniverseConfig, load_config
 
 print("=" * 80)
 print("  PRISM-R - Portfolio Risk Intelligence System")
@@ -220,8 +220,8 @@ print()
 # ============================================================================
 print("📈 [3/6] Estimando parâmetros com métodos ROBUSTOS...")
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.estimators.mu import shrunk_mean
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.estimators.mu import shrunk_mean
 
 recent_returns = returns.tail(ESTIMATION_WINDOW)
 
@@ -255,7 +255,7 @@ print()
 # ============================================================================
 print("🔒 [4/6] Definindo constraints por classe de ativo...")
 
-from itau_quant.risk.budgets import RiskBudget
+from arara_quant.risk.budgets import RiskBudget
 
 # Mapeamento de classes
 asset_class_map = {
@@ -343,7 +343,7 @@ print()
 # ============================================================================
 print("⚙️  [5/6] Otimizando portfolio (Mean-Variance + Risk Budgets)...")
 
-from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
+from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 # Custos de transação
 cost_vector = pd.Series(TRANSACTION_COST_BPS / 10000, index=valid_tickers)

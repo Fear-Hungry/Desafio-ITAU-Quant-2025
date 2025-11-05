@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 PRISM-R - Portfolio Risk Intelligence System
-Carteira ARARA - ITAU Quant Challenge
+Carteira ARARA - Arara Quant Lab
 
 Script completo para rodar otimização de portfolio com dados reais.
 """
@@ -162,12 +162,12 @@ print()
 # ============================================================================
 print("📈 [3/5] Estimando parâmetros de risco/retorno...")
 
-from itau_quant.estimators.cov import (
+from arara_quant.estimators.cov import (
     ledoit_wolf_shrinkage,
     nonlinear_shrinkage,
     tyler_m_estimator,
 )
-from itau_quant.estimators.mu import mean_return
+from arara_quant.estimators.mu import mean_return
 
 # Usar janela recente
 recent_returns = returns.tail(ESTIMATION_WINDOW)
@@ -189,7 +189,7 @@ elif SHRINKAGE_METHOD == "tyler":
     sigma = tyler_m_estimator(recent_returns)
     print("   Tyler M-estimator aplicado")
 else:
-    from itau_quant.estimators.cov import sample_cov
+    from arara_quant.estimators.cov import sample_cov
 
     sigma = sample_cov(recent_returns)
     print("   Sample covariance (sem shrinkage)")
@@ -209,7 +209,7 @@ print()
 # ============================================================================
 print("⚙️  [4/5] Otimizando portfolio (Mean-Variance)...")
 
-from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
+from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 # Configuração do otimizador
 config = MeanVarianceConfig(

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import cvxpy as cp
 import numpy as np
-from itau_quant.risk.constraints import (
+from arara_quant.risk.constraints import (
     build_constraints,
     leverage_constraint,
     tracking_error_constraint,

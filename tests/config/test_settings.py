@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
-from itau_quant.config.settings import Settings, load_env_file, reset_settings_cache
+from arara_quant.config.settings import Settings, load_env_file, reset_settings_cache
 
 
 def teardown_module() -> None:  # pragma: no cover - test helper
@@ -15,23 +15,23 @@ def test_load_env_file_parses_key_value(tmp_path: Path) -> None:
     env_path.write_text(
         """
         # comment
-        ITAU_QUANT_ENVIRONMENT=production
-        ITAU_QUANT_RANDOM_SEED=101
+        ARARA_QUANT_ENVIRONMENT=production
+        ARARA_QUANT_RANDOM_SEED=101
         INVALID_LINE
         """.strip(),
         encoding="utf-8",
     )
 
     data = load_env_file(env_path)
-    assert data["ITAU_QUANT_ENVIRONMENT"] == "production"
-    assert data["ITAU_QUANT_RANDOM_SEED"] == "101"
+    assert data["ARARA_QUANT_ENVIRONMENT"] == "production"
+    assert data["ARARA_QUANT_RANDOM_SEED"] == "101"
     assert "INVALID_LINE" not in data
 
 
 def test_settings_from_env_uses_project_root_and_env_file(tmp_path: Path) -> None:
     env_path = tmp_path / ".env"
     env_path.write_text(
-        "ITAU_QUANT_RANDOM_SEED=123\nITAU_QUANT_STRUCTURED_LOGGING=false\n",
+        "ARARA_QUANT_RANDOM_SEED=123\nARARA_QUANT_STRUCTURED_LOGGING=false\n",
         encoding="utf-8",
     )
 
@@ -47,8 +47,8 @@ def test_settings_from_env_uses_project_root_and_env_file(tmp_path: Path) -> Non
 def test_settings_from_env_overrides_and_env_variables(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    monkeypatch.setenv("ITAU_QUANT_DATA_DIR", "env_data")
-    monkeypatch.setenv("ITAU_QUANT_STRUCTURED_LOGGING", "1")
+    monkeypatch.setenv("ARARA_QUANT_DATA_DIR", "env_data")
+    monkeypatch.setenv("ARARA_QUANT_STRUCTURED_LOGGING", "1")
 
     settings = Settings.from_env(
         overrides={

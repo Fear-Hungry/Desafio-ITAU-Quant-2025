@@ -1,6 +1,6 @@
 # Scripts Directory
 
-This directory contains executable Python scripts organized by purpose. All scripts can be run directly via Python or through the unified `itau-quant` CLI.
+This directory contains executable Python scripts organized by purpose. All scripts can be run directly via Python or through the unified `arara-quant` CLI.
 
 ## Directory Structure
 
@@ -25,9 +25,9 @@ python scripts/examples/run_portfolio_arara.py
 poetry install
 
 # Run through unified interface
-poetry run itau-quant run-example arara
-poetry run itau-quant compare-baselines
-poetry run itau-quant production-deploy --version v2
+poetry run arara-quant run-example arara
+poetry run arara-quant compare-baselines
+poetry run arara-quant production-deploy --version v2
 ```
 
 ## Script Categories
@@ -37,7 +37,7 @@ Demonstration scripts for learning and testing:
 - `run_portfolio_arara.py` - Basic ARARA portfolio example
 - `run_portfolio_arara_robust.py` - Robust optimization with advanced features
 
-**CLI:** `poetry run itau-quant run-example [arara|robust]`
+**CLI:** `poetry run arara-quant run-example [arara|robust]`
 
 ### Research (`research/`)
 Analysis and experimentation scripts:
@@ -50,11 +50,11 @@ Analysis and experimentation scripts:
 
 **CLI:**
 ```bash
-poetry run itau-quant compare-baselines
-poetry run itau-quant compare-estimators
-poetry run itau-quant grid-search
-poetry run itau-quant test-skill
-poetry run itau-quant walkforward
+poetry run arara-quant compare-baselines
+poetry run arara-quant compare-estimators
+poetry run arara-quant grid-search
+poetry run arara-quant test-skill
+poetry run arara-quant walkforward
 ```
 
 ### Production (`production/`)
@@ -62,12 +62,12 @@ Production-ready deployment scripts:
 - `run_portfolio_production_erc.py` - Risk Parity (ERC) production system
 - `run_portfolio_production_erc_v2.py` - Calibrated ERC system (recommended)
 
-**CLI:** `poetry run itau-quant production-deploy [--version v1|v2]`
+**CLI:** `poetry run arara-quant production-deploy [--version v1|v2]`
 
 ## Development
 
 All scripts in this directory:
-1. Import from `src/itau_quant` package (not from root)
+1. Import from `src/arara_quant` package (not from root)
 2. Can be run standalone or via CLI
 3. Follow the project's code style (ruff, black)
 4. Are version controlled with git

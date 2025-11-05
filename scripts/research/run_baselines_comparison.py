@@ -2,7 +2,7 @@
 """Walk-forward OOS comparison against baseline strategies.
 
 This script runs a multi-strategy walk-forward evaluation using the helper
-utilities in ``itau_quant.evaluation.oos``. It mirrors the PRD requirement of
+utilities in ``arara_quant.evaluation.oos``. It mirrors the PRD requirement of
 comparing the robust portfolio against classical baselines (1/N, min-var, ERC,
 60/40, HRP) and records stress-period diagnostics for COVID-19 and 2022
 inflation shocks.
@@ -17,7 +17,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 import pandas as pd
-from itau_quant.data import get_arara_universe
+from arara_quant.data import get_arara_universe
 
 print("=" * 80)
 print("  PRISM-R - Comparação de Estratégias Baseline (OOS)")
@@ -150,7 +150,7 @@ else:
 # ============================================================================
 print("🔧 [2/3] Preparando avaliação OOS...")
 
-from itau_quant.evaluation.oos import compare_baselines, default_strategies, stress_test
+from arara_quant.evaluation.oos import compare_baselines, default_strategies, stress_test
 
 strategies = default_strategies(max_position=MAX_POSITION, shrink_strength=0.5)
 print(f"   ✅ {len(strategies)} estratégias definidas:")

@@ -4,8 +4,8 @@ import pytest
 
 pd = pytest.importorskip("pandas")
 
-from itau_quant.data.loader import download_and_cache_arara_prices, preprocess_data
-from itau_quant.data.paths import PROCESSED_DATA_DIR, RAW_DATA_DIR
+from arara_quant.data.loader import download_and_cache_arara_prices, preprocess_data
+from arara_quant.data.paths import PROCESSED_DATA_DIR, RAW_DATA_DIR
 
 
 @pytest.mark.skip(reason="evita chamadas de rede em CI; rodar manualmente")

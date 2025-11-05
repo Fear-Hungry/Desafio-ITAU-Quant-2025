@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from itau_quant.optimization.heuristics.cardinality import (
+from arara_quant.optimization.heuristics.cardinality import (
     compute_effective_number,
     select_support_topk,
     smart_topk_score,

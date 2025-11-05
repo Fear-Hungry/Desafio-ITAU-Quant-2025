@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.estimators import factors as factors_mod
+from arara_quant.estimators import factors as factors_mod
 
 
 def _build_prices() -> pd.DataFrame:

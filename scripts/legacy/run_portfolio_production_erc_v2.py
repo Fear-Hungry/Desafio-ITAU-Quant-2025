@@ -16,7 +16,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
 from production_logger import ProductionLogger
 from production_monitor import should_fallback_to_1N
 

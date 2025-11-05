@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from itau_quant.evaluation.oos import (
+from arara_quant.evaluation.oos import (
     OOSResult,
     StrategySpec,
     compare_baselines,

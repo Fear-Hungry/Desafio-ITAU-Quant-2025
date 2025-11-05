@@ -17,9 +17,9 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 
-from itau_quant.config import Settings
-from itau_quant.pipeline.data import download_and_prepare_data
-from itau_quant.utils.logging_config import get_logger, log_dict
+from arara_quant.config import Settings
+from arara_quant.pipeline.data import download_and_prepare_data
+from arara_quant.utils.logging_config import get_logger, log_dict
 
 logger = get_logger("scripts.run_01_data_pipeline")
 

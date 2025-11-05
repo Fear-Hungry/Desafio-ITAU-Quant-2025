@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from itau_quant.config.schemas import (
+from arara_quant.config.schemas import (
     AssetGroupConstraints,
     DataConfig,
     EstimatorConfig,

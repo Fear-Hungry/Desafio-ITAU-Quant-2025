@@ -3,14 +3,14 @@
 # All scripts should read from this config to ensure consistency
 
 oos_evaluation:
-  # Primary evaluation period: January 2, 2020 to October 31, 2025
-  # This represents 5.8 years of live trading validation
+  # Primary evaluation period: January 2, 2020 to October 09, 2025
+  # Matches current canonical artifacts in reports/walkforward/nav_daily.csv
   start_date: "2020-01-02"
-  end_date: "2025-10-31"
+  end_date: "2025-10-09"
 
-  # Period statistics
-  business_days: 1466  # Actual business days in period
-  n_windows: 64        # Number of walk-forward validation windows
+  # Period statistics (derived from nav_daily.csv)
+  business_days: 1451  # Actual business days in period
+  n_windows: 63        # Number of walk-forward validation windows in current artifacts
 
   # Walk-forward window configuration
   # (these should match values in backtest_full.yaml)
@@ -25,7 +25,8 @@ oos_evaluation:
     Used by all metric consolidation, reporting, and figure generation scripts.
 
     This period spans from the beginning of 2020 (post-COVID entry) through
-    Q3 2025, providing robust walk-forward validation across 64 windows.
+    Q3 2025, providing robust walk-forward validation across ~63 monthly windows
+    in the current artifact set.
 
     Period justification:
     - Starts 2020-01-02: Sufficient historical data for covariance estimation

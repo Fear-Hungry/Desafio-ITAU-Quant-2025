@@ -5,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.data.loader import (
+from arara_quant.data.loader import (
     DataBundle,
     DataLoader,
     calculate_returns,
@@ -22,7 +22,7 @@ from itau_quant.data.loader import (
 
 
 def test_load_asset_prices_file_exists(tmp_path, monkeypatch):
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     test_file = tmp_path / "test_prices.csv"
     index = pd.date_range("2020-01-01", periods=5, freq="D")
@@ -38,7 +38,7 @@ def test_load_asset_prices_file_exists(tmp_path, monkeypatch):
 
 
 def test_load_asset_prices_file_not_found(tmp_path, monkeypatch):
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "RAW_DATA_DIR", tmp_path)
 
@@ -47,7 +47,7 @@ def test_load_asset_prices_file_not_found(tmp_path, monkeypatch):
 
 
 def test_load_asset_prices_preserves_datetime_index(tmp_path, monkeypatch):
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     test_file = tmp_path / "test_prices.csv"
     index = pd.date_range("2020-01-01", periods=3, freq="D")
@@ -93,12 +93,12 @@ def test_calculate_returns_default_method_is_log():
 # =============================================================================
 
 
-@patch("itau_quant.data.loader.yf_download")
-@patch("itau_quant.data.loader.get_arara_universe")
+@patch("arara_quant.data.loader.yf_download")
+@patch("arara_quant.data.loader.get_arara_universe")
 def test_download_and_cache_arara_prices_creates_csv(
     mock_universe, mock_yf_download, tmp_path, monkeypatch
 ):
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "RAW_DATA_DIR", tmp_path)
 
@@ -120,12 +120,12 @@ def test_download_and_cache_arara_prices_creates_csv(
     assert loaded.shape == mock_prices.shape
 
 
-@patch("itau_quant.data.loader.yf_download")
-@patch("itau_quant.data.loader.get_arara_universe")
+@patch("arara_quant.data.loader.yf_download")
+@patch("arara_quant.data.loader.get_arara_universe")
 def test_download_and_cache_arara_prices_default_filename(
     mock_universe, mock_yf_download, tmp_path, monkeypatch
 ):
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "RAW_DATA_DIR", tmp_path)
     mock_universe.return_value = ["AAPL"]
@@ -143,7 +143,7 @@ def test_download_and_cache_arara_prices_default_filename(
 
 
 def test_preprocess_data_creates_parquet(tmp_path, monkeypatch):
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     raw_file = tmp_path / "raw_prices.csv"
     index = pd.date_range("2020-01-01", periods=5, freq="D")
@@ -160,7 +160,7 @@ def test_preprocess_data_creates_parquet(tmp_path, monkeypatch):
 
 
 def test_preprocess_data_returns_dataframe_with_returns(tmp_path, monkeypatch):
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     raw_file = tmp_path / "raw_prices.csv"
     index = pd.date_range("2020-01-01", periods=3, freq="D")
@@ -181,8 +181,8 @@ def test_preprocess_data_returns_dataframe_with_returns(tmp_path, monkeypatch):
 # =============================================================================
 
 
-@patch("itau_quant.data.loader.download_and_cache_arara_prices")
-@patch("itau_quant.data.loader.preprocess_data")
+@patch("arara_quant.data.loader.download_and_cache_arara_prices")
+@patch("arara_quant.data.loader.preprocess_data")
 def test_download_and_preprocess_arara_chains_functions(
     mock_preprocess, mock_download, tmp_path
 ):
@@ -206,7 +206,7 @@ def test_download_and_preprocess_arara_chains_functions(
 # =============================================================================
 
 
-@patch("itau_quant.data.loader.fred_download_dtb3")
+@patch("arara_quant.data.loader.fred_download_dtb3")
 def test_download_fred_dtb3_delegates_to_sources_module(mock_fred):
     expected_series = pd.Series(
         [0.01, 0.02, 0.015], index=pd.date_range("2020-01-01", periods=3)
@@ -278,7 +278,7 @@ def test_databundle_fields():
 
 
 def test_dataloader_init_default_tickers():
-    with patch("itau_quant.data.loader.get_arara_universe") as mock_universe:
+    with patch("arara_quant.data.loader.get_arara_universe") as mock_universe:
         mock_universe.return_value = ["AAPL", "MSFT", "GOOG"]
         loader = DataLoader()
         assert loader.tickers == ["AAPL", "MSFT", "GOOG"]
@@ -312,16 +312,16 @@ def test_dataloader_init_with_actions():
 # =============================================================================
 
 
-@patch("itau_quant.data.loader.yf_download")
-@patch("itau_quant.data.loader.normalize_index")
-@patch("itau_quant.data.loader.filter_liquid_assets")
-@patch("itau_quant.data.loader.validate_panel")
-@patch("itau_quant.data.loader._calculate_returns")
-@patch("itau_quant.data.loader.fred_download_dtb3")
-@patch("itau_quant.data.loader.compute_excess_returns")
-@patch("itau_quant.data.loader.rebalance_schedule")
-@patch("itau_quant.data.loader.request_hash")
-@patch("itau_quant.data.loader.save_parquet")
+@patch("arara_quant.data.loader.yf_download")
+@patch("arara_quant.data.loader.normalize_index")
+@patch("arara_quant.data.loader.filter_liquid_assets")
+@patch("arara_quant.data.loader.validate_panel")
+@patch("arara_quant.data.loader._calculate_returns")
+@patch("arara_quant.data.loader.fred_download_dtb3")
+@patch("arara_quant.data.loader.compute_excess_returns")
+@patch("arara_quant.data.loader.rebalance_schedule")
+@patch("arara_quant.data.loader.request_hash")
+@patch("arara_quant.data.loader.save_parquet")
 def test_dataloader_load_without_corporate_actions(
     mock_save,
     mock_hash,
@@ -377,19 +377,19 @@ def test_dataloader_load_without_corporate_actions(
     assert artefacts["rf_path"].name.endswith("rf_daily_test_hash.parquet")
 
 
-@patch("itau_quant.data.loader.yf_download")
-@patch("itau_quant.data.loader.normalize_index")
-@patch("itau_quant.data.loader.load_corporate_actions")
-@patch("itau_quant.data.loader.calculate_adjustment_factors")
-@patch("itau_quant.data.loader.apply_price_adjustments")
-@patch("itau_quant.data.loader.filter_liquid_assets")
-@patch("itau_quant.data.loader.validate_panel")
-@patch("itau_quant.data.loader._calculate_returns")
-@patch("itau_quant.data.loader.fred_download_dtb3")
-@patch("itau_quant.data.loader.compute_excess_returns")
-@patch("itau_quant.data.loader.rebalance_schedule")
-@patch("itau_quant.data.loader.request_hash")
-@patch("itau_quant.data.loader.save_parquet")
+@patch("arara_quant.data.loader.yf_download")
+@patch("arara_quant.data.loader.normalize_index")
+@patch("arara_quant.data.loader.load_corporate_actions")
+@patch("arara_quant.data.loader.calculate_adjustment_factors")
+@patch("arara_quant.data.loader.apply_price_adjustments")
+@patch("arara_quant.data.loader.filter_liquid_assets")
+@patch("arara_quant.data.loader.validate_panel")
+@patch("arara_quant.data.loader._calculate_returns")
+@patch("arara_quant.data.loader.fred_download_dtb3")
+@patch("arara_quant.data.loader.compute_excess_returns")
+@patch("arara_quant.data.loader.rebalance_schedule")
+@patch("arara_quant.data.loader.request_hash")
+@patch("arara_quant.data.loader.save_parquet")
 def test_dataloader_load_with_corporate_actions(
     mock_save,
     mock_hash,
@@ -455,9 +455,9 @@ def test_dataloader_load_with_corporate_actions(
     mock_adjust.assert_called_once()
 
 
-@patch("itau_quant.data.loader.yf_download")
-@patch("itau_quant.data.loader.normalize_index")
-@patch("itau_quant.data.loader.filter_liquid_assets")
+@patch("arara_quant.data.loader.yf_download")
+@patch("arara_quant.data.loader.normalize_index")
+@patch("arara_quant.data.loader.filter_liquid_assets")
 def test_dataloader_load_filters_illiquid_assets(mock_filter, mock_normalize, mock_yf):
     index = pd.date_range("2020-01-01", periods=5, freq="D")
     prices = pd.DataFrame(
@@ -482,13 +482,13 @@ def test_dataloader_load_filters_illiquid_assets(mock_filter, mock_normalize, mo
     mock_normalize.return_value = prices
     mock_filter.return_value = (filtered_prices, stats)
 
-    with patch("itau_quant.data.loader.validate_panel"):
-        with patch("itau_quant.data.loader._calculate_returns"):
-            with patch("itau_quant.data.loader.fred_download_dtb3"):
-                with patch("itau_quant.data.loader.compute_excess_returns"):
-                    with patch("itau_quant.data.loader.rebalance_schedule"):
-                        with patch("itau_quant.data.loader.request_hash"):
-                            with patch("itau_quant.data.loader.save_parquet"):
+    with patch("arara_quant.data.loader.validate_panel"):
+        with patch("arara_quant.data.loader._calculate_returns"):
+            with patch("arara_quant.data.loader.fred_download_dtb3"):
+                with patch("arara_quant.data.loader.compute_excess_returns"):
+                    with patch("arara_quant.data.loader.rebalance_schedule"):
+                        with patch("arara_quant.data.loader.request_hash"):
+                            with patch("arara_quant.data.loader.save_parquet"):
                                 loader = DataLoader(tickers=["AAPL", "ILLIQUID"])
                                 bundle = loader.load()
 
@@ -496,9 +496,9 @@ def test_dataloader_load_filters_illiquid_assets(mock_filter, mock_normalize, mo
                                 assert "ILLIQUID" not in bundle.prices.columns
 
 
-@patch("itau_quant.data.loader.yf_download")
-@patch("itau_quant.data.loader.normalize_index")
-@patch("itau_quant.data.loader.filter_liquid_assets")
+@patch("arara_quant.data.loader.yf_download")
+@patch("arara_quant.data.loader.normalize_index")
+@patch("arara_quant.data.loader.filter_liquid_assets")
 def test_dataloader_load_raises_when_no_liquid_assets(
     mock_filter, mock_normalize, mock_yf
 ):
@@ -530,16 +530,16 @@ def test_dataloader_load_raises_when_no_liquid_assets(
         loader.load()
 
 
-@patch("itau_quant.data.loader.yf_download")
-@patch("itau_quant.data.loader.normalize_index")
-@patch("itau_quant.data.loader.filter_liquid_assets")
-@patch("itau_quant.data.loader.validate_panel")
-@patch("itau_quant.data.loader._calculate_returns")
-@patch("itau_quant.data.loader.fred_download_dtb3")
-@patch("itau_quant.data.loader.compute_excess_returns")
-@patch("itau_quant.data.loader.rebalance_schedule")
-@patch("itau_quant.data.loader.request_hash")
-@patch("itau_quant.data.loader.save_parquet")
+@patch("arara_quant.data.loader.yf_download")
+@patch("arara_quant.data.loader.normalize_index")
+@patch("arara_quant.data.loader.filter_liquid_assets")
+@patch("arara_quant.data.loader.validate_panel")
+@patch("arara_quant.data.loader._calculate_returns")
+@patch("arara_quant.data.loader.fred_download_dtb3")
+@patch("arara_quant.data.loader.compute_excess_returns")
+@patch("arara_quant.data.loader.rebalance_schedule")
+@patch("arara_quant.data.loader.request_hash")
+@patch("arara_quant.data.loader.save_parquet")
 def test_dataloader_load_saves_parquet_files(
     mock_save,
     mock_hash,
@@ -591,17 +591,17 @@ def test_dataloader_load_saves_parquet_files(
     assert any("rf_daily_abc123.parquet" in path for path in save_calls)
 
 
-@patch("itau_quant.data.loader.crypto_download")
-@patch("itau_quant.data.loader.yf_download")
-@patch("itau_quant.data.loader.normalize_index")
-@patch("itau_quant.data.loader.filter_liquid_assets")
-@patch("itau_quant.data.loader.validate_panel")
-@patch("itau_quant.data.loader._calculate_returns")
-@patch("itau_quant.data.loader.fred_download_dtb3")
-@patch("itau_quant.data.loader.compute_excess_returns")
-@patch("itau_quant.data.loader.rebalance_schedule")
-@patch("itau_quant.data.loader.request_hash")
-@patch("itau_quant.data.loader.save_parquet")
+@patch("arara_quant.data.loader.crypto_download")
+@patch("arara_quant.data.loader.yf_download")
+@patch("arara_quant.data.loader.normalize_index")
+@patch("arara_quant.data.loader.filter_liquid_assets")
+@patch("arara_quant.data.loader.validate_panel")
+@patch("arara_quant.data.loader._calculate_returns")
+@patch("arara_quant.data.loader.fred_download_dtb3")
+@patch("arara_quant.data.loader.compute_excess_returns")
+@patch("arara_quant.data.loader.rebalance_schedule")
+@patch("arara_quant.data.loader.request_hash")
+@patch("arara_quant.data.loader.save_parquet")
 def test_dataloader_uses_crypto_connector(
     mock_save,
     mock_hash,
@@ -629,7 +629,7 @@ def test_dataloader_uses_crypto_connector(
     rf = pd.Series([0.0001] * len(index), index=index)
     excess = returns - rf.values.reshape(-1, 1)
 
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(
         dl, "get_arara_metadata", lambda: {"IBIT": {"asset_class": "Crypto"}}
@@ -673,7 +673,7 @@ def test_dataloader_uses_crypto_connector(
 
 
 def test_dataloader_load_reuses_cache(tmp_path, monkeypatch):
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     index = pd.date_range("2020-01-01", periods=3, freq="D")
     prices = pd.DataFrame({"AAA": [100.0, 101.0, 102.0]}, index=index)

@@ -61,7 +61,7 @@ Esses valores são **2000x maiores** que os registrados para PRISM-R no per_wind
 
 ## Correção implementada (2025-02-XX)
 
-1. **Pipeline unificado:** `scripts/research/run_backtest_walkforward.py` foi substituído por um *wrapper* fino que delega para `itau_quant.backtesting.run_backtest` (mesma engine usada pelo CLI).  
+1. **Pipeline unificado:** `scripts/research/run_backtest_walkforward.py` foi substituído por um *wrapper* fino que delega para `arara_quant.backtesting.run_backtest` (mesma engine usada pelo CLI).  
 2. **Instrumentação completa:** `_generate_wf_report` (CLI) agora salva:
    - `per_window_results_raw.csv` (split_metrics sem arredondamento)
    - `trades.csv` (turnover one-way e custos por rebalance)

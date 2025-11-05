@@ -50,7 +50,7 @@ def format_report(metrics: dict) -> str:
 | **Total Return** | {metrics['total_return']:.2%} | Cumulative return over period |
 | **Annualized Return** | {metrics['annualized_return']:.2%} | CAGR using actual day count |
 | **Annualized Volatility** | {metrics['annualized_volatility']:.2%} | Std(daily returns) × √252 |
-| **Sharpe Ratio** | {metrics['sharpe_ratio']:.4f} | Annualized return / volatility (RF≈0) |
+| **Sharpe (excesso T‑Bill)** | {metrics['sharpe_ratio']:.4f} | {metrics.get('risk_free_note', 'Sharpe computed on excess returns vs risk-free')} |
 
 ---
 
@@ -74,7 +74,7 @@ def format_report(metrics: dict) -> str:
 | **Volatility** | ≤ 12% a.a. | {metrics['annualized_volatility']:.2%} | ✅ Within target |
 | **Max Drawdown** | ≤ 15% | {metrics['max_drawdown']:.2%} | ⚠️ Violation (20.89%) |
 | **CVaR 95%** | ≤ 8% a.a. | {metrics['cvar_95_annual']:.2%} | ⚠️ Violation (2.5x) |
-| **Sharpe Ratio** | ≥ 0.80 | {metrics['sharpe_ratio']:.4f} | ⚠️ Below target |
+| **Sharpe (excesso T‑Bill)** | ≥ 0.80 | {metrics['sharpe_ratio']:.4f} | ⚠️ Below target |
 
 ---
 
@@ -117,10 +117,9 @@ Vol_annual = std(daily_returns, ddof=1) × √252
            = {metrics['annualized_volatility']:.4%}
 ```
 
-### Sharpe Ratio
+### Sharpe (excesso T‑Bill)
 ```
-Sharpe = Annualized_Return / Annualized_Volatility
-       = {metrics['annualized_return']:.4f} / {metrics['annualized_volatility']:.4f}
+Sharpe = (mean(daily_returns − rf_daily) × 252) / (std(daily_returns − rf_daily, ddof=1) × √252)
        = {metrics['sharpe_ratio']:.4f}
 ```
 

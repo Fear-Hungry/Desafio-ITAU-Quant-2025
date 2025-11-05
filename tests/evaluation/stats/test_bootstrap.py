@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.evaluation.stats import (
+from arara_quant.evaluation.stats import (
     block_bootstrap,
     bootstrap_metric,
     compare_vs_benchmark,

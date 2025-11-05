@@ -1,6 +1,6 @@
-# Desafio ITAÚ Quant — Carteira ARARA (PRISM-R)
+# Arara Quant Lab — Carteira ARARA (PRISM-R)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)]()
-[![CI](https://github.com/Fear-Hungry/Desafio-ITAU-Quant/actions/workflows/ci.yml/badge.svg)](https://github.com/Fear-Hungry/Desafio-ITAU-Quant/actions)
+[![CI](https://github.com/Fear-Hungry/arara-quant-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Fear-Hungry/arara-quant-lab/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
 
 ## Quickstart (reprodução do OOS canônico)
@@ -388,7 +388,7 @@ Executamos backtest completo com regime detection integrado e defensive mode.
 poetry run python scripts/research/run_adaptive_hedge_experiment.py
 
 # Regime-aware backtest
-poetry run itau-quant backtest \
+poetry run arara-quant backtest \
   --config configs/optimizer_regime_aware.yaml \
   --no-dry-run --json > reports/backtest_regime_aware.json
 ```
@@ -676,7 +676,7 @@ poetry install
 poetry run python scripts/run_01_data_pipeline.py --force-download --start 2010-01-01
 
 # 3. Backtest principal (gera artefatos OOS; consolidação lê o JSON)
-poetry run itau-quant backtest \
+poetry run arara-quant backtest \
   --config configs/optimizer_example.yaml \
   --no-dry-run --json > reports/backtest_$(date -u +%Y%m%dT%H%M%SZ).json
 
@@ -692,7 +692,7 @@ cat reports/FINAL_OOS_METRICS_REPORT.md
 cat reports/oos_consolidated_metrics.json | jq '.nav_final, .annualized_return, .sharpe_ratio, .n_days'
 ```
 
-Seeds: `PYTHONHASHSEED=0`, NumPy/torch seeds setados via `itau_quant.utils.random.set_global_seed`. Configuráveis via `.env`.
+Seeds: `PYTHONHASHSEED=0`, NumPy/torch seeds setados via `arara_quant.utils.random.set_global_seed`. Configuráveis via `.env`.
 
 Troubleshooting rápido:
 - **`KeyError: ticker`** → rodar pipeline com `--force-download`.
@@ -950,7 +950,7 @@ Scripts de Consolidação:
 │   └── backtest_*.json         # artefatos seriados
 ├── results/                    # pesos, métricas, baselines
 ├── scripts/                    # CLI (pipeline, pesquisa, GA, stress)
-├── src/itau_quant/             # código da lib (data, optimization, backtesting, evaluation)
+├── src/arara_quant/             # código da lib (data, optimization, backtesting, evaluation)
 ├── tests/                      # pytest (unit + integração)
 ├── pyproject.toml              # dependências e configuração Poetry
 └── README.md                   # relatório + instruções
@@ -977,11 +977,11 @@ Scripts de Consolidação:
 
 ## 10. Como citar
 ```bibtex
-@misc{itau_quant_prismr_2025,
-  title  = {Desafio ITAÚ Quant: Carteira ARARA (PRISM-R)},
+@misc{arara_quant_prismr_2025,
+  title  = {Arara Quant Lab: Carteira ARARA (PRISM-R)},
   author = {Marcus Vinícius Silva and Anna Beatriz Cardoso},
   year   = {2025},
-  url    = {https://github.com/Fear-Hungry/Desafio-ITAU-Quant}
+  url    = {https://github.com/Fear-Hungry/arara-quant-lab}
 }
 ```
 

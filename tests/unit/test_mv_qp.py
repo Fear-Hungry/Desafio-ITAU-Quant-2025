@@ -3,11 +3,11 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.optimization.core.mv_qp import (
+from arara_quant.optimization.core.mv_qp import (
     MeanVarianceConfig,
     solve_mean_variance,
 )
-from itau_quant.risk.budgets import RiskBudget
+from arara_quant.risk.budgets import RiskBudget
 
 
 def _default_config(**overrides) -> MeanVarianceConfig:

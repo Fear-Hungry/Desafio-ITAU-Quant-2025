@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from itau_quant.utils import timing
+from arara_quant.utils import timing
 
 
 def test_time_block_records_duration(monkeypatch):

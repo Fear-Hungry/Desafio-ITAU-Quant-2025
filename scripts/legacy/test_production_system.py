@@ -56,8 +56,8 @@ print()
 # Otimizar portfolio
 print("⚙️  Otimizando portfolio...")
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.optimization.core.risk_parity import iterative_risk_parity
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.optimization.core.risk_parity import iterative_risk_parity
 
 # Estimar covariância
 cov, shrinkage = ledoit_wolf_shrinkage(recent_returns)

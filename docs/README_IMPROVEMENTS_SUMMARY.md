@@ -294,10 +294,10 @@ Para acomodar novas seções detalhadas:
 - `data/processed/returns_arara.parquet` ✅
 - `reports/walkforward/nav_daily.csv` ✅ (CANONICAL)
 - `reports/oos_consolidated_metrics.json` ✅ (SINGLE SOURCE)
-- `src/itau_quant/estimators/mu.py` ✅
-- `src/itau_quant/estimators/cov.py` ✅
-- `src/itau_quant/optimization/core/risk_parity.py` ✅
-- `src/itau_quant/portfolio/defensive_overlay.py` ✅
+- `src/arara_quant/estimators/mu.py` ✅
+- `src/arara_quant/estimators/cov.py` ✅
+- `src/arara_quant/optimization/core/risk_parity.py` ✅
+- `src/arara_quant/portfolio/defensive_overlay.py` ✅
 
 ---
 

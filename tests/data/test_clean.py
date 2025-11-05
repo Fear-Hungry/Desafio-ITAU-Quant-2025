@@ -4,7 +4,7 @@ import pytest
 
 pd = pytest.importorskip("pandas")
 
-from itau_quant.data.processing.clean import (
+from arara_quant.data.processing.clean import (
     ensure_dtindex,
     filter_liquid_assets,
     normalize_index,

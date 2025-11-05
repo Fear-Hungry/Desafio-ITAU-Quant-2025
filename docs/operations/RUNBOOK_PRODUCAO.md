@@ -108,7 +108,7 @@ Quando fallback é ativado:
 ### Passo 1: Executar Script de Produção
 
 ```bash
-cd /home/marcusvinicius/Void/Desafio-ITAU-Quant
+cd /home/marcusvinicius/Void/arara-quant-lab
 poetry run python run_portfolio_production_erc.py
 ```
 

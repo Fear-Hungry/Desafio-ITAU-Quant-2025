@@ -3,7 +3,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.estimators import cov
+from arara_quant.estimators import cov
 
 
 def _toy_returns() -> pd.DataFrame:

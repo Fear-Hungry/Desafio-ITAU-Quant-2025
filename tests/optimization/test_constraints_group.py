@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from itau_quant.optimization.constraints_group import (
+from arara_quant.optimization.constraints_group import (
     GroupConstraint,
     parse_group_config,
     validate_group_caps,

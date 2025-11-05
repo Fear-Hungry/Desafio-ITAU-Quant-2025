@@ -3,7 +3,7 @@ from __future__ import annotations
 import math
 
 import pandas as pd
-from itau_quant.backtesting import metrics
+from arara_quant.backtesting import metrics
 
 
 def test_cumulative_nav_handles_empty_series() -> None:

@@ -3,7 +3,7 @@ from __future__ import annotations
 import cvxpy as cp
 import numpy as np
 import pandas as pd
-from itau_quant.optimization.core import constraints_builder as cb
+from arara_quant.optimization.core import constraints_builder as cb
 
 
 def test_budget_constraints_handle_leverage():

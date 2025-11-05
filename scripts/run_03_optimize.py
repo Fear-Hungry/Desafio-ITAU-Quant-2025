@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import argparse
 
-from itau_quant.config import Settings
-from itau_quant.pipeline.optimization import optimize_portfolio
-from itau_quant.utils.logging_config import get_logger, log_dict
+from arara_quant.config import Settings
+from arara_quant.pipeline.optimization import optimize_portfolio
+from arara_quant.utils.logging_config import get_logger, log_dict
 
 logger = get_logger("scripts.run_03_optimize")
 

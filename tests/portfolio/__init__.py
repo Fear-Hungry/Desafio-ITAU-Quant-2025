@@ -1,1 +1,1 @@
-"""Tests for itau_quant.portfolio package."""
+"""Tests for arara_quant.portfolio package."""

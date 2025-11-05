@@ -17,17 +17,17 @@ This document explains how to work with test coverage in the PRISM-R project.
 
 ```bash
 # Generate HTML coverage report
-poetry run pytest --cov=src/itau_quant --cov-report=html
+poetry run pytest --cov=src/arara_quant --cov-report=html
 
 # Open report in browser
 open htmlcov/index.html  # macOS
 xdg-open htmlcov/index.html  # Linux
 
 # Generate terminal report with missing lines
-poetry run pytest --cov=src/itau_quant --cov-report=term-missing
+poetry run pytest --cov=src/arara_quant --cov-report=term-missing
 
 # Generate XML report (for CI/Codecov)
-poetry run pytest --cov=src/itau_quant --cov-report=xml
+poetry run pytest --cov=src/arara_quant --cov-report=xml
 ```
 
 ### Coverage Configuration
@@ -36,7 +36,7 @@ Coverage settings are configured in `pyproject.toml`:
 
 ```toml
 [tool.coverage.run]
-source = ["src/itau_quant"]
+source = ["src/arara_quant"]
 omit = ["*/tests/*", "*/__pycache__/*"]
 
 [tool.coverage.report]
@@ -95,7 +95,7 @@ The CI pipeline enforces a minimum coverage of 70%:
 ```yaml
 - name: Run tests with coverage
   run: |
-    poetry run pytest --cov=src/itau_quant \
+    poetry run pytest --cov=src/arara_quant \
       --cov-report=xml \
       --cov-report=term-missing \
       --cov-fail-under=70
@@ -133,7 +133,7 @@ coverage:
 Use the HTML report to find specific uncovered lines:
 
 ```bash
-poetry run pytest --cov=src/itau_quant --cov-report=html
+poetry run pytest --cov=src/arara_quant --cov-report=html
 open htmlcov/index.html
 ```
 
@@ -265,7 +265,7 @@ Track coverage over time:
 poetry run coverage-badge -o coverage.svg -f
 
 # View historical trends on Codecov
-# Visit: https://codecov.io/gh/YOUR_USERNAME/Desafio-ITAU-Quant
+# Visit: https://codecov.io/gh/YOUR_USERNAME/arara-quant-lab
 ```
 
 ## Troubleshooting
@@ -276,10 +276,10 @@ If pytest-cov reports no data:
 
 ```bash
 # Ensure module is imported
-poetry run python -c "import itau_quant; print('OK')"
+poetry run python -c "import arara_quant; print('OK')"
 
 # Run with verbose output
-poetry run pytest --cov=src/itau_quant --cov-report=term -v
+poetry run pytest --cov=src/arara_quant --cov-report=term -v
 
 # Check coverage configuration
 cat pyproject.toml | grep -A 10 "\[tool.coverage"
@@ -297,14 +297,14 @@ Common causes:
 # Match CI environment
 poetry env use 3.11
 poetry install
-poetry run pytest --cov=src/itau_quant
+poetry run pytest --cov=src/arara_quant
 ```
 
 ### Coverage Badge Not Updating
 
 ```bash
 # Manually upload to Codecov
-poetry run pytest --cov=src/itau_quant --cov-report=xml
+poetry run pytest --cov=src/arara_quant --cov-report=xml
 curl -s https://codecov.io/bash | bash
 ```
 

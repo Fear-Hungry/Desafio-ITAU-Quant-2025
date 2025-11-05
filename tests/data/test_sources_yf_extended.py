@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from itau_quant.data.sources.yf import download_prices
+from arara_quant.data.sources.yf import download_prices
 
 
 @pytest.fixture
@@ -42,7 +42,7 @@ def mock_single_ticker_data():
 class TestDownloadPricesWithMocking:
     """Tests for download_prices with mocked yfinance."""
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_downloads_multiple_tickers(self, mock_download, mock_multiindex_data):
         """Test downloading multiple tickers."""
         mock_download.return_value = mock_multiindex_data
@@ -55,7 +55,7 @@ class TestDownloadPricesWithMocking:
         assert len(result) > 0
         mock_download.assert_called_once()
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_downloads_single_ticker(self, mock_download, mock_single_ticker_data):
         """Test downloading single ticker."""
         mock_download.return_value = mock_single_ticker_data
@@ -66,7 +66,7 @@ class TestDownloadPricesWithMocking:
         assert len(result.columns) == 1
         mock_download.assert_called_once()
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_normalizes_ticker_names(self, mock_download, mock_multiindex_data):
         """Test that ticker names are normalized (uppercase, stripped)."""
         mock_download.return_value = mock_multiindex_data
@@ -84,7 +84,7 @@ class TestDownloadPricesWithMocking:
         assert isinstance(result, pd.DataFrame)
         mock_download.assert_called_once()
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_extracts_adj_close(self, mock_download, mock_multiindex_data):
         """Test that Adj Close is extracted from MultiIndex."""
         mock_download.return_value = mock_multiindex_data
@@ -96,7 +96,7 @@ class TestDownloadPricesWithMocking:
         # Values should come from Adj Close, not Close
         assert result.notna().any().any()
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_fallback_to_close_when_adj_missing(self, mock_download):
         """Test fallback to Close when Adj Close is missing."""
         dates = pd.date_range("2024-01-01", periods=5, freq="D")
@@ -114,7 +114,7 @@ class TestDownloadPricesWithMocking:
         assert isinstance(result, pd.DataFrame)
         assert len(result) > 0
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_reorders_columns_to_match_request(self, mock_download, mock_multiindex_data):
         """Test that columns are reordered to match requested ticker order."""
         mock_download.return_value = mock_multiindex_data
@@ -125,7 +125,7 @@ class TestDownloadPricesWithMocking:
         # Should return in requested order
         assert list(result.columns) == ["QQQ", "SPY"]
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_forward_fills_missing_data(self, mock_download):
         """Test that missing data is forward-filled."""
         dates = pd.date_range("2024-01-01", periods=5, freq="D")
@@ -145,7 +145,7 @@ class TestDownloadPricesWithMocking:
         # Should forward-fill NaN values
         assert not result.isna().any().any()
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_removes_completely_empty_columns(self, mock_download):
         """Test that completely empty columns are removed."""
         dates = pd.date_range("2024-01-01", periods=5, freq="D")
@@ -164,13 +164,13 @@ class TestDownloadPricesWithMocking:
         assert "SPY" in result.columns
         assert "QQQ" not in result.columns or result["QQQ"].isna().all()
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_raises_on_empty_ticker_list(self, mock_download):
         """Test that empty ticker list raises ValueError."""
         with pytest.raises(ValueError, match="vazia"):
             download_prices([])
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_raises_on_whitespace_only_tickers(self, mock_download):
         """Test that whitespace-only tickers result in empty list after normalization."""
         # After stripping, these become empty strings and are removed
@@ -185,7 +185,7 @@ class TestDownloadPricesWithMocking:
         with pytest.raises(ValueError, match="vazia"):
             download_prices(result_tickers)
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_passes_start_end_dates(self, mock_download, mock_multiindex_data):
         """Test that start and end dates are passed to yfinance."""
         mock_download.return_value = mock_multiindex_data
@@ -199,7 +199,7 @@ class TestDownloadPricesWithMocking:
         assert call_kwargs["start"] == start
         assert call_kwargs["end"] == end
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_passes_datetime_objects(self, mock_download, mock_multiindex_data):
         """Test that datetime objects are accepted."""
         mock_download.return_value = mock_multiindex_data
@@ -213,7 +213,7 @@ class TestDownloadPricesWithMocking:
         assert call_kwargs["start"] == start
         assert call_kwargs["end"] == end
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_disables_progress_by_default(self, mock_download, mock_multiindex_data):
         """Test that progress bar is disabled by default."""
         mock_download.return_value = mock_multiindex_data
@@ -223,7 +223,7 @@ class TestDownloadPricesWithMocking:
         call_kwargs = mock_download.call_args.kwargs
         assert call_kwargs["progress"] is False
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_enables_progress_when_requested(self, mock_download, mock_multiindex_data):
         """Test that progress bar can be enabled."""
         mock_download.return_value = mock_multiindex_data
@@ -233,7 +233,7 @@ class TestDownloadPricesWithMocking:
         call_kwargs = mock_download.call_args.kwargs
         assert call_kwargs["progress"] is True
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_uses_auto_adjust_false(self, mock_download, mock_multiindex_data):
         """Test that auto_adjust is set to False."""
         mock_download.return_value = mock_multiindex_data
@@ -243,7 +243,7 @@ class TestDownloadPricesWithMocking:
         call_kwargs = mock_download.call_args.kwargs
         assert call_kwargs["auto_adjust"] is False
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_sorts_index(self, mock_download):
         """Test that index is sorted."""
         # Create data with unsorted dates
@@ -260,7 +260,7 @@ class TestDownloadPricesWithMocking:
         # Index should be sorted
         assert result.index.is_monotonic_increasing
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_handles_single_ticker_without_multiindex(self, mock_download, mock_single_ticker_data):
         """Test handling of single ticker data (no MultiIndex)."""
         mock_download.return_value = mock_single_ticker_data
@@ -271,7 +271,7 @@ class TestDownloadPricesWithMocking:
         assert "SPY" in result.columns or len(result.columns) == 1
         assert len(result) > 0
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_logs_download_info(self, mock_download, mock_multiindex_data, caplog):
         """Test that download info is logged."""
         mock_download.return_value = mock_multiindex_data
@@ -281,7 +281,7 @@ class TestDownloadPricesWithMocking:
 
         assert any("Baixando preços" in record.message for record in caplog.records)
 
-    @patch('itau_quant.data.sources.yf.yf.download')
+    @patch('arara_quant.data.sources.yf.yf.download')
     def test_handles_missing_tickers_gracefully(self, mock_download, mock_multiindex_data):
         """Test that missing tickers are handled gracefully."""
         # Request more tickers than available in data

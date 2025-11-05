@@ -3,7 +3,7 @@ from __future__ import annotations
 import cvxpy as cp
 import pandas as pd
 import pytest
-from itau_quant.optimization.core import penalties as penalties_mod
+from arara_quant.optimization.core import penalties as penalties_mod
 
 
 def test_l1_and_l2_penalties_are_convex():

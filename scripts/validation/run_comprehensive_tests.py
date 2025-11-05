@@ -127,7 +127,7 @@ except Exception as e:
 # ============================================================================
 print("🔧 [2/7] Configurando estratégias de teste...")
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
 
 strategies = {
     "ERC_v2_Prod": {
@@ -163,7 +163,7 @@ print()
 # ============================================================================
 print("🔀 [3/7] Criando splits walk-forward...")
 
-from itau_quant.backtesting.walk_forward import generate_walk_forward_splits
+from arara_quant.backtesting.walk_forward import generate_walk_forward_splits
 
 try:
     splits = list(

@@ -14,20 +14,20 @@ from typing import Callable
 
 import numpy as np
 import pandas as pd
-from itau_quant.estimators.cov import (
+from arara_quant.estimators.cov import (
     ledoit_wolf_shrinkage,
     nonlinear_shrinkage,
     project_to_psd,
     sample_cov,
     tyler_m_estimator,
 )
-from itau_quant.estimators.mu import shrunk_mean
-from itau_quant.evaluation.oos import (
+from arara_quant.estimators.mu import shrunk_mean
+from arara_quant.evaluation.oos import (
     StrategySpec,
     compare_baselines,
     default_strategies,
 )
-from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
+from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 from sklearn.covariance import MinCovDet
 
 OUTPUT_DIR = Path("results") / "cov_sensitivity"

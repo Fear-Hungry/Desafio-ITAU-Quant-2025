@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from itau_quant.data.processing import corporate_actions as ca
+from arara_quant.data.processing import corporate_actions as ca
 
 
 def _sample_actions() -> pd.DataFrame:

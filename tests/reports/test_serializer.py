@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from itau_quant.reports.serializer import generate_markdown, save_results
+from arara_quant.reports.serializer import generate_markdown, save_results
 
 
 class TestGenerateMarkdown:

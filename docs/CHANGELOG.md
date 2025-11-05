@@ -93,4 +93,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added MIT LICENSE
 - No credentials or secrets in repository
 
-[0.1.0]: https://github.com/Fear-Hungry/Desafio-ITAU-Quant/releases/tag/v0.1.0
+[0.1.0]: https://github.com/Fear-Hungry/arara-quant-lab/releases/tag/v0.1.0

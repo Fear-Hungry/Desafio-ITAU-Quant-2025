@@ -110,7 +110,7 @@ Budget constraints funcionam perfeitamente quando os retornos esperados são rea
 **Código responsável (mv_qp.py linhas 182-187):**
 ```python
 if config.budgets:
-    from itau_quant.risk.budgets import budgets_to_constraints
+    from arara_quant.risk.budgets import budgets_to_constraints
     budget_cons = budgets_to_constraints(w, config.budgets, assets)
     constraints.extend(budget_cons)
 ```

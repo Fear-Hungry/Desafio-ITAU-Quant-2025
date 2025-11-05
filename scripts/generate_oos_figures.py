@@ -140,34 +140,37 @@ def generate_drawdown_figure(df_oos: pd.DataFrame):
     plt.close()
 
 def generate_baseline_comparison_figure():
-    """Generate Sharpe vs Return scatter plot (PRISM-R vs baselines)."""
+    """Generate Sharpe (excesso T‑Bill) vs Return scatter (PRISM-R vs baselines)."""
     print("\n=== Generating Baseline Comparison Figure ===")
 
     # Load consolidated metrics for PRISM-R
     metrics = json.load(open(REPORTS_DIR / "oos_consolidated_metrics.json"))
 
+    # Use Sharpe computed on daily excess vs T‑Bill from consolidated metrics
     prism_sharpe = float(metrics.get('sharpe_ratio', 0))
     prism_return = float(metrics.get('annualized_return', 0)) * 100  # Convert to %
 
     # Baseline data (from historical validation)
     # These are standard baselines for comparison
+    # Baselines (Sharpe em excesso ao T‑Bill) e retornos anualizados estimados
+    # Valores de Sharpe calculados em excesso ao T‑Bill diário no período OOS canônico
     df_baselines = pd.DataFrame({
         'Strategy': ['Equal-Weight', 'Risk Parity', 'Min-Var (LW)', 'Shrunk MV', '60/40', 'HRP'],
-        'Sharpe': [0.69, 0.65, 0.69, 0.69, 0.45, 0.07],
-        'Return (%)': [7.4, 6.6, 1.7, 8.4, 4.1, 0.3]
+        'Sharpe (excesso T-Bill)': [0.2618, 0.2304, -0.5476, 0.1770, 0.2268, -0.3049],
+        'Return (%)': [4.32, 3.99, 1.30, 3.63, 3.86, 0.87]
     })
 
     fig, ax = plt.subplots(figsize=(12, 8))
 
     # Plot baselines as blue circles
     if not df_baselines.empty:
-        ax.scatter(df_baselines['Return (%)'].values, df_baselines['Sharpe'].values,
+        ax.scatter(df_baselines['Return (%)'].values, df_baselines['Sharpe (excesso T-Bill)'].values,
                   s=200, alpha=0.6, color='steelblue', label='Baseline Strategies', edgecolors='navy', linewidth=1.5)
 
         # Label each baseline
         for idx, row in df_baselines.iterrows():
             ax.annotate(row['Strategy'],
-                       (row['Return (%)'], row['Sharpe']),
+                       (row['Return (%)'], row['Sharpe (excesso T-Bill)']),
                        xytext=(5, 5), textcoords='offset points', fontsize=9, alpha=0.8)
 
     # Plot PRISM-R as red diamond (emphasize)
@@ -178,15 +181,15 @@ def generate_baseline_comparison_figure():
                bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.3))
 
     ax.set_xlabel('Annualized Return (%)', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Sharpe Ratio', fontsize=12, fontweight='bold')
-    ax.set_title('Risk-Return Comparison: PRISM-R vs Baseline Strategies', fontsize=14, fontweight='bold')
+    ax.set_ylabel('Sharpe (excesso T-Bill)', fontsize=12, fontweight='bold')
+    ax.set_title('Risk-Return: PRISM-R vs Baselines (Sharpe em excesso ao T-Bill)', fontsize=14, fontweight='bold')
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=11, loc='upper left')
     ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5, alpha=0.3)
     ax.axvline(x=0, color='black', linestyle='-', linewidth=0.5, alpha=0.3)
 
     # Source info
-    ax.text(0.99, 0.02, f'Source: reports/oos_consolidated_metrics.json | {len(df_baselines)} baselines',
+    ax.text(0.99, 0.02, f'Source: oos_consolidated_metrics.json (excesso T-Bill) | {len(df_baselines)} baselines',
             transform=ax.transAxes, fontsize=9, alpha=0.7, va='bottom', ha='right',
             bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', alpha=0.3))
 

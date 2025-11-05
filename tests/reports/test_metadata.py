@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from itau_quant.reports.metadata import get_git_commit, hash_file
+from arara_quant.reports.metadata import get_git_commit, hash_file
 
 
 class TestGetGitCommit:

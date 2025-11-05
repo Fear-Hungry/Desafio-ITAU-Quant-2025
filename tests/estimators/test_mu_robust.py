@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from itau_quant.estimators.mu_robust import (
+from arara_quant.estimators.mu_robust import (
     bayesian_shrinkage,
     combined_shrinkage,
     james_stein_shrinkage,

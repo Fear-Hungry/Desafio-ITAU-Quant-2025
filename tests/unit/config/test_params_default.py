@@ -1,5 +1,5 @@
 import pytest
-from itau_quant.config.params_default import (
+from arara_quant.config.params_default import (
     DEFAULT_PARAMS,
     StrategyParams,
     default_params,

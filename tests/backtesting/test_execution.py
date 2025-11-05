@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
-from itau_quant.backtesting.execution import simulate_execution
+from arara_quant.backtesting.execution import simulate_execution
 
 
 def test_simulate_execution_computes_turnover_and_cost() -> None:

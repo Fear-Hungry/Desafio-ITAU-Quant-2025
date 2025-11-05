@@ -191,7 +191,7 @@ Sharpe(MV Robust) ≥ Sharpe(1/N) + 0.2
 ### Teste Rápido (Portfolio Único)
 
 ```bash
-cd /home/marcusvinicius/Void/Desafio-ITAU-Quant
+cd /home/marcusvinicius/Void/arara-quant-lab
 poetry run python run_portfolio_arara_robust.py
 ```
 
@@ -319,7 +319,7 @@ poetry run python run_baselines_comparison.py
 
 ### Huber Mean (Robust M-Estimator)
 
-**Implementação:** `itau_quant.estimators.mu.huber_mean()`
+**Implementação:** `arara_quant.estimators.mu.huber_mean()`
 
 **Parâmetro:** `c=1.5` (threshold em unidades de σ)
 
@@ -335,7 +335,7 @@ poetry run python run_baselines_comparison.py
 
 ### Ledoit-Wolf Shrinkage
 
-**Implementação:** `itau_quant.estimators.cov.ledoit_wolf_shrinkage()`
+**Implementação:** `arara_quant.estimators.cov.ledoit_wolf_shrinkage()`
 
 **Shrinkage observado:** 0.0523 (5.23%)
 
@@ -348,7 +348,7 @@ poetry run python run_baselines_comparison.py
 
 ### Budget Constraints (Framework)
 
-**Implementação:** `itau_quant.risk.budgets.RiskBudget`
+**Implementação:** `arara_quant.risk.budgets.RiskBudget`
 
 **Exemplo:**
 ```python
@@ -367,22 +367,22 @@ RiskBudget(
 ## 📚 Referências de Código
 
 ### Estimadores
-- `src/itau_quant/estimators/mu.py` - Huber, BL, shrinkage
-- `src/itau_quant/estimators/cov.py` - Ledoit-Wolf, Tyler
-- `src/itau_quant/estimators/bl.py` - Black-Litterman completo
+- `src/arara_quant/estimators/mu.py` - Huber, BL, shrinkage
+- `src/arara_quant/estimators/cov.py` - Ledoit-Wolf, Tyler
+- `src/arara_quant/estimators/bl.py` - Black-Litterman completo
 
 ### Otimização
-- `src/itau_quant/optimization/core/mv_qp.py` - Mean-variance QP
-- `src/itau_quant/optimization/core/risk_parity.py` - ERC
-- `src/itau_quant/optimization/heuristics/hrp.py` - HRP
+- `src/arara_quant/optimization/core/mv_qp.py` - Mean-variance QP
+- `src/arara_quant/optimization/core/risk_parity.py` - ERC
+- `src/arara_quant/optimization/heuristics/hrp.py` - HRP
 
 ### Backtesting
-- `src/itau_quant/backtesting/walk_forward.py` - Splits temporais
-- `src/itau_quant/backtesting/metrics.py` - Métricas OOS
+- `src/arara_quant/backtesting/walk_forward.py` - Splits temporais
+- `src/arara_quant/backtesting/metrics.py` - Métricas OOS
 
 ### Risk Management
-- `src/itau_quant/risk/budgets.py` - RiskBudget framework
-- `src/itau_quant/costs/transaction_costs.py` - Custos e slippage
+- `src/arara_quant/risk/budgets.py` - RiskBudget framework
+- `src/arara_quant/costs/transaction_costs.py` - Custos e slippage
 
 ---
 

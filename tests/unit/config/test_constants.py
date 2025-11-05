@@ -1,5 +1,5 @@
 import pytest
-from itau_quant.config.constants import (
+from arara_quant.config.constants import (
     BPS,
     DEFAULT_BASE_CURRENCY,
     DEFAULT_RISK_FREE_RATE,

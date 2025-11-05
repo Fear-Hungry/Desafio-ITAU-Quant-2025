@@ -5,8 +5,8 @@ import json
 import logging
 from pathlib import Path
 
-from itau_quant.config.logging_conf import configure_logging
-from itau_quant.config.settings import Settings, reset_settings_cache
+from arara_quant.config.logging_conf import configure_logging
+from arara_quant.config.settings import Settings, reset_settings_cache
 
 
 def _cleanup_logging() -> None:
@@ -43,7 +43,7 @@ def test_configure_logging_structured_output(tmp_path: Path) -> None:
     assert payload["step"] == "load"
     assert payload["logger"] == "config.tests"
 
-    log_file = settings.logs_dir / "itau_quant.log"
+    log_file = settings.logs_dir / "arara_quant.log"
     assert log_file.exists()
 
 

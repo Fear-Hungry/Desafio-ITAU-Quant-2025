@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from itau_quant.data.sources import crypto
+from arara_quant.data.sources import crypto
 
 
 def test_sanitize_symbols_normalizes_input():

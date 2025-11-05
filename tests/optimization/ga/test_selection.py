@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-from itau_quant.optimization.ga import selection
-from itau_quant.optimization.ga.population import Individual
+from arara_quant.optimization.ga import selection
+from arara_quant.optimization.ga.population import Individual
 
 
 def _population() -> list[Individual]:

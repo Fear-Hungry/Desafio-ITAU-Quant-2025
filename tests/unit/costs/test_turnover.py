@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.costs import turnover as turnover_mod
+from arara_quant.costs import turnover as turnover_mod
 
 
 def test_l1_turnover_returns_series_with_matching_index():

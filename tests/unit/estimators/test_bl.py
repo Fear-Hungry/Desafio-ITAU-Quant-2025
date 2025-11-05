@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.estimators.bl import (
+from arara_quant.estimators.bl import (
     _solve_psd,
     black_litterman,
     build_projection_matrix,
@@ -462,7 +462,7 @@ def test_posterior_returns_fast_path_skips_sigma_inverse(market_data, monkeypatc
         return original_solve(A, B, jitter=jitter)
 
     monkeypatch.setattr(
-        "itau_quant.estimators.bl._solve_psd",
+        "arara_quant.estimators.bl._solve_psd",
         tracking_solve,
         raising=True,
     )

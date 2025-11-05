@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Iterable
 
 import pandas as pd
-from itau_quant.evaluation.oos import (
+from arara_quant.evaluation.oos import (
     StrategySpec,
     compare_baselines,
     default_strategies,

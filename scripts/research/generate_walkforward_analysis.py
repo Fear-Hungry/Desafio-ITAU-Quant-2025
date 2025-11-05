@@ -217,9 +217,9 @@ def plot_walkforward_analysis(
         label=f"Median: {median_sharpe:.3f}",
     )
 
-    ax2.set_title("Sharpe Ratio per OOS Window", fontsize=12, fontweight="bold")
+    ax2.set_title("Sharpe por Janela (OOS, RF≈0)", fontsize=12, fontweight="bold")
     ax2.set_xlabel("OOS Window Index", fontsize=10)
-    ax2.set_ylabel("Sharpe Ratio", fontsize=11)
+    ax2.set_ylabel("Sharpe (janela, RF≈0)", fontsize=11)
     ax2.legend(fontsize=9, loc="upper left")
     ax2.grid(True, alpha=0.3, axis="y")
 

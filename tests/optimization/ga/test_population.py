@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from itau_quant.optimization.ga import population as pop
+from arara_quant.optimization.ga import population as pop
 
 
 def test_encode_decode_roundtrip() -> None:

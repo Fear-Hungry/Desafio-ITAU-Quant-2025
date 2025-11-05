@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from itau_quant.data.processing.frequency import (
+from arara_quant.data.processing.frequency import (
     annualize_return,
     annualize_volatility,
     monthly_to_annual,

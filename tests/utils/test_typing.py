@@ -5,7 +5,7 @@ import pytest
 
 
 def test_typing_module_fallback_without_typealias(monkeypatch):
-    module_name = "itau_quant.utils.typing"
+    module_name = "arara_quant.utils.typing"
     sys.modules.pop(module_name, None)
 
     typing_module = importlib.import_module("typing")

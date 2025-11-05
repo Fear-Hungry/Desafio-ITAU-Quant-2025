@@ -21,7 +21,7 @@ exploração.
 - **Ledoit–Wolf**: estima a covariância shrinkando a matriz amostral `S` para
   uma matriz estruturada `F`, `Σ = (1 - δ) S + δ F`, com `δ` calculado em
   fechado.
-- **Checagem de PSD**: rotinas em `itau_quant.estimators.cov` projetam a matriz
+- **Checagem de PSD**: rotinas em `arara_quant.estimators.cov` projetam a matriz
   no cone PSD quando necessário, preservando simetria numérica.
 
 ## 3. Otimização média-variância

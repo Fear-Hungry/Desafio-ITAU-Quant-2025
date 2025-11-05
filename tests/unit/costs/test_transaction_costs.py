@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import pytest
-from itau_quant.costs.transaction_costs import (
+from arara_quant.costs.transaction_costs import (
     bps_to_decimal,
     linear_transaction_cost,
     slippage_square_root_bps,

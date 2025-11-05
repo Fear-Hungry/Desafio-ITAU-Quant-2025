@@ -81,6 +81,7 @@ poetry run python scripts/generate_oos_figures.py
 - [ ] Comando 2 executado sem erros
 - [ ] Comando 3 gerou `oos_consolidated_metrics.json`
 - [ ] Comando 4 gerou figuras em `reports/figures/`
+  - Nota: o gráfico de comparação PRISM‑R vs baselines exibe Sharpe em excesso ao T‑Bill (usar `consolidate_oos_metrics.py --riskfree-csv ...`).
 
 ---
 

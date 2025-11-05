@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from itau_quant.risk.regime import RegimeSnapshot, detect_regime, regime_multiplier
+from arara_quant.risk.regime import RegimeSnapshot, detect_regime, regime_multiplier
 
 
 def _make_returns(level: float, noise: float, periods: int = 90) -> pd.DataFrame:

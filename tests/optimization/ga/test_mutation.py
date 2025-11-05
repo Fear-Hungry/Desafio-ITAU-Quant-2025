@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import numpy as np
-from itau_quant.optimization.ga import mutation
-from itau_quant.optimization.ga.population import Individual
+from arara_quant.optimization.ga import mutation
+from arara_quant.optimization.ga.population import Individual
 
 
 def test_flip_asset_selection_changes_mask() -> None:

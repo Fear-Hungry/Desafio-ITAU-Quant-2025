@@ -8,16 +8,16 @@ Testa múltiplos valores de strength (0.0 a 0.7) e identifica o melhor Sharpe OO
 from pathlib import Path
 
 import pandas as pd
-from itau_quant.backtesting.metrics import compute_performance_metrics
-from itau_quant.backtesting.walk_forward import generate_walk_forward_splits
+from arara_quant.backtesting.metrics import compute_performance_metrics
+from arara_quant.backtesting.walk_forward import generate_walk_forward_splits
 
 # Carregar dados
-from itau_quant.data import get_arara_universe
-from itau_quant.data.processing.returns import calculate_returns
-from itau_quant.data.sources.yf import download_prices
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.estimators.mu import bayesian_shrinkage_mean
-from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
+from arara_quant.data import get_arara_universe
+from arara_quant.data.processing.returns import calculate_returns
+from arara_quant.data.sources.yf import download_prices
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.estimators.mu import bayesian_shrinkage_mean
+from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 print("=" * 80)
 print("  GRID SEARCH: Bayesian Shrinkage Strength")

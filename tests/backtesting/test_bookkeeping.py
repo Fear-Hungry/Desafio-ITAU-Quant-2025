@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
-from itau_quant.backtesting import bookkeeping
+from arara_quant.backtesting import bookkeeping
 
 
 def test_build_ledger_aligns_inputs_and_computes_nav() -> None:

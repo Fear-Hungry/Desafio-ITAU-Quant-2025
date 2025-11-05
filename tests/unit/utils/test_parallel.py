@@ -1,4 +1,4 @@
-from itau_quant.utils.parallel import parallel_map
+from arara_quant.utils.parallel import parallel_map
 
 
 def _extract_value(payload: dict) -> int:

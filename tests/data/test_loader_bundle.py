@@ -4,7 +4,7 @@ import pytest
 
 pytest.importorskip("pandas")
 
-from itau_quant.data.loader import DataLoader
+from arara_quant.data.loader import DataLoader
 
 
 @pytest.mark.skip(reason="evita chamadas de rede em CI; rodar manualmente")

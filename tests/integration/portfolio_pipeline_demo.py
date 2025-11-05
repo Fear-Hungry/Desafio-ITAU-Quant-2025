@@ -64,8 +64,8 @@ print()
 # ============================================================================
 print("📈 [2/5] Estimando parâmetros de risco/retorno...")
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.estimators.mu import mean_return
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.estimators.mu import mean_return
 
 # Retornos esperados (usar últimos 252 dias)
 recent_returns = returns.tail(252)
@@ -92,7 +92,7 @@ print()
 # ============================================================================
 print("⚙️  [3/5] Otimizando portfolio (Mean-Variance)...")
 
-from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
+from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 # Configuração
 config = MeanVarianceConfig(

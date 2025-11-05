@@ -4,8 +4,8 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from itau_quant.backtesting import run_backtest
-from itau_quant.config import Settings, reset_settings_cache
+from arara_quant.backtesting import run_backtest
+from arara_quant.config import Settings, reset_settings_cache
 
 
 def _make_settings(tmp_path: Path) -> Settings:

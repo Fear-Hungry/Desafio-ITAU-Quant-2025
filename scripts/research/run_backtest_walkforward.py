@@ -2,8 +2,8 @@
 """
 Run the canonical walk-forward backtest using the official CLI pipeline.
 
-This wrapper delegates all heavy lifting to ``itau_quant.backtesting.run_backtest``
-and reuses the same reporting helpers leveraged by ``poetry run itau-quant``.
+This wrapper delegates all heavy lifting to ``arara_quant.backtesting.run_backtest``
+and reuses the same reporting helpers leveraged by ``poetry run arara-quant``.
 The goal is to avoid divergence between research scripts and production code.
 """
 
@@ -14,9 +14,9 @@ from pathlib import Path
 
 import yaml
 
-from itau_quant.backtesting import run_backtest
-from itau_quant.cli import _generate_wf_report
-from itau_quant.config import get_settings
+from arara_quant.backtesting import run_backtest
+from arara_quant.cli import _generate_wf_report
+from arara_quant.config import get_settings
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = REPO_ROOT / "configs" / "optimizer_example.yaml"

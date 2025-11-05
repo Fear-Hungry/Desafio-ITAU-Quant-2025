@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from itau_quant.optimization.core import cvar_lp
+from arara_quant.optimization.core import cvar_lp
 
 
 def test_solve_cvar_lp_returns_feasible_solution() -> None:

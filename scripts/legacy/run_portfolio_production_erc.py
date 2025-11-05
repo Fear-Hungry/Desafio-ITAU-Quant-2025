@@ -76,8 +76,8 @@ print()
 
 print("📥 [1/5] Carregando dados...")
 
-from itau_quant.data.processing.returns import calculate_returns
-from itau_quant.data.sources.yf import download_prices
+from arara_quant.data.processing.returns import calculate_returns
+from arara_quant.data.sources.yf import download_prices
 
 END_DATE = datetime.now().strftime("%Y-%m-%d")
 START_DATE = "2022-01-01"
@@ -133,8 +133,8 @@ print("⚙️  [4/5] Otimizando portfolio...")
 
 recent_returns = returns.tail(ESTIMATION_WINDOW)
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.optimization.core.risk_parity import iterative_risk_parity
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.optimization.core.risk_parity import iterative_risk_parity
 
 # Estimar covariância
 cov, shrinkage = ledoit_wolf_shrinkage(recent_returns)

@@ -108,7 +108,7 @@ except Exception as e:
 # ============================================================================
 print("🔀 [2/4] Criando splits walk-forward...")
 
-from itau_quant.backtesting.walk_forward import generate_walk_forward_splits
+from arara_quant.backtesting.walk_forward import generate_walk_forward_splits
 
 try:
     splits = list(
@@ -138,9 +138,9 @@ except Exception as e:
 # ============================================================================
 print("🔄 [3/4] Rodando backtest walk-forward...")
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
-from itau_quant.estimators.mu import mean_return
-from itau_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.estimators.mu import mean_return
+from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 
 # Armazenar resultados
 portfolio_returns = []

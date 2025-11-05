@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pandas as pd
 import pytest
-from itau_quant.evaluation.walkforward_report import (
+from arara_quant.evaluation.walkforward_report import (
     StressPeriod,
     WalkForwardSummary,
     build_per_window_table,

@@ -5,7 +5,7 @@ import pytest
 
 pd = pytest.importorskip("pandas")
 
-from itau_quant.data.processing.returns import calculate_returns
+from arara_quant.data.processing.returns import calculate_returns
 
 
 def test_calculate_returns_log_and_simple():

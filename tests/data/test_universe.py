@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from itau_quant.data.universe import get_arara_metadata, get_arara_universe
+from arara_quant.data.universe import get_arara_metadata, get_arara_universe
 
 
 def test_arara_universe_has_expected_count_and_members():

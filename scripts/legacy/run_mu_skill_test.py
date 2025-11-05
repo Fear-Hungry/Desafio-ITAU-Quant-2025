@@ -91,7 +91,7 @@ print()
 
 print("🔧 [3/4] Definindo estimadores de μ...")
 
-from itau_quant.estimators.mu import huber_mean
+from arara_quant.estimators.mu import huber_mean
 
 
 def sample_mu_estimator(rets: pd.DataFrame) -> pd.Series:
@@ -130,7 +130,7 @@ print()
 print("🧪 [4/4] Testando skill preditivo...")
 print()
 
-from itau_quant.diagnostics.mu_skill import skill_report
+from arara_quant.diagnostics.mu_skill import skill_report
 
 results = {}
 

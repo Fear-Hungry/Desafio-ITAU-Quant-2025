@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pandas as pd
-from itau_quant.data.loader import DataBundle, DataLoader
+from arara_quant.data.loader import DataBundle, DataLoader
 
 
 def _mock_prices() -> pd.DataFrame:
@@ -13,7 +13,7 @@ def test_dataloader_applies_corporate_actions(monkeypatch):
     prices = _mock_prices()
     returns = prices.pct_change().fillna(0.0)
 
-    from itau_quant.data import loader as dl
+    from arara_quant.data import loader as dl
 
     monkeypatch.setattr(dl, "yf_download", lambda tickers, start, end: prices.copy())
     monkeypatch.setattr(

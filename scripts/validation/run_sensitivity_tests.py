@@ -107,7 +107,7 @@ except Exception as e:
 # ============================================================================
 print("🔀 [2/4] Criando splits walk-forward...")
 
-from itau_quant.backtesting.walk_forward import generate_walk_forward_splits
+from arara_quant.backtesting.walk_forward import generate_walk_forward_splits
 
 splits = list(
     generate_walk_forward_splits(
@@ -179,7 +179,7 @@ print("🔬 [3/4] TESTE 1: Sensibilidade ao Vol Target")
 print("=" * 80)
 print()
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage
 
 results_vol = {}
 

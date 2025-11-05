@@ -117,7 +117,7 @@
 - [ ] **Contribuição de Risco**
   ```python
   import numpy as np
-  from itau_quant.estimators.cov import ledoit_wolf_shrinkage
+  from arara_quant.estimators.cov import ledoit_wolf_shrinkage
   
   # Calcular contribuições marginais de risco
   returns = pd.read_parquet('data/processed/returns_full.parquet').tail(252)
@@ -277,7 +277,7 @@ diff run1.txt run2.txt  # Deve ser idêntico
 poetry run pytest tests/optimization/test_postprocess.py tests/optimization/heuristics/test_cardinality.py
 
 # 4. Backtest walk-forward
-poetry run python -m itau_quant.cli walkforward
+poetry run python -m arara_quant.cli walkforward
 
 # 5. Análise rápida de pesos
 poetry run python -c "

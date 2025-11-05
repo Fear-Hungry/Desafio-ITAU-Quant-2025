@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from itau_quant.utils.math_ops import (
+from arara_quant.utils.math_ops import (
     clip_with_tolerance,
     expm1_safe,
     normalize_vector,

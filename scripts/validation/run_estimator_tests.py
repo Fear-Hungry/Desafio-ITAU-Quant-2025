@@ -86,7 +86,7 @@ print("🔍 [2/4] TESTE 1: Sample Cov vs Ledoit-Wolf")
 print("=" * 80)
 print()
 
-from itau_quant.estimators.cov import ledoit_wolf_shrinkage, sample_cov
+from arara_quant.estimators.cov import ledoit_wolf_shrinkage, sample_cov
 
 # Sample covariance
 sample_sigma = sample_cov(returns_window, ddof=1) * 252
