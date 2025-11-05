@@ -3,7 +3,7 @@
 > Objetivo: organizar conteúdo e métricas para o relatório final exigido pelo edital, incluindo seção explícita de **Uso de IA Generativa**.
 
 ## 1. Resumo Executivo (0.5 págs)
-- Propósito da carteira ARARA e principais guardrails (vol ≤ 12%, DD ≤ 15%, CVaR5% ≤ 8%).
+- Propósito da carteira ARARA e principais guardrails (vol ≤ 12%, DD ≤ 15%, CVaR5% ≤ 8% anual).
 - Destaque para resultados mais recentes (`configs/optimizer_example_trimmed.yaml`, backtest em 2020-2025):
   - Sharpe OOS: 0.41
   - Max Drawdown: -14.8%
@@ -39,7 +39,7 @@
 - Destaque para warmup:
   - Turnover 1ª janela ≈ 100%; subsequentes ≈ 0% (ver JSON `walkforward[...]`).
   - Volatilidade estabiliza entre 4% e 9% após o warmup.
-- Métricas agregadas (Sharpe 0.41, NAV final 1.14, CVaR5% -??  – registrar do JSON `metrics["cvar"]` se desejado).
+- Métricas agregadas (Sharpe 0.41, NAV final 1.14, CVaR95% anual ≈ -20% – calcular de `metrics["cvar_95_annual"]` ou `cvar_95 × √252`).
 - Discussão sobre gap p/ baseline: equal-weight Sharpe ~0.43 (janela curta 2024.07+ no comparativo local).
 
 ## 6. Regime Stress & Mitigações (1 pág)
@@ -50,6 +50,7 @@
 - Próximas ações: incorporar views/tail hedges para evitar Sharpe negativo mesmo com λ elevado.
 
 ## 7. Comparação com Baselines (1 pág)
+- **Convenção CVaR:** Todos os valores reportados são **anualizados** (CVaR_diário × √252) para consistência com volatilidade e retorno. CVaR diário disponível em `cvar_95` para debug/monitoramento.
 - Script agora baixa dados reais com `BASELINES_FORCE_DOWNLOAD=1` e `BASELINES_DOWNLOAD_SLEEP=1`, carregando os 69 tickers de `get_arara_universe()`.
 - Amostra OOS: 2019-10-01 a 2025-10-31 (`results/baselines/baseline_metrics_oos.csv`).
   - Sharpe: Min-Var (0.69), Equal-Weight (0.69), Shrunk MV (0.69), ERC (0.65); drawdowns variam de -3.4% (Min-Var) a -21.7% (Shrunk MV).
@@ -57,7 +58,7 @@
 - Snapshot curto anterior (2024-07 → 2025-10) permanece no README apenas como smoke test; explicitar baixa confiabilidade.
 
 ## 8. Operação & Monitoramento (1 pág)
-- Descrever produção ERC v2: cash floor dinâmico 15%-40%, triggers (Sharpe 6M ≤0, CVaR<-2%, DD<-10%).
+- Descrever produção ERC v2: cash floor dinâmico 15%-40%, triggers (Sharpe 6M ≤0, CVaR diário <-2% ou ~-32% anual, DD<-10%).
 - Processo mensal + fallback 1/N, logs em `results/production/`.
 - Checklist warmup: rodar 3-6 rebalanceamentos usando pesos persistidos, verificar turnover médio <12%.
 

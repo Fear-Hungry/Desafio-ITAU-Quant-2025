@@ -28,6 +28,6 @@ def simulate_execution(
     prev = previous_weights.reindex(target_weights.index, fill_value=0.0).astype(float)
     target = target_weights.reindex(prev.index, fill_value=0.0).astype(float)
 
-    turnover = float(np.abs(target - prev).sum())
+    turnover = 0.5 * float(np.abs(target - prev).sum())  # one-way turnover
     cost = turnover * float(linear_cost_bps) / 10_000.0
     return ExecutionResult(weights=target, turnover=turnover, cost=cost)

@@ -327,7 +327,9 @@ def optimize_portfolio(
         cardinality_info = card_info
         turnover_card = card_info.get("turnover_after_cardinality")
         if turnover_card is None:
-            turnover_card = float((weights_card - prev).abs().sum())
+            turnover_card = 0.5 * float(
+                (weights_card - prev).abs().sum()
+            )  # one-way turnover
         cost_card = card_info.get("cost_after_cardinality", result.cost)
         expected_return_card = card_info.get(
             "reopt_expected_return", result.expected_return
@@ -752,7 +754,7 @@ def rebalance(
     trades = rounded_weights - previous_weights.reindex(rounded_weights.index).fillna(
         0.0
     )
-    realized_turnover = float(trades.abs().sum())
+    realized_turnover = 0.5 * float(trades.abs().sum())  # one-way turnover
 
     metrics = RebalanceMetrics(
         optimizer_expected_return=optimizer_expected_return,

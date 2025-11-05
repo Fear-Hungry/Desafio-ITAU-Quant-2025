@@ -112,7 +112,7 @@ def solve_cvar_lp(
     solution = pd.Series(
         np.asarray(weights_var.value).ravel(), index=assets, dtype=float
     ).fillna(0.0)
-    turnover = float(np.abs(solution - prev_series).sum())
+    turnover = 0.5 * float(np.abs(solution - prev_series).sum())  # one-way turnover
 
     return CvarResult(
         weights=solution,

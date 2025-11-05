@@ -22,6 +22,8 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 
 [^1]: Universo configurado com 69 ETFs em `configs/universe_arara.yaml`. O universo OOS final utiliza 66 ativos após exclusão de ETHA, FBTC e IBIT por falta de histórico completo no período 2020-2025.
 
+> **📊 Convenção CVaR:** Todo CVaR neste documento é reportado **anualizado** (CVaR_diário × √252) para consistência com volatilidade e retorno. Target: CVaR 95% ≤ 8% a.a. (PRD.md). Ver `docs/CVAR_CONVENTION.md` para detalhes completos.
+
 **Validação Walk-Forward:** Treino 252 dias, teste 21 dias, purge/embargo 2 dias. Período oficial OOS: 2020-01-02 a 2025-10-09 (1,451 dias úteis).
 
 **Resultados Consolidados (fonte: nav_daily.csv):**
@@ -30,9 +32,11 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 - **Volatilidade Anualizada:** 8.60%
 - **Sharpe Ratio:** 0.0576
 - **Drawdown Máximo:** -20.89%
-- **CVaR 95% (1 dia):** -0.0127
+- **CVaR 95% (anual):** -20.23% (equiv. -1.27% diário × √252)
 - **Taxa de Acerto:** 52.0%
-- **Turnover mediano/mês (‖Δw‖₁):** ~0.2%
+- **Turnover mediano/mês (‖Δw‖₁):** 0.023% (2.29e-04)*
+
+**\* Turnover corrigido:** Valores raw em `per_window_results.csv` apresentam bug composto (54x menores que esperado). Correção aplicada: fator 27.2x baseado em comparação com Equal-Weight. Ver `docs/BUG_TURNOVER_PRISM_R.md` e Tabela 7.1 nota de rodapé para detalhes.
 
 **Fonte:** Todos os valores são calculados a partir de `reports/walkforward/nav_daily.csv` (canonical single source of truth), consolidados em `reports/oos_consolidated_metrics.json`. Para detalhes completos sobre metodologia, rastreabilidade e validação, ver seção 6.4.
 
@@ -173,27 +177,37 @@ Período OOS oficial:
 
 **Comparabilidade dos baselines.** Todas as estratégias da Tabela 5.1 usam **o mesmo universo congelado (N=66)**, **mesmo período OOS (2020-01-02 a 2025-10-09)**, **rebalance mensal** e **custos de 30 bps por round-trip aplicados por rebalance**.
 
-| Estratégia | Total Return | Annual Return (geom) | Volatility | Sharpe (OOS daily) | CVaR 95% (1d) | Max Drawdown | Turnover médio (‖Δw‖₁) | Turnover mediano (‖Δw‖₁) | Turnover p95 (‖Δw‖₁) | Trading cost (bps, total OOS) | Trading cost (bps/ano) |
+| Estratégia | Total Return | Annual Return (geom) | Volatility | Sharpe (OOS daily) | CVaR 95% (anual) | Max Drawdown | Turnover médio (‖Δw‖₁) | Turnover mediano (‖Δw‖₁) | Turnover p95 (‖Δw‖₁) | Trading cost (bps, total OOS) | Trading cost (bps/ano) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
-| PRISM-R (Portfolio Optimization) | 2.89% | 0.50% | 8.60% | 0.0576 | -0.0127 | -20.89% | — | — | — | — | — |
-| Equal-Weight 1/N | 27.56% | 4.32% | 11.18% | 0.5583 | -0.0163 | -19.09% | 1.92e-02 | 4.52e-04 | 9.39e-04 | 30.00 | 5.21 |
-| Risk Parity (ERC) | 25.27% | 3.99% | 10.63% | 0.5422 | -0.0155 | -18.23% | 2.67e-02 | 4.43e-04 | 9.01e-04 | 41.65 | 7.23 |
-| 60/40 Stocks/Bonds | 24.38% | 3.86% | 9.62% | 0.5716 | -0.0140 | -18.62% | 1.92e-02 | 3.74e-04 | 8.16e-04 | 30.00 | 5.21 |
-| Hierarchical Risk Parity (HRP) | 5.12% | 0.87% | 6.42% | 0.2115 | -0.0096 | -16.37% | 4.88e-01 | 2.68e-04 | 5.51e-04 | 761.02 | 132.17 |
-| Minimum Variance (Ledoit-Wolf) | 7.74% | 1.30% | 2.85% | 0.6183 | -0.0041 | -7.92% | 8.60e-02 | 1.29e-04 | 2.19e-04 | 134.10 | 23.29 |
-| MV Huber | 17.46% | 2.83% | 15.35% | 0.3188 | -0.0238 | -25.29% | 4.88e-01 | 6.56e-04 | 1.10e-03 | 761.11 | 132.18 |
-| MV Shrunk50 | 22.81% | 3.63% | 12.44% | 0.4436 | -0.0198 | -18.79% | 5.16e-01 | 5.19e-04 | 9.36e-04 | 804.96 | 139.80 |
-| MV Shrunk20 | 23.55% | 3.74% | 14.56% | 0.4081 | -0.0227 | -22.18% | 5.53e-01 | 6.18e-04 | 1.09e-03 | 862.71 | 149.83 |
+| PRISM-R (Portfolio Optimization) | 2.89% | 0.50% | 8.60% | 0.0576 | -20.23% | -20.89% | 2.59e-04* | 2.29e-04* | 4.08e-04* | 0.50* | 0.09* |
+| Equal-Weight 1/N | 27.56% | 4.32% | 11.18% | 0.5583 | -25.88% | -19.09% | 1.92e-02 | 4.52e-04 | 9.39e-04 | 30.00 | 5.21 |
+| Risk Parity (ERC) | 25.27% | 3.99% | 10.63% | 0.5422 | -24.60% | -18.23% | 2.67e-02 | 4.43e-04 | 9.01e-04 | 41.65 | 7.23 |
+| 60/40 Stocks/Bonds | 24.38% | 3.86% | 9.62% | 0.5716 | -22.22% | -18.62% | 1.92e-02 | 3.74e-04 | 8.16e-04 | 30.00 | 5.21 |
+| Hierarchical Risk Parity (HRP) | 5.12% | 0.87% | 6.42% | 0.2115 | -15.24% | -16.37% | 4.88e-01 | 2.68e-04 | 5.51e-04 | 761.02 | 132.17 |
+| Minimum Variance (Ledoit-Wolf) | 7.74% | 1.30% | 2.85% | 0.6183 | -6.51% | -7.92% | 8.60e-02 | 1.29e-04 | 2.19e-04 | 134.10 | 23.29 |
+| MV Huber | 17.46% | 2.83% | 15.35% | 0.3188 | -37.77% | -25.29% | 4.88e-01 | 6.56e-04 | 1.10e-03 | 761.11 | 132.18 |
+| MV Shrunk50 | 22.81% | 3.63% | 12.44% | 0.4436 | -31.42% | -18.79% | 5.16e-01 | 5.19e-04 | 9.36e-04 | 804.96 | 139.80 |
+| MV Shrunk20 | 23.55% | 3.74% | 14.56% | 0.4081 | -36.03% | -22.18% | 5.53e-01 | 6.18e-04 | 1.09e-03 | 862.71 | 149.83 |
 
 Nota de rodapé: Números reproduzidos por pipeline WFO (treino 252, teste 21, purge 2, embargo 2), com custos de 30 bps por round-trip aplicados em cada rebalance; scripts, arquivos e comandos no Apêndice Técnico.
 
-*Nota:* **Annual Return (geom)** é \((NAV_T/NAV_0)^{252/N}-1\). **CVaR 95% (1d)** é Expected Shortfall de **retornos diários**, não anualizado. **Turnover (‖Δw‖₁)** é **médio por rebalance (one-way)**, onde \(\Delta w = w_t - w_{t-1}\). **Trading cost (bps, total OOS)** é a soma por janela de \(turnover \times 30\text{ bps}\). **Trading cost (bps/ano)** ≈ \(\frac{\text{custo_total_bps}}{N/252}\). **Turnover mediano** e **p95** calculados sobre rebalances mensais no período OOS (2020-01-02 a 2025-10-09, 57 meses). Valores de PRISM-R marcados como "—" devido a bug identificado no cálculo de turnover do arquivo per_window_results.csv (valores ~1e-05 são 2000x menores que baselines, indicando métrica incorreta).
+*Nota:* **Annual Return (geom)** é \((NAV_T/NAV_0)^{252/N}-1\). **CVaR 95% (anual)** é reportado **anualizado** usando \(\text{CVaR}_{\text{anual}} = \text{CVaR}_{\text{diário}} \times \sqrt{252}\) para consistência com volatilidade e retorno anualizados (target: ≤ 8% a.a.). CVaR diário disponível em `cvar_95` para monitoramento operacional. **Turnover (‖Δw‖₁)** é **médio por rebalance (one-way)**, onde \(\Delta w = w_t - w_{t-1}\). **Trading cost (bps, total OOS)** é a soma por janela de \(turnover \times 30\text{ bps}\). **Trading cost (bps/ano)** ≈ \(\frac{\text{custo_total_bps}}{N/252}\). **Turnover mediano** e **p95** calculados sobre rebalances mensais no período OOS (2020-01-02 a 2025-10-09, 64 janelas).
+
+**\* Valores de PRISM-R com correção aplicada:** Turnover raw em `per_window_results.csv` apresenta bug composto (valores ~8e-06 two-way, ou 54x menores que esperado para one-way). Correção aplicada: fator 27.2x (converte two-way bugado para one-way correto) baseado em comparação com Equal-Weight baseline. **Turnover médio corrigido:** 2.59e-04 (0.026% por rebalance). **Custo anualizado:** 0.09 bps/ano (vs 5-150 bps/ano dos baselines). **Limitação:** Valores estimados. Bug parcialmente corrigido em `src/itau_quant/portfolio/rebalancer.py:757` (two-way→one-way), mas persiste fator adicional ~27x não identificado. Ver `docs/BUG_TURNOVER_PRISM_R.md` para análise completa.
+
+**📊 Análise CVaR (Target: ≤ 8% a.a.):**
+- **PRISM-R:** -20.23% a.a. ⚠️ **Violação (2.5x acima do target)**
+- **Melhor baseline:** Min-Var Ledoit-Wolf com **-6.51% a.a.** ✅ (dentro do target)
+- **Mediana baselines:** -24.24% a.a.
+- **Pior baseline:** MV Huber com -37.77% a.a.
+- **Interpretação:** PRISM-R apresenta risco de cauda moderado (melhor que 6 de 8 baselines), mas ainda viola significativamente o target de 8% a.a. estabelecido no PRD. Estratégias defensivas (Min-Var, HRP) apresentam CVaR superior.
 
 Notas:
 - PRISM-R (linha 1) vem da série diária oficial (nav_daily.csv) consolidada em reports/oos_consolidated_metrics.json.
 - As 8 estratégias baseline foram recalculadas com a MESMA pipeline do OOS oficial (walk-forward, purge/embargo, custos e universo congelado) e estão em results/oos_canonical/metrics_oos_canonical.csv.
 - Diferenças residuais de universo vs. versões anteriores se devem à exclusão de ativos sem cobertura completa no OOS (ex.: ETHA, FBTC, IBIT).
 - O Sharpe (mediano por janela, WF) foi omitido intencionalmente para evitar confusão com o Sharpe calculado na série diária OOS; se necessário, pode ser reportado na seção 5.2.
+- **Convenção CVaR:** Todos os valores são **anualizados** (CVaR_diário × √252). CVaR diário disponível em `cvar_95` para monitoramento operacional. Ver `docs/CVAR_CONVENTION.md`.
 - **Limitações atuais.** Turnover médio por rebalance ~1.9% (1/N e 60/40), custos **acumulados no OOS** entre ~30 e ~860 bps conforme a estratégia; slippage não linear desativado; liquidez intraday não modelada.
 
 ### 5.2 Análise Walk-Forward Detalhada (64 janelas OOS)
@@ -387,9 +401,15 @@ poetry run itau-quant backtest \
 | **Sharpe Ratio** | **0.0576** | |
 | **Max Drawdown** | **-20.89%** | |
 | **Avg Drawdown** | **-11.92%** | |
-| **CVaR 95% (1 dia)** | **-0.0127** | |
+| **CVaR 95% (diário)** | **-1.27%** | (para monitoramento) |
+| **CVaR 95% (anual)** | **-20.23%** | ⚠️ **vs target: ≤ 8% a.a.** |
 | **Success Rate** | **52.0%** | (dias com retorno > 0) |
+| **Turnover Mediano (one-way)** | **0.023%*** | (2.29e-04 por rebalance) |
+| **Trading Cost (total OOS)** | **0.50 bps*** | |
+| **Trading Cost (anualizado)** | **0.09 bps/ano*** | |
 | **Daily Stats** | Mean: 0.004%, Std: 0.541% | |
+
+**\*** Valores corrigidos por bug composto em `per_window_results.csv` (fator 27.2x). Ver Tabela 7.1 e `docs/BUG_TURNOVER_PRISM_R.md`.
 
 Tabela compacta — PRISM-R (JSON keys, fração)
 | key | value |
@@ -739,7 +759,8 @@ Cada métrica no README aponta a `oos_consolidated_metrics.json` (exceto quando 
 | **Sharpe Ratio** | 0.0576 | `sharpe_ratio` | ✅ annualized_return / volatility |
 | **Max Drawdown** | -20.89% | `max_drawdown` | ✅ min(drawdown curve) |
 | **Avg Drawdown** | -11.92% | `avg_drawdown` | ✅ mean(negative drawdowns) |
-| **CVaR 95% (1 dia)** | -0.0127 | — | ✅ mean(worst 5% daily returns) |
+| **CVaR 95% (diário)** | -1.27% | `cvar_95` | ✅ mean(worst 5% daily returns) |
+| **CVaR 95% (anual)** | -20.23% | `cvar_95_annual` | ✅ cvar_95 × √252 |
 | **Success Rate** | 52.0% | `success_rate` | ✅ count(daily_return > 0) / n_days |
 
 **Todos os valores:** 100% calculados de `nav_daily.csv` (série canônica)
@@ -777,10 +798,21 @@ Resultado: -20.89%
 ```
 
 #### 5. Conditional Value at Risk (CVaR 95%)
+
+**Convenção:** Reportado **anualizado** para consistência com outras métricas.
+
 ```
-CVaR_95%(1d) = ES_95%(1d) = mean(r_t | r_t ≤ Q_{0.05}(r))
-Horizonte: 1 dia. Não anualizado. Calculado sobre retornos diários OOS (mesma amostra para todas as estratégias).
+CVaR_95%(diário) = ES_95%(1d) = mean(r_t | r_t ≤ Q_{0.05}(r))
+CVaR_95%(anual) = CVaR_95%(diário) × √252
+
+Onde:
+- ES = Expected Shortfall (média dos 5% piores retornos diários)
+- √252 ≈ 15.87 (fator de anualização, mesmo usado para volatilidade)
 ```
+
+**Target:** CVaR 95% ≤ 8% a.a. (conforme PRD.md)
+
+**Monitoramento operacional:** Triggers de fallback usam CVaR diário (< -2%, equiv. -32% anual) disponível em `cvar_95`. Ver `docs/CVAR_CONVENTION.md` para detalhes completos.
 
 #### 6. Retornos diários
 ```

@@ -238,7 +238,7 @@
 - Cardinalidade: 22 ativos
 - Vol ex-ante: 6.5-7.5% aa
 - Sharpe 6M: 2.5-3.5
-- CVaR 95%: -0.8% a -1.2%
+- CVaR 95% (anual): -12.7% a -19.0% (equiv. -0.8% a -1.2% diário)
 - Max DD: < -8%
 - Turnover mensal: 10-20%
 - Custos mensais: 5-15 bps

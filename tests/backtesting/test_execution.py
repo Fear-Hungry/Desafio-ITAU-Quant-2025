@@ -11,6 +11,8 @@ def test_simulate_execution_computes_turnover_and_cost() -> None:
     result = simulate_execution(prev, target, linear_cost_bps=25)
 
     assert result.weights.loc["AAA"] == 0.2
-    expected_turnover = abs(0.2 - 0.6) + abs(0.5 - 0.4)
+    # One-way turnover: 0.5 * (|0.2 - 0.6| + |0.5 - 0.4|) = 0.5 * 0.5 = 0.25
+    expected_turnover_two_way = abs(0.2 - 0.6) + abs(0.5 - 0.4)
+    expected_turnover = 0.5 * expected_turnover_two_way  # one-way turnover
     assert result.turnover == expected_turnover
     assert result.cost == expected_turnover * 25 / 10_000

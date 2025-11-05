@@ -229,7 +229,9 @@ def apply_cardinality_constraint(
             full_weights > significance_threshold
         ].index.tolist()
         trades_full = full_weights - prev_full
-        k_info["turnover_after_cardinality"] = float(trades_full.abs().sum())
+        k_info["turnover_after_cardinality"] = 0.5 * float(
+            trades_full.abs().sum()
+        )  # one-way turnover
         if mv_config.cost_vector is not None:
             costs_vector = (
                 mv_config.cost_vector.reindex(universe).fillna(0.0).astype(float)

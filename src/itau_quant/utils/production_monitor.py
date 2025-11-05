@@ -5,10 +5,14 @@ Production Monitor - Sistema de Fallback Automático
 Monitora métricas de risco e performa switch automático para 1/N
 quando triggers são violados.
 
-Triggers:
+Triggers (operacionais, usando métricas diárias):
 1. Sharpe 6M ≤ 0.0
 2. CVaR 5% < -2% (daily) - valores mais negativos que -2% ativam fallback
+   (equivalente a ~-32% anual; note que targets do projeto são anualizados: CVaR ≤ 8% a.a.)
 3. Max DD < -10% - drawdowns piores que -10% ativam fallback
+
+Nota: CVaR é mantido em escala diária para triggers operacionais (facilita monitoramento
+intraday), mas reportado anualizado (CVaR_diário × √252) para comparação com targets.
 """
 
 from dataclasses import dataclass
@@ -47,7 +51,8 @@ class PortfolioMetrics:
 
 
 def calculate_portfolio_metrics(
-    returns: pd.Series, lookback_days: int = 126  # 6 meses ~ 126 dias úteis
+    returns: pd.Series,
+    lookback_days: int = 126,  # 6 meses ~ 126 dias úteis
 ) -> PortfolioMetrics:
     """
     Calcula métricas de portfolio para os últimos N dias.
@@ -108,7 +113,7 @@ def evaluate_triggers(
     sharpe_threshold : float
         Limite inferior para Sharpe 6M (default: 0.0)
     cvar_threshold : float
-        Limite inferior para CVaR 95% diário (default: -2%)
+        Limite inferior para CVaR 95% diário (default: -2%, equiv. ~-32% anual)
     dd_threshold : float
         Limite inferior para Max DD (default: -10%)
 

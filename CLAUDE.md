@@ -389,7 +389,7 @@ The following targets drive design decisions:
 |---------------------|--------------|------------------------------------------|
 | Sharpe Ratio (HAC)  | ≥ 0.80       | Must beat best baseline - 0.10           |
 | Max Drawdown        | ≤ 15%        | Triggers defensive mode at 15%           |
-| CVaR (5%)           | ≤ 8%         | Tail risk control                        |
+| CVaR (5%)           | ≤ 8% annual  | Tail risk control (√252 × CVaR daily)    |
 | Volatility          | ≤ 12% annual | Annualized rolling std                   |
 | Monthly Turnover    | 5% - 20%     | Controlled via transaction costs (c = 30 bps) in objective |
 | Annual Costs        | ≤ 50 bps     | Linear + slippage model                  |

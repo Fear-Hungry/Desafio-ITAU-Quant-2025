@@ -77,9 +77,13 @@ def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict) -> di
     max_drawdown = np.min(drawdowns)
     avg_drawdown = np.mean(drawdowns[drawdowns < 0]) if np.any(drawdowns < 0) else 0
 
-    # CVaR 95% (approximate from drawdown tail)
-    cvar_threshold = np.percentile(drawdowns, 5)  # Worst 5%
-    cvar_95 = np.mean(drawdowns[drawdowns <= cvar_threshold]) if np.any(drawdowns <= cvar_threshold) else max_drawdown
+    # CVaR 95% (Expected Shortfall from daily returns)
+    # Calculate from worst 5% of daily returns, not drawdowns
+    var_95_threshold = np.percentile(daily_returns, 5)  # 5th percentile (worst 5%)
+    cvar_95_daily = np.mean(daily_returns[daily_returns <= var_95_threshold]) if np.any(daily_returns <= var_95_threshold) else np.min(daily_returns)
+
+    # Annualized CVaR (using √252 scaling, same as volatility)
+    cvar_95_annual = cvar_95_daily * np.sqrt(252)
 
     # Success rate (% of positive days)
     success_rate = np.sum(daily_returns > 0) / len(daily_returns)
@@ -95,7 +99,8 @@ def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict) -> di
         # Risk metrics
         "max_drawdown": max_drawdown,
         "avg_drawdown": avg_drawdown,
-        "cvar_95": cvar_95,
+        "cvar_95": cvar_95_daily,  # Daily CVaR for monitoring
+        "cvar_95_annual": cvar_95_annual,  # Annualized CVaR for targets
 
         # Sample statistics
         "n_days": n_days,
@@ -254,7 +259,8 @@ def format_simple_metrics_table(metrics: dict) -> str:
         f"| Sharpe Ratio | {metrics['sharpe_ratio']:.4f} |",
         f"| Max Drawdown | {metrics['max_drawdown']:.2%} |",
         f"| Avg Drawdown | {metrics['avg_drawdown']:.2%} |",
-        f"| CVaR 95% | {metrics['cvar_95']:.4f} |",
+        f"| CVaR 95% (daily) | {metrics['cvar_95']:.4f} ({metrics['cvar_95']:.2%}) |",
+        f"| CVaR 95% (annual) | {metrics['cvar_95_annual']:.4f} ({metrics['cvar_95_annual']:.2%}) |",
         f"| Success Rate | {metrics['success_rate']:.1%} |",
         f"| Days in Period | {metrics['n_days']} |",
         f"| Start Date | {metrics['period_start']} |",
@@ -287,6 +293,13 @@ def main():
 
     # Save metrics as JSON for further processing
     json_output = REPORTS_DIR / "oos_consolidated_metrics.json"
+
+    # Add baseline alignment note
+    metrics['baseline_alignment_note'] = (
+        "Baselines must be recomputed with the same OOS period defined in configs/oos_period.yaml; "
+        "do not mix window-level Sharpe with daily-series Sharpe."
+    )
+
     with open(json_output, "w") as f:
         # Convert numpy types to native Python for JSON serialization
         metrics_json = {

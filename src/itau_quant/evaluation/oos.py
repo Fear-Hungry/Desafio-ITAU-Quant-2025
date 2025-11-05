@@ -168,12 +168,16 @@ def _compute_metrics(
     volatility = std * ann_factor if std > 0 else 0.0
     annualized = (1.0 + total_return) ** (252.0 / periods) - 1.0 if periods > 0 else 0.0
 
+    cvar_daily = float(_cvar(daily_returns, alpha=0.95))
+    cvar_annual = cvar_daily * ann_factor  # √252 scaling
+
     metrics = {
         "total_return": float(total_return),
         "annualized_return": float(annualized),
         "volatility": float(volatility),
         "sharpe": float(sharpe),
-        "cvar_95": float(_cvar(daily_returns, alpha=0.95)),
+        "cvar_95": cvar_daily,  # Daily CVaR for monitoring
+        "cvar_95_annual": cvar_annual,  # Annualized CVaR for targets
         "max_drawdown": float(_max_drawdown(daily_returns)),
         "avg_turnover": float(avg_turnover),
         "total_cost": float(total_cost),

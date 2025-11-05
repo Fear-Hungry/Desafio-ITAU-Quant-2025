@@ -346,7 +346,7 @@ def solve_mean_variance(
         mu.reindex(assets).to_numpy(dtype=float) @ weights.to_numpy()
     )
     variance = float(weights.to_numpy() @ cov_matrix @ weights.to_numpy())
-    turnover = float(np.abs(weights - prev).sum())
+    turnover = 0.5 * float(np.abs(weights - prev).sum())  # one-way turnover
     cost = 0.0
     if config.cost_vector is not None:
         cost = float(

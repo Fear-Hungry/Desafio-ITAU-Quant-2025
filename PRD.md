@@ -56,7 +56,7 @@ Target pós-custos:
 • Retorno: CDI + 4 p.p. a.a.
 • Volatilidade: ≤ 12% a.a.
 • Max Drawdown: ≤ 15%
-• CVaR(5%): ≤ 8%
+• CVaR(5%): ≤ 8% a.a. (anualizado √252 × CVaR diário)
 • Sharpe Ratio: ≥ 0.80
 • Turnover mensal: 5–20%
 • Custos totais: ≤ 50 bps a.a.
@@ -258,7 +258,7 @@ Target pós-custos:
 • Retorno: CDI + 4 p.p. a.a.
 • Volatilidade: ≤ 12% a.a.
 • Max Drawdown: ≤ 15%
-• CVaR(5%): ≤ 8%
+• CVaR(5%): ≤ 8% a.a. (anualizado √252 × CVaR diário)
 • Sharpe Ratio: ≥ 0.80
 • Turnover mensal: 5–20%
 • Custos totais: ≤ 50 bps a.a.
