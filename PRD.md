@@ -1,6 +1,6 @@
 # PRD — PRISM-R (carteira ARARA)
 
-**Objetivo:** implementar, validar e documentar uma carteira multi-ativos ARARA com **retorno ajustado a risco** e **custos/turnover** na função-objetivo, sob **cardinalidade** e **restrições realistas**, entregando **relatório final** no padrão do edital (até 10 páginas + seção “Uso de IA Generativa”). Metas e cronograma abaixo amarram com as datas do desafio e um “adiantamento” interno para fechamento em 01/11. O edital pede 10 páginas e seção obrigatória de GenAI; a versão V2 indica **04/11/2025** para entrega final, e a versão anterior indicava **07/11/2025**. Vamos cravar **internamente 01/11/2025** para ter folga.
+**Objetivo:** implementar, validar e documentar uma carteira multi-ativos ARARA com **retorno ajustado a risco** e **custos/turnover** na função-objetivo, sob **cardinalidade** e **restrições realistas**, entregando **relatório final** no padrão interno (até 10 páginas + seção “Uso de IA Generativa”). Metas e cronograma abaixo seguem marcos proprietários com fechamento em **01/11/2025**, mantendo o relatório congelado para publicação externa quando necessário.
 
 ---
 
@@ -10,7 +10,7 @@
 **Frequência:** rebalance **mensal no 1º pregão útil**; monitoramento diário de risco; rebalance extraordinário por gatilho (drawdown > 10% ou CVaR acima do limite).
 **Benchmark:** MSCI ACWI em USD e também 60/40 US (SPY/TLT) para leitura.
 **Dados mínimos:** OHLCV + close adjusted; calendário EUA.
-**Entrega formatada conforme edital:** relatório até 10 páginas, com seções exigidas e **“Uso de IA Generativa”** obrigatório (vale 15% da nota).
+**Entrega formatada conforme padrão interno:** relatório até 10 páginas, com seções exigidas e **“Uso de IA Generativa”** obrigatório (vai para o anexo final).
 
 ---
 
@@ -26,7 +26,7 @@
 
 * Sharpe OOS da carteira principal ≥ Sharpe do melhor baseline − 0.10 e **CVaR 5%** ≤ pior baseline em CVaR.
 * Turnover médio mensal ≤ 20% e custo anualizado ≤ 50 bps (parametrizável).
-* Relatório em 10 páginas com seção GenAI conforme edital.
+* Relatório em 10 páginas com seção GenAI descrevendo como LLMs foram empregados.
 
 ---
 
@@ -139,7 +139,7 @@ Portfólio institucional global que entrega **CDI + 4% com risco controlado** us
 5. **Meta-heurística externa:** `metaheuristic_outer(...)` com busca de subset e hiperparâmetros, orçamento computacional fixo.
 6. **Backtest walk-forward:** `rebalance_backtest(...)` mensal, custos, gatilhos de risco, logs de decisão.
 7. **Relato & gráficos:** tabelas de métricas OOS, curvas com IC via bootstrap, comparação com baselines.
-8. **Conformidade edital:** relatório 10 páginas, seção **“Uso de IA Generativa”** obrigatória; pode usar GenAI em qualquer etapa do processo.
+8. **Relatório executivo:** documento de até 10 páginas com seção **“Uso de IA Generativa”** obrigatória; GenAI pode ser utilizada em qualquer etapa desde que revisionada.
 
 ---
 
@@ -175,9 +175,9 @@ Portfólio institucional global que entrega **CDI + 4% com risco controlado** us
 
 ## 8) Cronograma e marcos até 01/11/2025
 
-> Datas no fuso America/Cuiabá. “Entregas do edital” abaixo são para amarrar expectativas. O edital V2 marca pré-relatório **30/09** e final **04/11**; nossa **data-alvo interna** é **01/11** para dar lastro.
+> Datas no fuso America/Cuiabá. Os marcos abaixo compõem o cronograma interno, com **01/11** como data-alvo para congelar o pacote de evidências e o relatório executivo.
 
-* **26–30/09** · Kickoff técnico, repo, checklist de dados; rascunho pré-relatório do edital (sumário executivo + plano). **Marco do edital: pré-relatório 30/09.**
+* **26–30/09** · Kickoff técnico, repo, checklist de dados; rascunho do sumário executivo + plano detalhado.
 * **01–08/10** · Estimadores robustos prontos; baselines 1/N, min-var (shrinkage), risk-parity; backtest básico.
 * **09–16/10** · Núcleo convexo com custos/turnover; restrições realistas e grupos; bateria de testes.
 * **17–22/10** · Meta-heurística (PSO/GA) para (S,K,\lambda,\eta,\tau); validação cruzada walk-forward.
@@ -185,7 +185,7 @@ Portfólio institucional global que entrega **CDI + 4% com risco controlado** us
 * **28–31/10** · Redação final 10 páginas, gráficos, revisão e checagens.
 * **01/11** · **Fechamento interno** do relatório completo (versão “congelada”).
 * **Buffer 02–03/11** · Ajustes finos;
-* **04/11** · Entrega no sistema do desafio, se mantido o cronograma V2.
+* **04/11** · Reserva para eventuais publicações externas ou apresentações.
 
 ---
 
@@ -201,7 +201,7 @@ Portfólio institucional global que entrega **CDI + 4% com risco controlado** us
 ## 10) Riscos e mitigação
 
 * **Overfitting/backtest feliz:** randomizações, stress, walk-forward, embargo; reportar IC.
-* **Mudança de cronograma do edital:** manter **01/11** como D-1; acompanhar canal do desafio.
+* **Mudança de cronograma externo:** manter **01/11** como D-1; acompanhar stakeholders.
 * **Ruído/cauda pesada:** uso de **CVaR** e estimadores robustos; análise de cenários.
 * **Custos e fricção mais altos que o previsto:** varrer grid de (c), tolerância de turnover; relatório com sensibilidade.
 * **Cardinalidade MIQP pesado:** heurísticas de subset + núcleo convexo.

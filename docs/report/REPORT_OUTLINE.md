@@ -1,11 +1,11 @@
 # PRISM-R — Draft Report Outline (≤ 10 páginas)
 
-> Objetivo: organizar conteúdo e métricas para o relatório final exigido pelo edital, incluindo seção explícita de **Uso de IA Generativa**.
+> Objetivo: organizar conteúdo e métricas para o relatório final institucional, incluindo seção explícita de **Uso de IA Generativa**.
 
 ## 1. Resumo Executivo (0.5 págs)
 - Propósito da carteira ARARA e principais guardrails (vol ≤ 12%, DD ≤ 15%, CVaR5% ≤ 8% anual).
 - Destaque para resultados mais recentes (`configs/optimizer_example_trimmed.yaml`, backtest em 2020-2025):
-  - Sharpe OOS: 0.41
+  - Sharpe OOS: 0.41 (excesso ao T‑Bill quando fornecida série RF diária)
   - Max Drawdown: -14.8%
   - Vol anualizada: 6.1%
   - Retorno total: 14.1%
@@ -39,7 +39,7 @@
 - Destaque para warmup:
   - Turnover 1ª janela ≈ 100%; subsequentes ≈ 0% (ver JSON `walkforward[...]`).
   - Volatilidade estabiliza entre 4% e 9% após o warmup.
-- Métricas agregadas (Sharpe 0.41, NAV final 1.14, CVaR95% anual ≈ -20% – calcular de `metrics["cvar_95_annual"]` ou `cvar_95 × √252`).
+- Métricas agregadas (Sharpe 0.41 em excesso ao T‑Bill quando RF diária é usada, NAV final 1.14, CVaR95% anual ≈ -20% – calcular de `metrics["cvar_95_annual"]` ou `cvar_95 × √252`).
 - Discussão sobre gap p/ baseline: equal-weight Sharpe ~0.43 (janela curta 2024.07+ no comparativo local).
 
 ## 6. Regime Stress & Mitigações (1 pág)
