@@ -198,6 +198,11 @@ def test_estimator_config_custom_values():
     assert config.shrink_strength == 0.8
 
 
+def test_estimator_config_allows_graphical_lasso():
+    config = EstimatorConfig(sigma_method="graphical_lasso")
+    assert config.sigma_method == "graphical_lasso"
+
+
 def test_estimator_config_invalid_mu_method():
     """Test that invalid mu_method raises ValidationError."""
     with pytest.raises(ValidationError):

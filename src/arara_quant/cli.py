@@ -28,6 +28,7 @@ from arara_quant.evaluation.walkforward_report import (
     identify_stress_periods,
 )
 from arara_quant.optimization.solvers import run_optimizer
+from arara_quant.utils.yaml_loader import load_yaml_text
 
 __all__ = ["build_parser", "main"]
 
@@ -65,6 +66,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Executa otimização real",
     )
     opt.add_argument("--json", action="store_true", help="Mostra resultado em JSON")
+    opt.add_argument(
+        "--metaheuristic-config",
+        type=str,
+        help="Arquivo YAML com configuração de meta-heurística (GA)",
+    )
     opt.set_defaults(dry_run=True)
 
     back = subparsers.add_parser("backtest", help="Executa (ou simula) o backtest")
@@ -155,6 +161,17 @@ def _configure_logging(
     configure_logging(
         settings=settings, structured=structured, context={"command": command}
     )
+
+
+def _load_metaheuristic_override(path_str: str, settings: Settings) -> dict[str, Any]:
+    candidate = Path(path_str)
+    if not candidate.is_absolute():
+        candidate = (settings.project_root / candidate).resolve()
+    if not candidate.exists():
+        raise FileNotFoundError(
+            f"Metaheuristic config not found: {candidate}"
+        )
+    return load_yaml_text(candidate.read_text(encoding="utf-8"))
 
 
 def _print_payload(payload: dict[str, Any], *, as_json: bool) -> None:
@@ -299,8 +316,16 @@ def main(argv: Iterable[str] | None = None) -> int:
             payload = settings.to_dict()
             _print_payload(payload, as_json=args.json)
         elif args.command == "optimize":
+            meta_override = None
+            if getattr(args, "metaheuristic_config", None):
+                meta_override = _load_metaheuristic_override(
+                    args.metaheuristic_config, settings
+                )
             opt_result = run_optimizer(
-                args.config, dry_run=args.dry_run, settings=settings
+                args.config,
+                dry_run=args.dry_run,
+                settings=settings,
+                metaheuristic_override=meta_override,
             )
             payload = opt_result.to_dict(include_weights=args.json)
             _print_payload(payload, as_json=args.json)

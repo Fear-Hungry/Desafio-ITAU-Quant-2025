@@ -681,6 +681,8 @@ def _export_tables(
             continue
 
         df_export = df.copy()
+        success = False
+
         latex_path = output_dir / f"{filename}_{name}.tex"
         try:
             latex_text = df_export.to_latex(
@@ -692,6 +694,7 @@ def _export_tables(
             )
             latex_path.write_text(latex_text, encoding="utf-8")
             paths[f"{name}_latex"] = latex_path
+            success = True
         except Exception:
             latex_path.unlink(missing_ok=True)
 
@@ -704,8 +707,14 @@ def _export_tables(
             )
             md_path.write_text(markdown_text, encoding="utf-8")
             paths[f"{name}_markdown"] = md_path
+            success = True
         except Exception:
             md_path.unlink(missing_ok=True)
+
+        if not success:
+            csv_path = output_dir / f"{filename}_{name}.csv"
+            df_export.to_csv(csv_path, index=True, float_format="%.6f")
+            paths[f"{name}_csv"] = csv_path
 
     return paths
 

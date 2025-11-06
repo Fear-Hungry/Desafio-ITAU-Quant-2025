@@ -60,6 +60,18 @@ def test_tyler_m_estimator_trace_normalisation():
     assert np.all(eigvals >= -1e-9)
 
 
+def test_graphical_lasso_covariance_and_precision():
+    returns = _toy_returns()
+    cov_df, precision_df = cov.graphical_lasso_cov(
+        returns, alpha=0.05, max_iter=50, tol=1e-6
+    )
+    assert cov_df.shape == precision_df.shape == (3, 3)
+    eigvals = np.linalg.eigvalsh(cov_df.to_numpy())
+    assert np.all(eigvals > 0)
+    identity_approx = cov_df.to_numpy() @ precision_df.to_numpy()
+    np.testing.assert_allclose(identity_approx, np.eye(3), atol=5e-3)
+
+
 @pytest.mark.parametrize("nu", [4.0, 10.0])
 def test_student_t_cov_scales_sample(nu):
     returns = _toy_returns()

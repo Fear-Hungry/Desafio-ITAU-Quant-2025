@@ -36,8 +36,13 @@
 		}
 	},
 
-	// Install dependencies after container is created
-	"postCreateCommand": "poetry install",
+	// Reuse local Codex CLI configuration inside the container
+	"mounts": [
+		"source=${localEnv:HOME}/.codex,target=/root/.codex,type=bind"
+	],
+
+	// Install required tooling after container is created
+	"postCreateCommand": "/bin/bash .devcontainer/post_create.sh",
 
 	// Forward Jupyter port if needed
 	"forwardPorts": [8888],

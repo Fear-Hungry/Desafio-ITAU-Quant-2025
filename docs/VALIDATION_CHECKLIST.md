@@ -98,9 +98,7 @@ poetry run python scripts/generate_oos_figures.py
 
 ## 🐛 Bugs Conhecidos (VERIFICAR STATUS)
 
-- [ ] **Turnover PRISM-R:** Bug documentado em `BUG_TURNOVER_PRISM_R.md`
-- [ ] Valores ~1e-05 vs baselines ~0.04-0.07% (2000x diferença)
-- [ ] Investigação em andamento?
+- [ ] Nenhum bug aberto registrado para esta entrega. Atualize esta seção quando surgir um novo incidente.
 
 ---
 

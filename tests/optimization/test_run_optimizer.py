@@ -4,6 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 from arara_quant.config import Settings, reset_settings_cache
 from arara_quant.optimization.solvers import run_optimizer
 
@@ -67,6 +68,76 @@ state:
     AAA: 0.3
     BBB: 0.4
     CCC: 0.3
+""".strip(),
+        encoding="utf-8",
+    )
+    return config
+
+
+def _write_config_with_metaheuristic(tmp_path: Path, returns_path: Path) -> Path:
+    config = tmp_path / "configs" / "optimizer_meta.yaml"
+    config.write_text(
+        f"""
+base_currency: USD
+data:
+  returns: {returns_path}
+optimizer:
+  lambda: 6.0
+  eta: 0.2
+  tau: 0.5
+  min_weight: 0.0
+  max_weight: 0.7
+  metaheuristic:
+    enabled: true
+    window_days: 90
+    turnover_target: [0.0, 0.6]
+    cardinality_target: [3, 3]
+    ga:
+      seed: 123
+      generations: 1
+      population:
+        size: 2
+        cardinality:
+          min: 3
+          max: 3
+        hyperparams:
+          lambda:
+            choices: [2.0]
+          eta:
+            choices: [0.05]
+          tau:
+            choices: [0.15]
+      mutation:
+        flip_prob: 0.0
+        constraints:
+          cardinality:
+            min: 3
+            max: 3
+      crossover:
+        method: uniform
+        constraints:
+          cardinality:
+            min: 3
+            max: 3
+      selection:
+        method: tournament
+        tournament_size: 2
+      evaluation:
+        metric: objective
+    parallel:
+      enabled: false
+estimators:
+  mu:
+    method: simple
+    window_days: 90
+  sigma:
+    method: ledoit_wolf
+    window_days: 90
+state:
+  previous_weights:
+    AAA: 0.25
+    BBB: 0.35
+    CCC: 0.40
 """.strip(),
         encoding="utf-8",
     )
@@ -213,3 +284,21 @@ def test_run_optimizer_executes_mean_cvar(tmp_path: Path) -> None:
     assert result.metrics.get("cvar") is not None
     assert result.metrics["cvar"] <= 0.06 + 1e-6
     assert result.metrics["expected_return"] >= 0.0005 - 1e-8
+
+
+def test_run_optimizer_applies_metaheuristic(tmp_path: Path) -> None:
+    settings = _make_settings(tmp_path)
+    returns_path = _write_returns(tmp_path)
+    config_path = _write_config_with_metaheuristic(tmp_path, returns_path)
+
+    result = run_optimizer(config_path, dry_run=False, settings=settings)
+
+    assert result.summary is not None and result.summary.is_optimal()
+    assert any("Metaheuristic tuned" in note for note in result.notes)
+    assert result.metrics is not None
+    meta_metrics = result.metrics.get("metaheuristic")
+    assert isinstance(meta_metrics, dict)
+    params = meta_metrics.get("params", {})
+    assert pytest.approx(params.get("lambda", 0.0)) == 2.0
+    assert pytest.approx(params.get("eta", 0.0)) == 0.05
+    assert pytest.approx(params.get("tau", 0.0)) == 0.15

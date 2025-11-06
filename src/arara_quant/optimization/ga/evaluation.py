@@ -8,6 +8,8 @@ from typing import Any, Callable, Mapping, Sequence
 import numpy as np
 import pandas as pd
 
+from arara_quant.utils.parallel import parallel_map
+
 from .population import Individual
 
 __all__ = [
@@ -126,12 +128,28 @@ def evaluate_population(
     data: Mapping[str, Any],
     core_solver: Callable[[Mapping[str, Any]], Mapping[str, Any]],
     config: Mapping[str, Any],
+    parallel: Mapping[str, Any] | None = None,
 ) -> list[EvaluationResult]:
-    results: list[EvaluationResult] = []
-    for individual in population:
+    if not population:
+        return []
+
+    def _job(individual: Individual) -> EvaluationResult:
         try:
-            result = _evaluate_single(individual, data, core_solver, config)
+            return _evaluate_single(individual, data, core_solver, config)
         except Exception as exc:  # pragma: no cover - safety net
-            result = handle_failures(individual, exc, config)
-        results.append(result)
-    return results
+            return handle_failures(individual, exc, config)
+
+    if not parallel or not bool(parallel.get("enabled", True)):
+        return [_job(individual) for individual in population]
+
+    backend = parallel.get("backend", "process")
+    max_workers = parallel.get("max_workers")
+    timeout = parallel.get("timeout")
+    results = parallel_map(
+        _job,
+        population,
+        backend=backend,
+        max_workers=max_workers,
+        timeout=timeout,
+    )
+    return list(results)

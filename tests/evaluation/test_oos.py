@@ -57,6 +57,7 @@ def test_compare_baselines_with_custom_strategies() -> None:
         "volatility",
         "sharpe",
         "cvar_95",
+        "cvar_95_annual",
         "max_drawdown",
         "avg_turnover",
         "total_cost",

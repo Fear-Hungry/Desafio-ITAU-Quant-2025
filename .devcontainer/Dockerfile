@@ -6,7 +6,12 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get -y install --no-install-recommends \
     git \
     curl \
+    ca-certificates \
+    openssl \
     build-essential \
+    nodejs \
+    npm \
+    && update-ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 

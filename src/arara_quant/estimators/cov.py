@@ -34,6 +34,7 @@ __all__ = [
     "student_t_cov",
     "project_to_psd",
     "regularize_cov",
+    "graphical_lasso_cov",
 ]
 
 
@@ -256,6 +257,76 @@ def nonlinear_shrinkage(
     _warn_if_ill_conditioned(cov.to_numpy())
 
     return cov
+
+
+def graphical_lasso_cov(
+    returns: ArrayOrFrame,
+    *,
+    alpha: float = 0.01,
+    max_iter: int = 100,
+    tol: float = 1e-4,
+    assume_centered: bool = False,
+    enet_tol: float = 1e-4,
+    mode: str = "cd",
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Graphical Lasso covariance/precision estimator.
+
+    Parameters
+    ----------
+    returns
+        Historical returns arranged as observations by assets.
+    alpha
+        Regularisation strength (L1 penalty). Must be positive.
+    max_iter
+        Maximum number of solver iterations.
+    tol
+        Convergence tolerance for the coordinate descent loop.
+    assume_centered
+        Whether to skip explicit mean subtraction.
+    enet_tol
+        Duality gap threshold for the internal lasso solver.
+    mode
+        One of {'cd', 'lars'} as supported by ``sklearn``.
+
+    Returns
+    -------
+    (covariance, precision)
+        DataFrames containing the estimated covariance and precision matrices.
+    """
+
+    if alpha <= 0:
+        raise ValueError("alpha must be strictly positive for Graphical Lasso.")
+    if max_iter <= 0:
+        raise ValueError("max_iter must be positive.")
+    if tol <= 0 or enet_tol <= 0:
+        raise ValueError("tol and enet_tol must be positive.")
+
+    clean = _ensure_dataframe(returns, min_obs=2)
+    values = clean.to_numpy(dtype=float)
+
+    try:
+        from sklearn.covariance import GraphicalLasso
+    except ImportError as exc:  # pragma: no cover - dependency guaranteed in prod
+        raise ImportError(
+            "GraphicalLasso requires scikit-learn to be installed."
+        ) from exc
+
+    model = GraphicalLasso(
+        alpha=float(alpha),
+        max_iter=int(max_iter),
+        tol=float(tol),
+        assume_centered=assume_centered,
+        enet_tol=float(enet_tol),
+        mode=mode,
+    )
+    model.fit(values)
+
+    cov_df = _format_matrix(model.covariance_, clean.columns)
+    precision_df = _format_matrix(model.precision_, clean.columns)
+
+    _warn_if_ill_conditioned(cov_df.to_numpy())
+
+    return cov_df, precision_df
 
 
 def tyler_m_estimator(

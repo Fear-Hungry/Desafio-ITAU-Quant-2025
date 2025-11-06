@@ -95,6 +95,7 @@ def run_genetic_algorithm(
         "selection", {"method": "tournament", "tournament_size": 3}
     )
     evaluation_cfg = config.get("evaluation", {"metric": "objective"})
+    parallel_cfg = config.get("parallel")
 
     generations = int(config.get("generations", 10))
     elitism_ratio = float(config.get("elitism", 0.1))
@@ -105,7 +106,13 @@ def run_genetic_algorithm(
     stagnation_counter = 0
 
     for generation in range(generations):
-        evaluations = evaluate_population(population, data, core_solver, evaluation_cfg)
+        evaluations = evaluate_population(
+            population,
+            data,
+            core_solver,
+            evaluation_cfg,
+            parallel=parallel_cfg,
+        )
         fitness_scores = [result.fitness for result in evaluations]
         best_idx = int(np.argmax(fitness_scores))
         generation_best = evaluations[best_idx]

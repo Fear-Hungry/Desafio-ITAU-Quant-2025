@@ -38,3 +38,26 @@ def test_handle_failures_assigns_low_fitness() -> None:
         individual, RuntimeError("fail"), {"failure_fitness": -99}
     )
     assert result.fitness == -99
+
+
+def test_evaluate_population_parallel_matches_sequential() -> None:
+    individuals = [
+        Individual(np.array([1, 0, 0, 0], dtype=bool), {}),
+        Individual(np.array([0, 1, 1, 0], dtype=bool), {}),
+        Individual(np.array([0, 0, 1, 1], dtype=bool), {}),
+    ]
+    data = {"universe": ["A", "B", "C", "D"]}
+    config = {"metric": "objective"}
+
+    sequential = evaluation.evaluate_population(individuals, data, _core_solver, config)
+    parallel_results = evaluation.evaluate_population(
+        individuals,
+        data,
+        _core_solver,
+        config,
+        parallel={"enabled": True, "backend": "thread", "max_workers": 2},
+    )
+
+    seq_fitness = [round(res.fitness, 6) for res in sequential]
+    par_fitness = [round(res.fitness, 6) for res in parallel_results]
+    assert seq_fitness == par_fitness

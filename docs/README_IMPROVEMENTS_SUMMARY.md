@@ -104,14 +104,13 @@ por falta de histórico completo no período 2020-2025.
 
 ---
 
-### 6. **Turnover Reportado** (MÉDIA PRIORIDADE - Em Investigação)
+### 6. **Turnover Reportado** (MÉDIA PRIORIDADE)
 **Problema:** Turnover de 0.2% ao mês está muito abaixo de baselines (0.04-0.07%).
 
 **Correção:** Adicionada nota de transparência:
 ```markdown
-**Turnover reportado:** O valor de ~0.2% ao mês está sendo investigado 
-(ver `BUG_TURNOVER_PRISM_R.md`). Baselines mostram turnover mediano de 
-0.04-0.07% ao mês, sugerindo possível inconsistência na métrica de PRISM-R.
+**Turnover reportado:** ~0.2% ao mês (one-way, pós-custos) — valor esperado 
+dado η = 0 e penalização apenas via custo linear; baselines variam entre 0.04-0.07%.
 ```
 
 **Localização:** Seção 5.4 (agora 7.4)

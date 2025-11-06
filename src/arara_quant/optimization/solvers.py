@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import logging
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+import numpy as np
 import pandas as pd
 
 from arara_quant.config import Settings, get_settings
@@ -17,11 +19,17 @@ from arara_quant.optimization.core.mv_qp import (
     solve_mean_variance,
 )
 from arara_quant.optimization.core.solver_utils import SolverSummary
+from arara_quant.optimization.heuristics.metaheuristic import (
+    MetaheuristicResult,
+    metaheuristic_outer,
+)
 from arara_quant.risk.budgets import RiskBudget, load_budgets, validate_budgets
 from arara_quant.utils.data_loading import read_dataframe, read_vector
 from arara_quant.utils.yaml_loader import load_yaml_text
 
 DEFAULT_OPTIMIZER_CONFIG = "optimizer_example.yaml"
+
+logger = logging.getLogger(__name__)
 
 __all__ = [
     "OptimizationResult",
@@ -53,6 +61,7 @@ class OptimizerConfig:
     max_cvar: float | None = None
     risk_config: Mapping[str, Any] | None = None
     budgets: Sequence[RiskBudget] | None = None
+    metaheuristic: Mapping[str, Any] | None = None
 
 
 @dataclass(slots=True)
@@ -134,6 +143,7 @@ def run_optimizer(
     *,
     dry_run: bool = True,
     settings: Settings | None = None,
+    metaheuristic_override: Mapping[str, Any] | None = None,
 ) -> OptimizationResult:
     settings = settings or get_settings()
     resolved = resolve_config_path(config_path, settings=settings)
@@ -224,6 +234,21 @@ def run_optimizer(
         budgets=optimizer_config.budgets,
     )
 
+    meta_cfg = metaheuristic_override or optimizer_config.metaheuristic
+    meta_result: MetaheuristicResult | None = None
+    if (
+        meta_cfg
+        and not dry_run
+        and optimizer_config.objective.startswith("mean_variance")
+    ):
+        mv_config, meta_result = _apply_metaheuristic(
+            returns,
+            mu_series,
+            mv_config,
+            optimizer_config,
+            meta_cfg,
+        )
+
     mv_result = solve_mean_variance(mu_series, cov_matrix, mv_config)
 
     metrics = {
@@ -231,6 +256,40 @@ def run_optimizer(
         "variance": mv_result.variance,
         "objective_value": mv_result.objective_value,
     }
+
+    if meta_result is not None:
+        params = {k: meta_result.params.get(k) for k in ("lambda", "eta", "tau")}
+        card = int(meta_result.metrics.get("cardinality", 0))
+
+        lambda_val = params.get("lambda")
+        eta_val = params.get("eta")
+        tau_val = params.get("tau")
+
+        lambda_disp = float(lambda_val) if lambda_val is not None else float(
+            optimizer_config.risk_aversion
+        )
+        eta_disp = float(eta_val) if eta_val is not None else float(
+            optimizer_config.turnover_penalty
+        )
+        tau_disp = None if tau_val is None else float(tau_val)
+
+        result.notes.append(
+            "Metaheuristic tuned λ={:.4g}, η={:.4g}, τ={} (k={})".format(
+                lambda_disp,
+                eta_disp,
+                "None" if tau_disp is None else f"{tau_disp:.4g}",
+                card,
+            )
+        )
+        metrics["metaheuristic"] = {
+            "fitness": float(meta_result.fitness),
+            "cardinality": card,
+            "params": {
+                "lambda": lambda_disp,
+                "eta": eta_disp,
+                "tau": tau_disp,
+            },
+        }
 
     result.weights = mv_result.weights
     result.metrics = metrics
@@ -359,6 +418,15 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
     solver = optimizer_section.get("solver")
     solver_kwargs = optimizer_section.get("solver_kwargs", {})
 
+    metaheuristic_cfg = optimizer_section.get("metaheuristic")
+    if isinstance(metaheuristic_cfg, (str, Path)):
+        meta_path = _resolve_relative_path(
+            Path(metaheuristic_cfg), base=path.parent, settings=settings
+        )
+        metaheuristic_cfg = load_yaml_text(meta_path.read_text(encoding="utf-8"))
+    elif metaheuristic_cfg is not None and not isinstance(metaheuristic_cfg, Mapping):
+        raise TypeError("optimizer.metaheuristic must be a mapping or path")
+
     cvar_alpha = None
     max_cvar = None
     if isinstance(risk_limits, Mapping):
@@ -396,6 +464,7 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
         max_cvar=max_cvar,
         risk_config=risk_config,
         budgets=budgets,
+        metaheuristic=metaheuristic_cfg,
     )
 
 
@@ -482,6 +551,36 @@ def _estimate_inputs(
         cov_matrix = covariance_estimators.sample_cov(data_for_sigma)
     elif sigma_method == "tyler":
         cov_matrix = covariance_estimators.tyler_m_estimator(data_for_sigma)
+    elif sigma_method in {"graphical_lasso", "graphical-lasso", "glasso"}:
+        alpha = float(sigma_config.get("alpha", 0.01))
+        max_iter = int(sigma_config.get("max_iter", 200))
+        tol = float(sigma_config.get("tol", 1e-4))
+        assume_centered = bool(sigma_config.get("assume_centered", False))
+        enet_tol = float(sigma_config.get("enet_tol", 1e-4))
+        mode = str(sigma_config.get("mode", "cd"))
+        sparsity_tol = float(sigma_config.get("sparsity_tol", 1e-6))
+        cov_matrix, precision_matrix = covariance_estimators.graphical_lasso_cov(
+            data_for_sigma,
+            alpha=alpha,
+            max_iter=max_iter,
+            tol=tol,
+            assume_centered=assume_centered,
+            enet_tol=enet_tol,
+            mode=mode,
+        )
+        if precision_matrix.shape[0] > 1:
+            mask = ~np.eye(precision_matrix.shape[0], dtype=bool)
+            off_diag = np.abs(precision_matrix.to_numpy()[mask])
+            if off_diag.size > 0:
+                sparse_ratio = float(np.mean(off_diag < sparsity_tol))
+                logger.info(
+                    "Graphical Lasso alpha=%.4f produced %.1f%% sparse precision "
+                    "(tol=%g, mode=%s).",
+                    alpha,
+                    100.0 * sparse_ratio,
+                    sparsity_tol,
+                    mode,
+                )
     else:
         raise ValueError(f"Unsupported covariance estimator '{sigma_method}'")
 
@@ -493,6 +592,101 @@ def _estimate_inputs(
     cov_matrix = covariance_estimators.project_to_psd(cov_matrix, epsilon=1e-9)
 
     return mu_series, cov_matrix
+
+
+def _clone_mv_config(
+    config: MeanVarianceConfig, **updates: Any
+) -> MeanVarianceConfig:
+    payload = {field.name: getattr(config, field.name) for field in fields(MeanVarianceConfig)}
+    payload.update(updates)
+    return MeanVarianceConfig(**payload)
+
+
+def _parse_float_pair(value: Any) -> tuple[float, float] | None:
+    if value is None:
+        return None
+    if isinstance(value, (list, tuple)) and len(value) == 2:
+        return float(value[0]), float(value[1])
+    raise ValueError(
+        "turnover_target must be a sequence with exactly two numeric entries"
+    )
+
+
+def _parse_int_pair(value: Any) -> tuple[int, int] | None:
+    if value is None:
+        return None
+    if isinstance(value, (list, tuple)) and len(value) == 2:
+        return int(value[0]), int(value[1])
+    raise ValueError(
+        "cardinality_target must be a sequence with exactly two integers"
+    )
+
+
+def _apply_metaheuristic(
+    returns: pd.DataFrame,
+    mu_series: pd.Series,
+    base_config: MeanVarianceConfig,
+    optimizer_config: OptimizerConfig,
+    meta_cfg: Mapping[str, Any],
+) -> tuple[MeanVarianceConfig, MetaheuristicResult | None]:
+    if not isinstance(meta_cfg, Mapping):
+        raise TypeError("metaheuristic configuration must be a mapping")
+    if not meta_cfg.get("enabled", True):
+        return base_config, None
+
+    ga_cfg = meta_cfg.get("ga")
+    if not isinstance(ga_cfg, Mapping):
+        raise ValueError("metaheuristic config must include a 'ga' mapping")
+
+    window_days = int(meta_cfg.get("window_days", 0) or 0)
+    calibration_returns = returns.tail(window_days) if window_days > 0 else returns
+    mu_meta, cov_meta = _estimate_inputs(calibration_returns, optimizer_config)
+
+    ga_cfg_local = dict(ga_cfg)
+    if "parallel" not in ga_cfg_local and meta_cfg.get("parallel"):
+        ga_cfg_local["parallel"] = dict(meta_cfg["parallel"])
+
+    turnover_target = _parse_float_pair(meta_cfg.get("turnover_target"))
+    cardinality_target = _parse_int_pair(meta_cfg.get("cardinality_target"))
+    penalty_weights = dict(meta_cfg.get("penalty_weights", {}))
+
+    meta_result = metaheuristic_outer(
+        mu_meta,
+        cov_meta,
+        base_config,
+        ga_config=ga_cfg_local,
+        turnover_target=turnover_target,
+        cardinality_target=cardinality_target,
+        penalty_weights=penalty_weights,
+    )
+
+    updates: dict[str, Any] = {}
+    params = meta_result.params or {}
+    if params.get("lambda") is not None:
+        updates["risk_aversion"] = float(params["lambda"])
+    if params.get("eta") is not None:
+        updates["turnover_penalty"] = float(params["eta"])
+    if "tau" in params:
+        tau_value = params.get("tau")
+        updates["turnover_cap"] = (
+            None if tau_value is None else float(tau_value)
+        )
+
+    apply_selection = bool(meta_cfg.get("apply_selection", True))
+    selected_assets = [
+        asset for asset in meta_result.selected_assets if asset in mu_series.index
+    ]
+    if apply_selection and selected_assets and len(selected_assets) < len(mu_series.index):
+        lower = base_config.lower_bounds.reindex(mu_series.index).fillna(0.0).copy()
+        upper = base_config.upper_bounds.reindex(mu_series.index).fillna(1.0).copy()
+        inactive = ~lower.index.isin(selected_assets)
+        lower.loc[inactive] = 0.0
+        upper.loc[inactive] = 0.0
+        updates["lower_bounds"] = lower
+        updates["upper_bounds"] = upper
+
+    tuned_config = _clone_mv_config(base_config, **updates) if updates else base_config
+    return tuned_config, meta_result
 
 
 def _build_cost_vector(

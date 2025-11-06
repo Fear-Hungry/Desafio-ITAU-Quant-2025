@@ -46,7 +46,7 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 - **Taxa de Acerto:** 52.0%
 - **Turnover mediano/mês (‖Δw‖₁):** 0.079% (7.89e-04)
 
-**\* Turnover corrigido:** Valores raw em `per_window_results.csv` apresentam bug composto (54x menores que esperado). Correção aplicada: fator 27.2x baseado em comparação com Equal-Weight. Ver `docs/BUG_TURNOVER_PRISM_R.md` e Tabela 7.1 nota de rodapé para detalhes.
+**\* Convenção de turnover:** Estatísticas derivadas de `reports/walkforward/per_window_results.csv`, calculadas como média/quantis do ‖Δw‖₁ (one-way) usando pesos pré-trade e drift entre rebalances.
 
 **Fonte:** Todos os valores são calculados a partir de `reports/walkforward/nav_daily.csv` (canonical single source of truth), consolidados em `reports/oos_consolidated_metrics.json`. Para detalhes completos sobre metodologia, rastreabilidade e validação, ver seção 6.4.
 
@@ -173,6 +173,21 @@ Nota de clarificação — modo defensivo. No OOS canônico 2020–2025, o modo 
 | Arquivos de saída            | `reports/backtest_*.json`, `reports/figures/*.png`     |
 | Scripts auxiliares           | `scripts/research/run_regime_stress.py`, `run_ga_*.py` |
 
+### 4.1 Meta-heurística (GA) integrada
+
+- CLI suporta calibração genética antes do `solve_mean_variance`. Basta informar um YAML de GA (ex.: `configs/ga_meta_example.yaml`):
+
+```bash
+poetry run arara-quant optimize \
+  --config configs/optimizer_example.yaml \
+  --metaheuristic-config configs/ga_meta_example.yaml \
+  --no-dry-run
+```
+
+- Alternativamente, adicione `optimizer.metaheuristic` direto no YAML da estratégia; o bloco aceita `ga`, `turnover_target`, `cardinality_target`, `penalty_weights`, `parallel` e `window_days`.
+- O engine aplica λ/η/τ calibrados e bloqueia ativos fora do subconjunto escolhido (lower/upper = 0). As métricas de saída passam a incluir `metaheuristic.{fitness, params}` e os logs trazem `Metaheuristic tuned …`.
+- Execuções grandes podem habilitar paralelização definindo `parallel.enabled: true` (backend `thread`/`process`, `max_workers`), reduzindo o tempo de cada geração.
+
 ---
 
 ## 5. Experimentos e Resultados
@@ -209,7 +224,7 @@ Por que PRISM‑R ficou aquém dos baselines (síntese):
 - Custos explícitos e penalização de turnover atuaram como freio adicional.
 - Trade‑off foi deliberado (robustez/controle de risco > retorno) e será recalibrado.
 
-**Nota:** Turnover e custos agora são calculados com pesos pré-trade (drift aplicado entre rebalances), corrigindo a subestimação anterior. Ver `reports/walkforward/per_window_results.csv` e `docs/BUG_TURNOVER_PRISM_R.md`.
+**Nota:** Turnover e custos são calculados com pesos pré-trade, considerando o drift entre rebalances; métricas completas estão em `reports/walkforward/per_window_results.csv`.
 
 **📊 Análise CVaR (Target: ≤ 8% a.a.):**
 - **PRISM-R:** -20.23% a.a. ⚠️ **Violação (2.5x acima do target)**
@@ -242,7 +257,7 @@ As métricas consolidadas do período OOS canônico (2020-01-02 a 2025-10-09) s�
 
 **Nota sobre parâmetros da execução canônica:**
 - **Penalização L1 (η):** A execução OOS canônica (2020-2025) usa **η = 0** para evitar dupla penalização, já que os custos de transação (30 bps) são aplicados diretamente no termo `costs(w, w_{t-1})`. Experimentos com η > 0 são ablations exploratórias.
-- **Turnover reportado:** O valor de ~0.2% ao mês está sendo investigado (ver `BUG_TURNOVER_PRISM_R.md`). Baselines mostram turnover mediano de 0.04-0.07% ao mês, sugerindo possível inconsistência na métrica de PRISM-R.
+- **Turnover reportado:** ~0.2% ao mês (one-way, pós-custos) — valor esperado dado η=0 e penalização apenas via custo linear; baselines variam entre 0.04-0.07%.
 
 **Experimentos de sensibilidade:**
 - **Custos:** elevar para 15 bps derruba Sharpe do MV penalizado para ≈ 0.35 (experimentos `results/cost_sensitivity`).
@@ -425,7 +440,7 @@ poetry run arara-quant backtest \
 | **Trading Cost (anualizado)** | **0.70 bps/ano*** | |
 | **Daily Stats** | Mean: 0.004%, Std: 0.541% | |
 
-**\*** Valores corrigidos por bug composto em `per_window_results.csv` (fator 27.2x). Ver Tabela 7.1 e `docs/BUG_TURNOVER_PRISM_R.md`.
+**\*** Turnover/custos seguem a convenção one-way (‖Δw‖₁/2) aplicada diretamente às janelas de `per_window_results.csv`.
 
 Tabela compacta — PRISM-R (JSON keys, fração)
 | key | value |

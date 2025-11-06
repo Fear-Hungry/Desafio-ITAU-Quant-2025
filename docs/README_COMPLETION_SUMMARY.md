@@ -245,14 +245,14 @@ cat reports/oos_consolidated_metrics.json | jq '
 | **Max Drawdown** | ≤ 15% | -20.89% | ⚠️ Violation | -5.9 pp |
 | **CVaR 95%** | ≤ 8% a.a. | -20.23% | ⚠️ Violation | -12.2 pp (2.5x) |
 | **Sharpe** | ≥ 0.80 | 0.0576 | ⚠️ Below | -0.74 |
-| **Turnover** | 5-20%/mo | 0.026%/mo | ✅ Low* | *Bug suspected |
-| **Costs** | ≤ 50 bps/yr | 0.09 bps/yr | ✅ Excellent* | *Bug suspected |
+| **Turnover** | 5-20%/mo | 0.026%/mo | ⚠️ Below | Penalização/custos atuais reduzem demais a rotação |
+| **Costs** | ≤ 50 bps/yr | 0.09 bps/yr | ✅ Excellent | Direto reflexo do turnover contido |
 
 **Key Findings:**
 - ✅ **Volatility control: Excellent** (8.60% well below 12% target)
 - ⚠️ **Tail risk: Needs improvement** (CVaR 2.5x above target)
 - ⚠️ **Drawdown: Minor violation** (-20.89% vs -15% target)
-- 🔍 **Turnover/costs suspiciously low** (see BUG_TURNOVER_PRISM_R.md)
+- 🔍 **Turnover/costs muito baixos** para a meta. Ajuste λ/η e budgets para destravar risco alocado.
 
 ---
 

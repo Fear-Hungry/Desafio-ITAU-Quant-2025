@@ -135,7 +135,7 @@ class EstimatorConfig(BaseModel):
     mu_method : Literal
         Mean return estimator (simple, huber, trimmed, shrunk_50)
     sigma_method : Literal
-        Covariance estimator (sample, ledoit_wolf, nonlinear, tyler)
+        Covariance estimator (sample, ledoit_wolf, nonlinear, tyler, graphical_lasso)
     huber_delta : float
         Delta parameter for Huber mean (only used if mu_method='huber')
     """
@@ -144,7 +144,9 @@ class EstimatorConfig(BaseModel):
     mu_method: Literal["simple", "huber", "trimmed", "shrunk_50"] = Field(
         default="simple", description="Mean return estimator"
     )
-    sigma_method: Literal["sample", "ledoit_wolf", "nonlinear", "tyler"] = Field(
+    sigma_method: Literal[
+        "sample", "ledoit_wolf", "nonlinear", "tyler", "graphical_lasso"
+    ] = Field(
         default="ledoit_wolf", description="Covariance estimator"
     )
     huber_delta: float = Field(default=1.5, gt=0, description="Huber delta parameter")

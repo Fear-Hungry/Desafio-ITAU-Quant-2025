@@ -144,6 +144,32 @@ def compute_wf_summary_stats(
     )
 
 
+def _generate_simple_latex(df: pd.DataFrame) -> str:
+    """Fallback LaTeX output that avoids optional pandas dependencies."""
+
+    if df.empty:
+        return ""
+
+    headers = df.columns.tolist()
+    column_spec = "l" * len(headers) or "l"
+    lines = [f"\\begin{{tabular}}{{{column_spec}}}", "\\hline"]
+    lines.append(" & ".join(headers) + r" \\")
+    lines.append("\\hline")
+
+    for _, row in df.iterrows():
+        formatted = []
+        for value in row:
+            if isinstance(value, (int, float, np.number)):
+                formatted.append(f"{float(value):.4f}")
+            else:
+                formatted.append(str(value))
+        lines.append(" & ".join(formatted) + r" \\")
+
+    lines.append("\\hline")
+    lines.append("\\end{tabular}")
+    return "\n".join(lines)
+
+
 def build_per_window_table(
     split_metrics: pd.DataFrame,
     *,
@@ -202,7 +228,10 @@ def build_per_window_table(
             lines.append("| " + " | ".join(values) + " |")
         return "\n".join(lines)
     elif format == "latex":
-        return table_df.to_latex(index=False, float_format="%.4f")
+        try:
+            return table_df.to_latex(index=False, float_format="%.4f")
+        except Exception:
+            return _generate_simple_latex(table_df)
     elif format == "csv":
         return table_df.to_csv(index=False)
     else:
