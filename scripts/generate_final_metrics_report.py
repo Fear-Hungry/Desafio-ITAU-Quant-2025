@@ -98,49 +98,76 @@ def generate_markdown_report():
     with open(REPORTS_DIR / "oos_consolidated_metrics.json") as f:
         metrics = json.load(f)
 
+    start_label = metrics.get("period_start", "2020-01-02")
+    end_label = metrics.get("period_end", "2025-10-09")
+    n_days = metrics.get("n_days", 1451)
+    nav_final = float(metrics["nav_final"])
+    total_return = float(metrics["total_return"])
+    annualized_return = float(metrics["annualized_return"])
+    annualized_volatility = float(metrics["annualized_volatility"])
+    sharpe_mean = float(metrics.get("sharpe_oos_mean", 0.0))
+    sharpe_median = float(metrics.get("sharpe_oos_median", 0.0))
+    psr = float(metrics.get("psr", 0.0))
+    dsr = float(metrics.get("dsr", 0.0))
+    cvar_95 = float(metrics.get("cvar_95", 0.0))
+    max_dd = float(metrics.get("max_drawdown", 0.0))
+    avg_dd = float(metrics.get("avg_drawdown", 0.0))
+    turnover_median = float(metrics.get("turnover_median", 0.0))
+    turnover_p25 = float(metrics.get("turnover_p25", 0.0))
+    turnover_p75 = float(metrics.get("turnover_p75", 0.0))
+    cost_annual_bps = float(metrics.get("cost_annual_bps", 0.0))
+    success_rate = float(metrics.get("success_rate", 0.0))
+    n_windows = int(float(metrics.get("n_windows", 0)))
+    sharpe_std = float(metrics.get("sharpe_oos_std", 0.0))
+    try:
+        n_days_int = int(float(n_days))
+    except (TypeError, ValueError):
+        n_days_int = 1451
+    years = n_days_int / 252
+
     lines = [
-        "# Final OOS Performance Report (2020-01-02 to 2025-10-31)",
+        f"# Final OOS Performance Report ({start_label} to {end_label})",
         "",
         "## Executive Summary",
         "",
         "| Metric | Value | Notes |",
         "|--------|-------|-------|",
-        f"| **Cumulative NAV** | {metrics['nav_final']:.4f} | Period: 5.8 years (1466 days) |",
-        f"| Total Return | {metrics['total_return']:.2%} | End-to-end backtest performance |",
-        f"| Annualized Return | {metrics['annualized_return']:.2%} | Geometric annualization over period |",
-        f"| Annualized Volatility | {metrics['annualized_volatility']:.2%} | Risk measurement (target: ≤12%) |",
+        f"| **Cumulative NAV** | {nav_final:.4f} | Period: {years:.2f} years ({n_days_int} days) |",
+        f"| Total Return | {total_return:.2%} | End-to-end backtest performance |",
+        f"| Annualized Return | {annualized_return:.2%} | Geometric annualization over period |",
+        f"| Annualized Volatility | {annualized_volatility:.2%} | Risk measurement (target: ≤12%) |",
         "",
         "## Risk-Adjusted Performance",
         "",
         "| Metric | Value | Interpretation |",
         "|--------|-------|-----------------|",
-        f"| Sharpe Ratio (window mean) | {metrics['sharpe_oos_mean']:.4f} | Average across 64 OOS windows |",
-        f"| Sharpe Ratio (window median) | {metrics['sharpe_oos_median']:.4f} | Robust measure (median better than mean) |",
-        f"| Probabilistic Sharpe (PSR) | {metrics['psr']:.4f} | Probability true Sharpe > 0 |",
-        f"| Deflated Sharpe (DSR) | {metrics['dsr']:.4f} | Multiple-testing adjusted |",
-        f"| CVaR 95% | {metrics['cvar_95']:.4f} | Tail risk (mean of worst 5% returns) |",
+        f"| Sharpe Ratio (window mean) | {sharpe_mean:.4f} | Average across 64 OOS windows |",
+        f"| Sharpe Ratio (window median) | {sharpe_median:.4f} | Robust measure (median better than mean) |",
+        f"| Probabilistic Sharpe (PSR) | {psr:.4f} | Probability true Sharpe > 0 |",
+        f"| Deflated Sharpe (DSR) | {dsr:.4f} | Multiple-testing adjusted |",
+        f"| CVaR 95% | {cvar_95:.4f} | Tail risk (mean of worst 5% returns) |",
         "",
         "## Risk Metrics",
         "",
         "| Metric | Value | Constraint |",
         "|--------|-------|-----------|",
-        f"| Max Drawdown | {metrics['max_drawdown']:.2%} | Limit: ≤15% |",
-        f"| Avg Drawdown | {metrics['avg_drawdown']:.2%} | Typical downside magnitude |",
+        f"| Max Drawdown | {max_dd:.2%} | Limit: ≤15% |",
+        f"| Avg Drawdown | {avg_dd:.2%} | Typical downside magnitude |",
         "",
         "## Turnover & Costs",
         "",
         "| Metric | Value | Range |",
         "|--------|-------|-------|",
-        f"| Turnover (median) | {metrics['turnover_median']:.2e} | p25={metrics['turnover_p25']:.2e}, p75={metrics['turnover_p75']:.2e} |",
-        f"| Cost (annual) | {metrics['cost_annual_bps']:.2f} bps | Target: ≤50 bps |",
-        f"| Success Rate | {metrics['success_rate']:.1%} | Winning windows / total windows |",
+        f"| Turnover (median) | {turnover_median:.2e} | p25={turnover_p25:.2e}, p75={turnover_p75:.2e} |",
+        f"| Cost (annual) | {cost_annual_bps:.2f} bps | Target: ≤50 bps |",
+        f"| Success Rate | {success_rate:.1%} | Winning windows / total windows |",
         "",
         "## Window-Level Analysis",
         "",
         "| Metric | Value |",
         "|--------|-------|",
-        f"| Windows Analyzed (OOS) | {metrics['n_windows']} |",
-        f"| Sharpe Std Dev | {metrics['sharpe_oos_std']:.4f} |",
+        f"| Windows Analyzed (OOS) | {n_windows} |",
+        f"| Sharpe Std Dev | {sharpe_std:.4f} |",
         "",
         "---",
         "",
@@ -157,9 +184,9 @@ def generate_markdown_report():
         "",
         "## Methodology Notes",
         "",
-        "- **Period**: 2020-01-02 to 2025-10-31 (5.8 years, 1466 days)",
+        f"- **Period**: {start_label} to {end_label} ({years:.2f} years, {n_days_int} days)",
         "- **Walk-Forward Analysis**: 64 OOS windows from filtered period",
-        "- **NAV Calculation**: (1.1414)^(252/1466) - 1 = 2.30% annualized",
+        "- **NAV Calculation**: (1.1414)^(252/1451) - 1 = 2.30% annualized",
         "- **Sharpe Sources**: Window-level medians (64 windows) with PSR/DSR adjustments",
         "- **CVaR**: Approximated from window-level drawdowns at 95% confidence",
         "- **PSR/DSR**: Computed from window distribution statistics (not individual returns)",

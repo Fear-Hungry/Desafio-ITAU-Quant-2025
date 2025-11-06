@@ -52,7 +52,7 @@
 ## 7. Comparação com Baselines (1 pág)
 - **Convenção CVaR:** Todos os valores reportados são **anualizados** (CVaR_diário × √252) para consistência com volatilidade e retorno. CVaR diário disponível em `cvar_95` para debug/monitoramento.
 - Script agora baixa dados reais com `BASELINES_FORCE_DOWNLOAD=1` e `BASELINES_DOWNLOAD_SLEEP=1`, carregando os 69 tickers de `get_arara_universe()`.
-- Amostra OOS: 2019-10-01 a 2025-10-31 (`results/baselines/baseline_metrics_oos.csv`).
+- Amostra OOS: 2019-10-01 a 2025-10-09 (`results/baselines/baseline_metrics_oos.csv`).
   - Sharpe: Min-Var (0.69), Equal-Weight (0.69), Shrunk MV (0.69), ERC (0.65); drawdowns variam de -3.4% (Min-Var) a -21.7% (Shrunk MV).
   - Stress tests mostram Shrunk MV positivo em 2022 (+7.4%), demais estratégias negativas; 2023 banking stress favorável às carteiras defensivas.
 - Snapshot curto anterior (2024-07 → 2025-10) permanece no README apenas como smoke test; explicitar baixa confiabilidade.

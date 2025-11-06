@@ -30,5 +30,5 @@ oos_evaluation:
 
     Period justification:
     - Starts 2020-01-02: Sufficient historical data for covariance estimation
-    - Ends 2025-10-31: Final available data for out-of-sample validation
+    - Ends 2025-10-09: Final available data for out-of-sample validation
     - Avoids data snooping: Walk-forward with proper temporal validation

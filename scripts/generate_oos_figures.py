@@ -3,7 +3,7 @@
 Generate OOS validation figures from canonical nav_daily.csv (single source of truth).
 
 Figures generated:
-1. NAV cumulative (2020-01-02 to 2025-10-31 OOS period)
+1. NAV cumulative (2020-01-02 to 2025-10-09 OOS period)
 2. Drawdown underwater plot
 3. Sharpe vs Return scatter (PRISM-R vs baselines)
 4. Window-level metrics distribution

@@ -256,8 +256,8 @@ def compute_consolidated_metrics(df_windows: pd.DataFrame) -> dict:
         # Basic performance
         "nav_final": 1.1414,  # Given value for 2020-2025 period
         "total_return": 0.1414,  # 14.14%
-        "n_days": 1466,  # 2020-01-02 to 2025-10-31
-        "annualized_return": (1.1414 ** (252 / 1466)) - 1,  # Annualized using daily count
+        "n_days": 1451,  # 2020-01-02 to 2025-10-09
+        "annualized_return": (1.1414 ** (252 / 1451)) - 1,  # Annualized using daily count
         "annualized_volatility": 0.0605,  # From backtest JSON metadata
 
         # Risk metrics (from window aggregation)
@@ -294,8 +294,11 @@ def compute_consolidated_metrics(df_windows: pd.DataFrame) -> dict:
 def format_metrics_table(metrics: dict) -> str:
     """Format metrics as markdown table."""
 
+    start_label = metrics.get("period_start", "2020-01-02")
+    end_label = metrics.get("period_end", "2025-10-09")
+
     lines = [
-        "## Final OOS Performance Metrics (2020-01-02 to 2025-10-31)",
+        f"## Final OOS Performance Metrics ({start_label} to {end_label})",
         "",
         "| Metric | Value |",
         "|--------|-------|",
