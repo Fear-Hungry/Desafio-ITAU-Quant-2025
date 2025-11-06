@@ -219,7 +219,7 @@ jobs:
       - name: Validate universe configs
         run: |
           poetry run python -c "
-          from itau_quant.config import load_config, UniverseConfig
+          from arara_quant.config import load_config, UniverseConfig
           import sys
           from pathlib import Path
 
@@ -243,7 +243,7 @@ jobs:
       - name: Validate portfolio configs
         run: |
           poetry run python -c "
-          from itau_quant.config import load_config, PortfolioConfig
+          from arara_quant.config import load_config, PortfolioConfig
           import sys
           from pathlib import Path
 
@@ -263,6 +263,14 @@ jobs:
                   print(f'  ✗ {config_file.name}: {e}')
                   sys.exit(1)
           "
+
+      - name: Ensure README turnover stats are up to date
+        run: |
+          poetry run python scripts/update_readme_turnover_stats.py --force-overwrite
+          if ! git diff --quiet README.md; then
+            echo "::error::README.md turnover stats are out of sync. Run scripts/update_readme_turnover_stats.py --force-overwrite locally."
+            exit 1
+          fi
 
   status-check:
     name: All CI Checks Passed

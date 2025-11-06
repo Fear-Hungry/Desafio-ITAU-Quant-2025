@@ -1,6 +1,6 @@
 # Arara Quant Lab — Carteira ARARA (PRISM-R)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)]()
-[![CI](https://github.com/Fear-Hungry/arara-quant-lab/actions/workflows/ci.yml/badge.svg)](https://github.com/Fear-Hungry/arara-quant-lab/actions)
+[![CI](https://github.com/Fear-Hungry/Desafio-ITAU-Quant/actions/workflows/ci.yml/badge.svg)](https://github.com/Fear-Hungry/Desafio-ITAU-Quant/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
 
 ## Quickstart (reprodução do OOS canônico)
@@ -1032,7 +1032,7 @@ Scripts de Consolidação:
   title  = {Arara Quant Lab: Carteira ARARA (PRISM-R)},
   author = {Marcus Vinícius Silva and Anna Beatriz Cardoso},
   year   = {2025},
-  url    = {https://github.com/Fear-Hungry/arara-quant-lab}
+  url    = {https://github.com/Fear-Hungry/Desafio-ITAU-Quant}
 }
 ```
 

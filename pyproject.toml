@@ -43,7 +43,6 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 line-length = 88
-exclude = ["scripts/"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "PL"]
@@ -59,10 +58,11 @@ ignore = [
     "PLW2901",   # Loop variable overwritten
     "PLE0605",   # Invalid __all__ format
 ]
+per-file-ignores = { "scripts/**/*.py": ["E501", "D"] }
 
 [tool.black]
 line-length = 88
-target-version = ['py39']
+target-version = ['py311']
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
