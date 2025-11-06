@@ -8,6 +8,7 @@ from typing import Callable, Mapping, Sequence
 import numpy as np
 import pandas as pd
 
+from arara_quant.costs.turnover import normalised_turnover
 from arara_quant.estimators.cov import ledoit_wolf_shrinkage
 from arara_quant.estimators.mu import shrunk_mean
 from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
@@ -47,6 +48,24 @@ def _ensure_frame(data: pd.DataFrame | pd.Series) -> pd.DataFrame:
     if isinstance(data, pd.Series):
         return data.to_frame()
     return data.copy()
+
+
+def _drift_weights(
+    weights: pd.Series, returns: pd.DataFrame, *, align_to: Sequence[str]
+) -> pd.Series:
+    """Drift post-trade weights with realised returns to obtain pre-trade weights."""
+
+    if weights.empty or returns.empty:
+        return weights.reindex(align_to, fill_value=0.0)
+
+    growth = (1.0 + returns).prod(axis=0)
+    growth = growth.reindex(weights.index).fillna(1.0)
+    drifted = weights * growth
+    total = float(drifted.sum())
+    if total <= 0 or not np.isfinite(total):
+        return weights.reindex(align_to, fill_value=0.0)
+    drifted = drifted / total
+    return drifted.reindex(align_to, fill_value=0.0)
 
 
 def _max_drawdown(series: pd.Series) -> float:
@@ -350,6 +369,9 @@ def compare_baselines(
         spec.name: pd.Series(0.0, index=returns.columns, dtype=float)
         for spec in strategies
     }
+    last_rebalance_date: dict[str, pd.Timestamp | None] = {
+        spec.name: None for spec in strategies
+    }
 
     test_start_idx = train_window + purge_window
 
@@ -366,15 +388,25 @@ def compare_baselines(
         rebalance_date = test_slice.index[0]
 
         for spec in strategies:
-            prev = prev_weights[spec.name]
+            prev_post = prev_weights[spec.name].reindex(returns.columns).fillna(0.0)
+            last_date = last_rebalance_date[spec.name]
+            drift_slice = returns.loc[
+                (returns.index > last_date) & (returns.index < rebalance_date)
+            ] if last_date is not None else returns.iloc[0:0]
+            prev_pretrade = _drift_weights(
+                prev_post, drift_slice, align_to=returns.columns
+            )
+
             weights = (
-                spec.builder(train_slice, prev).reindex(returns.columns).fillna(0.0)
+                spec.builder(train_slice, prev_post)
+                .reindex(returns.columns)
+                .fillna(0.0)
             )
             weights = weights.clip(lower=0.0, upper=max_position)
             total = float(weights.sum())
             if total > 0:
                 weights = weights / total
-            turnover = float(np.abs(weights - prev).sum())
+            turnover = normalised_turnover(weights, prev_pretrade)
             transaction_cost = turnover * (costs_bps / 10_000.0)
 
             strategy_returns = test_slice.mul(weights, axis=1).sum(axis=1)
@@ -386,6 +418,7 @@ def compare_baselines(
             costs[spec.name].append(transaction_cost)
             weights_log[spec.name].append((rebalance_date, weights))
             prev_weights[spec.name] = weights
+            last_rebalance_date[spec.name] = rebalance_date
 
         test_start_idx += test_window + embargo_window
 
