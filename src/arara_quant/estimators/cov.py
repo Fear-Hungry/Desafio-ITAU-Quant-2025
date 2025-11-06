@@ -29,6 +29,8 @@ ArrayOrFrame = Union[pd.DataFrame, pd.Series, np.ndarray, Sequence[Sequence[floa
 __all__ = [
     "sample_cov",
     "ledoit_wolf_shrinkage",
+    "oas_shrinkage",
+    "min_cov_det",
     "nonlinear_shrinkage",
     "tyler_m_estimator",
     "student_t_cov",
@@ -203,6 +205,100 @@ def ledoit_wolf_shrinkage(
     _warn_if_ill_conditioned(cov.to_numpy())
 
     return cov, float(shrinkage)
+
+
+def oas_shrinkage(
+    returns: ArrayOrFrame,
+    *,
+    assume_centered: bool = False,
+) -> tuple[pd.DataFrame, float]:
+    """Oracle Approximating Shrinkage estimator (Chen, Wiesel & Hero).
+
+    Parameters
+    ----------
+    returns
+        Historical returns arranged as observations by assets.
+    assume_centered
+        Pass-through flag to sklearn's implementation.  When ``True`` the data
+        is assumed to be zero-mean and no centering is applied internally.
+
+    Returns
+    -------
+    (covariance, shrinkage)
+        Shrunk covariance matrix and the implied shrinkage intensity.
+    """
+
+    clean = _ensure_dataframe(returns, min_obs=2)
+    values = clean.to_numpy(dtype=float)
+
+    try:
+        from sklearn.covariance import OAS
+    except ImportError as exc:  # pragma: no cover - dependency managed elsewhere
+        raise ImportError("OAS estimator requires scikit-learn to be installed.") from exc
+
+    if values.shape[0] <= 1:
+        raise ValueError("At least two observations required for shrinkage.")
+
+    model = OAS(assume_centered=assume_centered)
+    model.fit(values)
+
+    cov = _format_matrix(model.covariance_, clean.columns)
+    cov = project_to_psd(cov, epsilon=1e-9)
+    _warn_if_ill_conditioned(cov.to_numpy())
+
+    return cov, float(model.shrinkage_)
+
+
+def min_cov_det(
+    returns: ArrayOrFrame,
+    *,
+    support_fraction: float | None = None,
+    assume_centered: bool = False,
+    random_state: int | np.random.RandomState | None = None,
+) -> pd.DataFrame:
+    """Minimum Covariance Determinant (MCD) robust estimator.
+
+    Parameters
+    ----------
+    returns
+        Historical returns arranged as observations by assets.
+    support_fraction
+        Proportion of points to keep in the support of the raw MCD.  Must lie in
+        (0.5, 1].  When ``None`` sklearn picks an adaptive value.
+    assume_centered
+        Skip mean subtraction if data are already centered.
+    random_state
+        Optional random seed for deterministic subsampling.
+    """
+
+    clean = _ensure_dataframe(returns, min_obs=2)
+    values = clean.to_numpy(dtype=float)
+
+    if support_fraction is not None:
+        if not 0.5 < float(support_fraction) <= 1.0:
+            raise ValueError("support_fraction must lie in (0.5, 1].")
+        support_fraction = float(support_fraction)
+
+    try:
+        from sklearn.covariance import MinCovDet
+    except ImportError as exc:  # pragma: no cover - dependency managed elsewhere
+        raise ImportError(
+            "MinCovDet estimator requires scikit-learn to be installed."
+        ) from exc
+
+    model = MinCovDet(
+        support_fraction=support_fraction,
+        assume_centered=assume_centered,
+        random_state=random_state,
+        store_precision=False,
+    )
+    model.fit(values)
+
+    cov = _format_matrix(model.covariance_, clean.columns)
+    cov = project_to_psd(cov, epsilon=1e-9)
+    _warn_if_ill_conditioned(cov.to_numpy())
+
+    return cov
 
 
 def nonlinear_shrinkage(

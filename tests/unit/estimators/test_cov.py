@@ -44,12 +44,28 @@ def test_ledoit_wolf_shrinkage_output():
     assert np.all(eigvals >= -1e-9)
 
 
+def test_oas_shrinkage_output():
+    returns = _toy_returns()
+    cov_df, shrinkage = cov.oas_shrinkage(returns)
+    assert 0.0 <= shrinkage <= 1.0
+    eigvals = np.linalg.eigvalsh(cov_df.to_numpy())
+    assert np.all(eigvals >= -1e-9)
+
+
 def test_nonlinear_shrinkage_psd_and_labels():
     returns = _toy_returns()
     nonlinear = cov.nonlinear_shrinkage(returns)
     np.testing.assert_array_equal(nonlinear.index, returns.columns)
     eigvals = np.linalg.eigvalsh(nonlinear.to_numpy())
     assert np.all(eigvals >= -1e-9)
+
+
+def test_min_cov_det_psd():
+    returns = _toy_returns()
+    mcd = cov.min_cov_det(returns)
+    eigvals = np.linalg.eigvalsh(mcd.to_numpy())
+    assert np.all(eigvals >= -1e-9)
+    assert list(mcd.index) == ["A", "B", "C"]
 
 
 def test_tyler_m_estimator_trace_normalisation():

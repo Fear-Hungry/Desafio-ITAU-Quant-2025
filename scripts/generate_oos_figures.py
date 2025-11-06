@@ -9,18 +9,28 @@ Figures generated:
 4. Window-level metrics distribution
 """
 
-import pandas as pd
-import numpy as np
-import yaml
-import matplotlib.pyplot as plt
-from pathlib import Path
 import json
+from itertools import cycle
+from pathlib import Path
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import yaml
 
 REPO_ROOT = Path(__file__).parent.parent
 CONFIG_DIR = REPO_ROOT / "configs"
 REPORTS_DIR = REPO_ROOT / "reports"
 WALKFORWARD_DIR = REPORTS_DIR / "walkforward"
 FIGURES_DIR = REPORTS_DIR / "figures"
+
+
+def _palette():
+    colors = plt.rcParams.get("axes.prop_cycle", None)
+    if colors is None:
+        return cycle([None])
+    return cycle(colors.by_key().get("color", [None]))
+
 
 def load_oos_config():
     """Load OOS period from centralized config."""
@@ -49,7 +59,13 @@ def setup_style():
     plt.rcParams['figure.figsize'] = (14, 7)
     plt.rcParams['font.size'] = 10
 
-def generate_nav_figure(df_oos: pd.DataFrame):
+def _build_output_path(stem: str, suffix: str) -> Path:
+    """Return standardized figure path for a given suffix."""
+
+    return FIGURES_DIR / f"{stem}_{suffix}.png"
+
+
+def generate_nav_figure(df_oos: pd.DataFrame, suffix: str):
     """Generate cumulative NAV figure from nav_daily.csv (OOS period)."""
     print("\n=== Generating NAV Cumulative Figure ===")
 
@@ -57,15 +73,26 @@ def generate_nav_figure(df_oos: pd.DataFrame):
     nav_curve = df_oos['nav'].values
 
     fig, ax = plt.subplots(figsize=(14, 7))
+    palette = _palette()
+    nav_color = next(palette)
+    accent_color = next(palette)
 
     # Plot cumulative NAV from canonical nav_daily.csv
-    ax.plot(dates, nav_curve, linewidth=2.5, label='NAV (OOS Daily)', color='#1f77b4')
-    ax.fill_between(dates, 1.0, nav_curve, alpha=0.3, color='#1f77b4')
+    ax.plot(dates, nav_curve, linewidth=2.5, label='NAV (OOS Daily)', color=nav_color)
+    ax.fill_between(dates, 1.0, nav_curve, alpha=0.3, color=nav_color)
 
     # Mark final NAV
     nav_final = nav_curve[-1]
-    ax.axhline(y=nav_final, color='red', linestyle='--', linewidth=1.5, alpha=0.6, label=f'Final NAV: {nav_final:.4f}')
-    ax.text(dates[-1], nav_final + 0.015, f'{nav_final:.4f}', fontsize=11, color='red', ha='right', fontweight='bold')
+    ax.axhline(y=nav_final, color=accent_color, linestyle='--', linewidth=1.5, alpha=0.6, label=f'Final NAV: {nav_final:.4f}')
+    ax.text(
+        dates[-1],
+        nav_final + 0.015,
+        f'{nav_final:.4f}',
+        fontsize=11,
+        color=accent_color,
+        ha='right',
+        fontweight='bold',
+    )
 
     # Mark max drawdown point
     running_max = np.maximum.accumulate(nav_curve)
@@ -73,10 +100,28 @@ def generate_nav_figure(df_oos: pd.DataFrame):
     min_dd_idx = int(np.argmin(drawdown))
     max_dd = drawdown[min_dd_idx]
 
-    ax.axvline(x=dates[min_dd_idx], color='orange', linestyle=':', alpha=0.6, linewidth=2)
-    ax.scatter([dates[min_dd_idx]], [nav_curve[min_dd_idx]], color='orange', s=100, zorder=5, marker='o', edgecolors='darkred', linewidth=2)
-    ax.text(dates[min_dd_idx], nav_curve[min_dd_idx] - 0.08, f'Max DD\n{max_dd:.2%}', fontsize=10, ha='center',
-            color='darkred', fontweight='bold', bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.3))
+    dd_color = next(palette)
+    ax.axvline(x=dates[min_dd_idx], color=dd_color, linestyle=':', alpha=0.6, linewidth=2)
+    ax.scatter(
+        [dates[min_dd_idx]],
+        [nav_curve[min_dd_idx]],
+        color=dd_color,
+        s=100,
+        zorder=5,
+        marker='o',
+        edgecolors=accent_color,
+        linewidth=2,
+    )
+    ax.text(
+        dates[min_dd_idx],
+        nav_curve[min_dd_idx] - 0.08,
+        f'Max DD\n{max_dd:.2%}',
+        fontsize=10,
+        ha='center',
+        color=accent_color,
+        fontweight='bold',
+        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.3),
+    )
 
     ax.set_xlabel('Date', fontsize=12, fontweight='bold')
     ax.set_ylabel('NAV', fontsize=12, fontweight='bold')
@@ -86,13 +131,14 @@ def generate_nav_figure(df_oos: pd.DataFrame):
     ax.set_ylim([0.7, max(1.1, nav_final * 1.05)])
 
     plt.tight_layout()
-    output = FIGURES_DIR / "oos_nav_cumulative_20251103.png"
+    output = _build_output_path("oos_nav_cumulative", suffix)
     plt.savefig(output, dpi=150, bbox_inches='tight')
     print(f"✓ Saved: {output}")
     print(f"  NAV Final: {nav_final:.4f} | Max DD: {max_dd:.2%}")
     plt.close()
 
-def generate_drawdown_figure(df_oos: pd.DataFrame):
+
+def generate_drawdown_figure(df_oos: pd.DataFrame, suffix: str):
     """Generate underwater drawdown plot from nav_daily.csv."""
     print("\n=== Generating Drawdown Underwater Figure ===")
 
@@ -101,29 +147,33 @@ def generate_drawdown_figure(df_oos: pd.DataFrame):
 
     # Compute drawdowns
     running_max = np.maximum.accumulate(nav_curve)
-    drawdowns = (nav_curve / running_max - 1.0) * 100  # Convert to percentage
+    drawdowns = (nav_curve / running_max - 1.0) * 100
+
+    palette = _palette()
+    bar_color = next(palette)
+    threshold_color = next(palette)
+    worst_color = next(palette)
 
     fig, ax = plt.subplots(figsize=(14, 7))
 
     # Underwater plot (negative drawdown)
-    colors = np.where(drawdowns < -15, 'darkred', np.where(drawdowns < -10, 'red', 'orange'))
-    ax.bar(dates, drawdowns, color=colors, alpha=0.6, width=1.0, label='Drawdown %')
+    ax.bar(dates, drawdowns, color=bar_color, alpha=0.6, width=1.0, label='Drawdown %')
 
     # Mark key thresholds
-    ax.axhline(y=-15, color='red', linestyle='--', linewidth=2, alpha=0.6, label='Limit: -15%')
-    ax.axhline(y=-20, color='darkred', linestyle='--', linewidth=2, alpha=0.6, label='Severe: -20%')
+    ax.axhline(y=-15, color=threshold_color, linestyle='--', linewidth=2, alpha=0.6, label='Limit: -15%')
+    ax.axhline(y=-20, color=worst_color, linestyle='--', linewidth=2, alpha=0.6, label='Severe: -20%')
     ax.axhline(y=0, color='black', linestyle='-', linewidth=0.8, alpha=0.3)
 
     # Mark worst drawdown
     min_dd_idx = int(np.argmin(drawdowns))
     worst_dd = float(drawdowns[min_dd_idx])
-    ax.scatter(dates[min_dd_idx], worst_dd, color='darkred', s=100, zorder=5)
+    ax.scatter(dates[min_dd_idx], worst_dd, color=worst_color, s=100, zorder=5)
     ax.annotate(f"Worst: {worst_dd:.1f}%\n({pd.to_datetime(dates[min_dd_idx]).strftime('%Y-%m-%d')})",
                 xy=(dates[min_dd_idx], worst_dd),
                 xytext=(20, -20), textcoords='offset points',
                 fontsize=10, ha='left',
-                bbox=dict(boxstyle='round,pad=0.5', fc='yellow', alpha=0.5),
-                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0', color='darkred'))
+                bbox=dict(boxstyle='round,pad=0.5', fc='white', alpha=0.5),
+                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0', color=worst_color))
 
     ax.set_xlabel('Date', fontsize=11)
     ax.set_ylabel('Drawdown (%)', fontsize=11)
@@ -133,13 +183,14 @@ def generate_drawdown_figure(df_oos: pd.DataFrame):
     ax.set_ylim([min(drawdowns) * 1.1, 2])
 
     plt.tight_layout()
-    output = FIGURES_DIR / "oos_drawdown_underwater_20251103.png"
+    output = _build_output_path("oos_drawdown_underwater", suffix)
     plt.savefig(output, dpi=150, bbox_inches='tight')
     print(f"✓ Saved: {output}")
     print(f"  Max Drawdown: {worst_dd:.1f}%")
     plt.close()
 
-def generate_baseline_comparison_figure():
+
+def generate_baseline_comparison_figure(suffix: str):
     """Generate Sharpe (excesso T‑Bill) vs Return scatter (PRISM-R vs baselines)."""
     print("\n=== Generating Baseline Comparison Figure ===")
 
@@ -161,11 +212,22 @@ def generate_baseline_comparison_figure():
     })
 
     fig, ax = plt.subplots(figsize=(12, 8))
+    palette = _palette()
+    baseline_color = next(palette)
+    prism_color = next(palette)
 
     # Plot baselines as blue circles
     if not df_baselines.empty:
-        ax.scatter(df_baselines['Return (%)'].values, df_baselines['Sharpe (excesso T-Bill)'].values,
-                  s=200, alpha=0.6, color='steelblue', label='Baseline Strategies', edgecolors='navy', linewidth=1.5)
+        ax.scatter(
+            df_baselines['Return (%)'].values,
+            df_baselines['Sharpe (excesso T-Bill)'].values,
+            s=200,
+            alpha=0.6,
+            color=baseline_color,
+            label='Baseline Strategies',
+            edgecolors=baseline_color,
+            linewidth=1.5,
+        )
 
         # Label each baseline
         for idx, row in df_baselines.iterrows():
@@ -174,11 +236,21 @@ def generate_baseline_comparison_figure():
                        xytext=(5, 5), textcoords='offset points', fontsize=9, alpha=0.8)
 
     # Plot PRISM-R as red diamond (emphasize)
-    ax.scatter([prism_return], [prism_sharpe], s=500, alpha=0.8, color='#d62728', marker='D',
-              label='PRISM-R (Our Strategy)', edgecolors='darkred', linewidth=2.5, zorder=5)
+    ax.scatter(
+        [prism_return],
+        [prism_sharpe],
+        s=500,
+        alpha=0.8,
+        color=prism_color,
+        marker='D',
+        label='PRISM-R (Our Strategy)',
+        edgecolors=prism_color,
+        linewidth=2.5,
+        zorder=5,
+    )
     ax.annotate('PRISM-R', (prism_return, prism_sharpe), xytext=(10, 10), textcoords='offset points',
-               fontsize=11, fontweight='bold', color='darkred',
-               bbox=dict(boxstyle='round,pad=0.3', facecolor='yellow', alpha=0.3))
+               fontsize=11, fontweight='bold', color=prism_color,
+               bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.6))
 
     ax.set_xlabel('Annualized Return (%)', fontsize=12, fontweight='bold')
     ax.set_ylabel('Sharpe (excesso T-Bill)', fontsize=12, fontweight='bold')
@@ -194,24 +266,32 @@ def generate_baseline_comparison_figure():
             bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', alpha=0.3))
 
     plt.tight_layout()
-    output = FIGURES_DIR / "oos_baseline_comparison_20251103.png"
+    output = _build_output_path("oos_baseline_comparison", suffix)
     plt.savefig(output, dpi=150, bbox_inches='tight')
     print(f"✓ Saved: {output}")
     print(f"  PRISM-R: Sharpe={prism_sharpe:.4f}, Return={prism_return:.2f}%")
     plt.close()
 
-def generate_daily_distribution_figure(df_oos: pd.DataFrame):
+
+def generate_daily_distribution_figure(df_oos: pd.DataFrame, suffix: str):
     """Generate daily returns distribution figure."""
     print("\n=== Generating Daily Returns Distribution Figure ===")
 
     daily_returns = df_oos['daily_return'].values * 100  # Convert to %
+    palette = _palette()
+    hist_color = next(palette)
+    cumulative_color = next(palette)
+    vol_color = next(palette)
+    pie_colors = [next(palette) for _ in range(3)]
 
     fig, axes = plt.subplots(2, 2, figsize=(14, 10))
 
     # 1. Daily Returns Histogram
-    axes[0, 0].hist(daily_returns, bins=50, color='steelblue', alpha=0.6, edgecolor='black')
-    axes[0, 0].axvline(np.mean(daily_returns), color='red', linestyle='--', linewidth=2, label=f'Mean: {np.mean(daily_returns):.3f}%')
-    axes[0, 0].axvline(np.median(daily_returns), color='green', linestyle='--', linewidth=2, label=f'Median: {np.median(daily_returns):.3f}%')
+    axes[0, 0].hist(daily_returns, bins=50, color=hist_color, alpha=0.6, edgecolor='black')
+    mean_color = next(palette)
+    median_color = next(palette)
+    axes[0, 0].axvline(np.mean(daily_returns), color=mean_color, linestyle='--', linewidth=2, label=f'Mean: {np.mean(daily_returns):.3f}%')
+    axes[0, 0].axvline(np.median(daily_returns), color=median_color, linestyle='--', linewidth=2, label=f'Median: {np.median(daily_returns):.3f}%')
     axes[0, 0].set_xlabel('Daily Return (%)', fontsize=10)
     axes[0, 0].set_ylabel('Frequency', fontsize=10)
     axes[0, 0].set_title('Distribution of Daily Returns', fontsize=11, fontweight='bold')
@@ -220,8 +300,8 @@ def generate_daily_distribution_figure(df_oos: pd.DataFrame):
 
     # 2. Cumulative Returns
     cumulative = np.cumsum(daily_returns)
-    axes[0, 1].plot(df_oos['date'].values, cumulative, linewidth=2, color='#1f77b4')
-    axes[0, 1].fill_between(df_oos['date'].values, 0, cumulative, alpha=0.3, color='#1f77b4')
+    axes[0, 1].plot(df_oos['date'].values, cumulative, linewidth=2, color=cumulative_color)
+    axes[0, 1].fill_between(df_oos['date'].values, 0, cumulative, alpha=0.3, color=cumulative_color)
     axes[0, 1].set_xlabel('Date', fontsize=10)
     axes[0, 1].set_ylabel('Cumulative Return (%)', fontsize=10)
     axes[0, 1].set_title('Cumulative Daily Returns Over Time', fontsize=11, fontweight='bold')
@@ -229,9 +309,9 @@ def generate_daily_distribution_figure(df_oos: pd.DataFrame):
 
     # 3. Rolling Volatility (21-day)
     rolling_vol = pd.Series(daily_returns).rolling(21).std()
-    axes[1, 0].plot(df_oos['date'].values, rolling_vol, linewidth=1.5, color='purple', alpha=0.7)
-    axes[1, 0].fill_between(df_oos['date'].values, rolling_vol, alpha=0.2, color='purple')
-    axes[1, 0].axhline(np.mean(rolling_vol), color='red', linestyle='--', linewidth=1.5, label=f'Mean Vol: {np.mean(rolling_vol):.2f}%')
+    axes[1, 0].plot(df_oos['date'].values, rolling_vol, linewidth=1.5, color=vol_color, alpha=0.7)
+    axes[1, 0].fill_between(df_oos['date'].values, rolling_vol, alpha=0.2, color=vol_color)
+    axes[1, 0].axhline(np.mean(rolling_vol), color=next(palette), linestyle='--', linewidth=1.5, label=f'Mean Vol: {np.mean(rolling_vol):.2f}%')
     axes[1, 0].set_xlabel('Date', fontsize=10)
     axes[1, 0].set_ylabel('21-Day Rolling Volatility (%)', fontsize=10)
     axes[1, 0].set_title('Rolling Volatility (21-day window)', fontsize=11, fontweight='bold')
@@ -243,15 +323,14 @@ def generate_daily_distribution_figure(df_oos: pd.DataFrame):
     negative_days = np.sum(daily_returns < 0)
     zero_days = np.sum(daily_returns == 0)
 
-    colors = ['green', 'red', 'gray']
     sizes = [positive_days, negative_days, zero_days]
     labels = [f'Positive\n({positive_days} days)', f'Negative\n({negative_days} days)', f'Zero\n({zero_days} days)']
 
-    axes[1, 1].pie(sizes, labels=labels, colors=colors, autopct='%1.1f%%', startangle=90, textprops={'fontsize': 10})
+    axes[1, 1].pie(sizes, labels=labels, colors=pie_colors, autopct='%1.1f%%', startangle=90, textprops={'fontsize': 10})
     axes[1, 1].set_title('Distribution of Positive/Negative Days', fontsize=11, fontweight='bold')
 
     plt.tight_layout()
-    output = FIGURES_DIR / "oos_daily_distribution_20251103.png"
+    output = _build_output_path("oos_daily_distribution", suffix)
     plt.savefig(output, dpi=150, bbox_inches='tight')
     print(f"✓ Saved: {output}")
     print(f"  Daily stats: Mean={np.mean(daily_returns):.3f}%, Std={np.std(daily_returns):.3f}%, Win rate={(positive_days/len(daily_returns)*100):.1f}%")
@@ -270,15 +349,16 @@ def main():
     oos_config = load_oos_config()
     df_nav = load_nav_daily()
     df_oos = filter_to_oos_period(df_nav, oos_config)
+    figure_suffix = pd.to_datetime(oos_config['end_date']).strftime("%Y%m%d")
 
     print(f"✓ OOS Period: {oos_config['start_date']} to {oos_config['end_date']}")
     print(f"✓ Data loaded: {len(df_oos)} trading days")
 
     # Generate all figures
-    generate_nav_figure(df_oos)
-    generate_drawdown_figure(df_oos)
-    generate_baseline_comparison_figure()
-    generate_daily_distribution_figure(df_oos)
+    generate_nav_figure(df_oos, figure_suffix)
+    generate_drawdown_figure(df_oos, figure_suffix)
+    generate_baseline_comparison_figure(figure_suffix)
+    generate_daily_distribution_figure(df_oos, figure_suffix)
 
     print("\n" + "=" * 70)
     print("✅ ALL FIGURES GENERATED SUCCESSFULLY")

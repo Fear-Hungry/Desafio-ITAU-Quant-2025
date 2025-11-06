@@ -13,7 +13,12 @@ from typing import Any
 import pandas as pd
 
 from arara_quant.config import Settings
-from arara_quant.estimators.cov import ledoit_wolf_shrinkage, sample_cov
+from arara_quant.estimators.cov import (
+    ledoit_wolf_shrinkage,
+    min_cov_det,
+    oas_shrinkage,
+    sample_cov,
+)
 from arara_quant.estimators.mu import huber_mean, mean_return, shrunk_mean
 from arara_quant.utils.logging_config import get_logger
 
@@ -39,13 +44,13 @@ def estimate_parameters(
 
     This function applies robust estimators to historical returns:
     - μ (expected return): Huber mean (robust to outliers) or simple mean
-    - Σ (covariance): Ledoit-Wolf shrinkage or sample covariance
+    - Σ (covariance): Ledoit-Wolf/OAS shrinkage, MinCovDet, or sample covariance
 
     Args:
         returns_file: Input parquet file with historical returns
         window: Number of most recent observations to use (rolling window)
         mu_method: Method for expected return ("shrunk_50", "huber", or "simple")
-        cov_method: Method for covariance ("ledoit_wolf" or "sample")
+        cov_method: Method for covariance ("ledoit_wolf", "oas", "mincovdet", or "sample")
         huber_delta: Robustness parameter for Huber estimator (typically 1.5)
         shrink_strength: Shrinkage intensity towards the prior (default 0.5)
         annualize: If True, annualize estimates (252 trading days)
@@ -102,15 +107,21 @@ def estimate_parameters(
     else:
         raise ValueError(f"Unsupported mu_method: {mu_method}")
 
-    logger.info("Estimating Σ via %s", cov_method)
+    cov_key = (cov_method or "").strip().lower().replace("-", "_")
+    logger.info("Estimating Σ via %s", cov_key or cov_method)
 
     # Estimate covariance (Σ)
-    shrinkage = None
-    if cov_method == "ledoit_wolf":
+    shrinkage: float | None = None
+    if cov_key == "ledoit_wolf":
         cov_daily, shrinkage = ledoit_wolf_shrinkage(sample)
         shrinkage = float(shrinkage)
-    elif cov_method == "sample":
+    elif cov_key == "oas":
+        cov_daily, shrinkage = oas_shrinkage(sample)
+        shrinkage = float(shrinkage)
+    elif cov_key in {"sample", "empirical"}:
         cov_daily = sample_cov(sample)
+    elif cov_key in {"mincovdet", "min_cov_det", "mcd"}:
+        cov_daily = min_cov_det(sample)
     else:
         raise ValueError(f"Unsupported cov_method: {cov_method}")
 

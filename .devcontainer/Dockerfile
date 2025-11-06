@@ -15,6 +15,10 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Preinstall Codex CLI so plain `docker run` already has it available.
+RUN npm install -g @openai/codex \
+    && npm cache clean --force
+
 # Install Poetry
 ENV POETRY_VERSION=1.8.0
 ENV POETRY_HOME="/opt/poetry"

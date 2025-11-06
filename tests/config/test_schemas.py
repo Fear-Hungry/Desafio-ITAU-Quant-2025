@@ -203,6 +203,12 @@ def test_estimator_config_allows_graphical_lasso():
     assert config.sigma_method == "graphical_lasso"
 
 
+@pytest.mark.parametrize("method", ["oas", "mincovdet"])
+def test_estimator_config_allows_new_cov_methods(method):
+    config = EstimatorConfig(sigma_method=method)
+    assert config.sigma_method == method
+
+
 def test_estimator_config_invalid_mu_method():
     """Test that invalid mu_method raises ValidationError."""
     with pytest.raises(ValidationError):
@@ -255,6 +261,11 @@ def test_portfolio_config_custom_values():
     assert config.turnover_penalty == 0.25
     assert config.estimation_window == 126
     assert config.shrinkage_method == "nonlinear"
+
+
+def test_portfolio_config_accepts_oas_shrinkage():
+    config = PortfolioConfig(shrinkage_method="oas")
+    assert config.shrinkage_method == "oas"
 
 
 def test_portfolio_config_min_greater_than_max_raises():

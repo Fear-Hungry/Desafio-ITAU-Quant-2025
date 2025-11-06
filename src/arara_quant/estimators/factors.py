@@ -307,12 +307,17 @@ def factor_covariance(
 
     factors_df = _to_dataframe(factors).dropna(how="any")
 
-    method = method.lower()
+    method = method.lower().replace("-", "_")
     if method == "sample":
         return cov_estimators.sample_cov(factors_df, **kwargs)
     if method == "ledoit_wolf":
         cov_df, _ = cov_estimators.ledoit_wolf_shrinkage(factors_df, **kwargs)
         return cov_df
+    if method == "oas":
+        cov_df, _ = cov_estimators.oas_shrinkage(factors_df, **kwargs)
+        return cov_df
+    if method in {"mincovdet", "mcd", "min_cov_det"}:
+        return cov_estimators.min_cov_det(factors_df, **kwargs)
     if method == "tyler":
         return cov_estimators.tyler_m_estimator(factors_df, **kwargs)
     if method == "nonlinear":

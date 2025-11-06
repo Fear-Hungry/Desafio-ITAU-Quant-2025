@@ -135,7 +135,7 @@ class EstimatorConfig(BaseModel):
     mu_method : Literal
         Mean return estimator (simple, huber, trimmed, shrunk_50)
     sigma_method : Literal
-        Covariance estimator (sample, ledoit_wolf, nonlinear, tyler, graphical_lasso)
+        Covariance estimator (sample, ledoit_wolf, nonlinear, tyler, graphical_lasso, oas, mincovdet)
     huber_delta : float
         Delta parameter for Huber mean (only used if mu_method='huber')
     """
@@ -145,7 +145,13 @@ class EstimatorConfig(BaseModel):
         default="simple", description="Mean return estimator"
     )
     sigma_method: Literal[
-        "sample", "ledoit_wolf", "nonlinear", "tyler", "graphical_lasso"
+        "sample",
+        "ledoit_wolf",
+        "nonlinear",
+        "tyler",
+        "graphical_lasso",
+        "oas",
+        "mincovdet",
     ] = Field(
         default="ledoit_wolf", description="Covariance estimator"
     )
@@ -194,7 +200,7 @@ class PortfolioConfig(BaseModel):
     estimation_window: int = Field(
         default=252, gt=0, description="Estimation window (trading days)"
     )
-    shrinkage_method: Literal["ledoit_wolf", "nonlinear", "tyler"] = Field(
+    shrinkage_method: Literal["ledoit_wolf", "nonlinear", "tyler", "oas"] = Field(
         default="ledoit_wolf", description="Covariance shrinkage method"
     )
     estimators: EstimatorConfig | None = Field(

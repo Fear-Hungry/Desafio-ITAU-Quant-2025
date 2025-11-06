@@ -48,16 +48,16 @@ poetry run python scripts/consolidate_oos_metrics.py
 **Key Metrics Generated:**
 ```json
 {
-  "nav_final": 1.0289,
-  "total_return": 0.0289,
-  "annualized_return": 0.0050,
-  "annualized_volatility": 0.0860,
-  "sharpe_ratio": 0.0576,
-  "max_drawdown": -0.2089,
-  "avg_drawdown": -0.1192,
-  "cvar_95": -0.0127,           // ← Daily CVaR
-  "cvar_95_annual": -0.2023,    // ← NEW: Annualized CVaR
-  "success_rate": 0.5203,
+  "nav_final": 1.0288657188001502,
+  "total_return": 0.02886571880015021,
+  "annualized_return": 0.004954446381679967,
+  "annualized_volatility": 0.08596241615802391,
+  "sharpe_ratio": -0.21300083657353924,
+  "max_drawdown": -0.20886843865285545,
+  "avg_drawdown": -0.11917215346729178,
+  "cvar_95": -0.012746570427993225,
+  "cvar_95_annual": -0.2023455325286413,
+  "success_rate": 0.5203308063404548,
   "n_days": "1451",
   "period_start": "2020-01-02",
   "period_end": "2025-10-09"
@@ -70,10 +70,10 @@ poetry run python scripts/generate_oos_figures.py
 ```
 
 **Outputs:**
-- ✅ `reports/figures/oos_nav_cumulative_20251103.png`
-- ✅ `reports/figures/oos_drawdown_underwater_20251103.png`
-- ✅ `reports/figures/oos_baseline_comparison_20251103.png` (Sharpe em excesso ao T‑Bill)
-- ✅ `reports/figures/oos_daily_distribution_20251103.png`
+- ✅ `reports/figures/oos_nav_cumulative_20251009.png`
+- ✅ `reports/figures/oos_drawdown_underwater_20251009.png`
+- ✅ `reports/figures/oos_baseline_comparison_20251009.png` (Sharpe em excesso ao T‑Bill)
+- ✅ `reports/figures/oos_daily_distribution_20251009.png`
 
 #### C. Final Report (scripts/generate_final_report.py) — NEW
 ```bash

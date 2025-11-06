@@ -158,11 +158,47 @@ def run_estimators(
     else:
         raise ValueError(f"Unsupported mean estimator '{method}'.")
 
-    cov_method = (sigma_config.get("method") or "ledoit_wolf").lower()
-    if cov_method == "ledoit_wolf":
-        cov = clean_returns.cov(ddof=1)
-    elif cov_method == "sample":
-        cov = clean_returns.cov(ddof=1)
+    cov_method = (sigma_config.get("method") or "ledoit_wolf")
+    cov_key = cov_method.strip().lower().replace("-", "_")
+    assume_centered = bool(sigma_config.get("assume_centered", False))
+
+    if cov_key == "ledoit_wolf":
+        if bool(sigma_config.get("nonlinear", False)):
+            cov = covariance_estimators.nonlinear_shrinkage(clean_returns)
+        else:
+            cov, _ = covariance_estimators.ledoit_wolf_shrinkage(clean_returns)
+    elif cov_key == "nonlinear":
+        cov = covariance_estimators.nonlinear_shrinkage(clean_returns)
+    elif cov_key in {"sample", "empirical"}:
+        cov = covariance_estimators.sample_cov(clean_returns)
+    elif cov_key == "oas":
+        cov, _ = covariance_estimators.oas_shrinkage(
+            clean_returns, assume_centered=assume_centered
+        )
+    elif cov_key in {"mincovdet", "mcd", "min_cov_det"}:
+        cov = covariance_estimators.min_cov_det(
+            clean_returns,
+            support_fraction=sigma_config.get("support_fraction"),
+            assume_centered=assume_centered,
+            random_state=sigma_config.get("random_state"),
+        )
+    elif cov_key == "tyler":
+        cov = covariance_estimators.tyler_m_estimator(clean_returns)
+    elif cov_key in {"graphical_lasso", "glasso"}:
+        alpha = float(sigma_config.get("alpha", 0.01))
+        max_iter = int(sigma_config.get("max_iter", 200))
+        tol = float(sigma_config.get("tol", 1e-4))
+        enet_tol = float(sigma_config.get("enet_tol", 1e-4))
+        mode = str(sigma_config.get("mode", "cd"))
+        cov, _ = covariance_estimators.graphical_lasso_cov(
+            clean_returns,
+            alpha=alpha,
+            max_iter=max_iter,
+            tol=tol,
+            assume_centered=assume_centered,
+            enet_tol=enet_tol,
+            mode=mode,
+        )
     else:
         raise ValueError(f"Unsupported covariance estimator '{cov_method}'.")
     cov = cov.astype(float)

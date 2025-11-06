@@ -25,11 +25,11 @@ def _make_settings(tmp_path: Path) -> Settings:
     )
 
 
-def teardown_function() -> None:
-    reset_settings_cache()
+def _run_synthetic_backtest(
+    tmp_path: Path,
+) -> tuple["BacktestResult", pd.DataFrame, Settings]:
+    """Execute a small walk-forward backtest used across tests."""
 
-
-def test_run_backtest_produces_walkforward_metrics(tmp_path: Path) -> None:
     settings = _make_settings(tmp_path)
 
     dates = pd.bdate_range("2022-01-03", periods=320)
@@ -70,6 +70,15 @@ estimators:
     config_path.write_text(config_text, encoding="utf-8")
 
     result = run_backtest(config_path, dry_run=False, settings=settings)
+    return result, returns, settings
+
+
+def teardown_function() -> None:
+    reset_settings_cache()
+
+
+def test_run_backtest_produces_walkforward_metrics(tmp_path: Path) -> None:
+    result, _, _ = _run_synthetic_backtest(tmp_path)
 
     assert result.split_metrics is not None and not result.split_metrics.empty
     assert set(result.split_metrics.columns) >= {
@@ -81,3 +90,47 @@ estimators:
     assert result.horizon_metrics is not None
     horizons = result.horizon_metrics.set_index("horizon_days")
     assert {21, 63}.intersection(horizons.index) == {21, 63}
+
+
+def test_turnover_matches_half_l1_pretrade(tmp_path: Path) -> None:
+    result, returns, _ = _run_synthetic_backtest(tmp_path)
+
+    assert result.split_metrics is not None and not result.split_metrics.empty
+    assert result.weights is not None and not result.weights.empty
+
+    split_metrics = result.split_metrics.copy()
+    split_metrics["test_start"] = pd.to_datetime(split_metrics["test_start"])
+    split_metrics = split_metrics.set_index("test_start").sort_index()
+
+    weights = result.weights.sort_index()
+    returns = returns.sort_index()
+
+    prev_post_trade = pd.Series(0.0, index=weights.columns, dtype=float)
+    prev_date: pd.Timestamp | None = None
+
+    for date, post_trade in weights.iterrows():
+        post_trade = post_trade.astype(float)
+        if prev_date is None:
+            pre_trade = prev_post_trade.reindex(post_trade.index).fillna(0.0)
+        else:
+            seg = returns.loc[(returns.index > prev_date) & (returns.index <= date)]
+            drifted = prev_post_trade.copy()
+            if not seg.empty:
+                growth = (1.0 + seg).prod(axis=0)
+                growth = growth.reindex(drifted.index).fillna(1.0)
+                drifted = drifted * growth
+                total = float(drifted.sum())
+                if total > 0 and np.isfinite(total):
+                    drifted = drifted / total
+            pre_trade = drifted.reindex(post_trade.index).fillna(0.0)
+
+        turnover_half = 0.5 * float(np.abs(post_trade - pre_trade).sum())
+        reported = float(split_metrics.loc[date, "turnover"])
+        assert np.isclose(
+            turnover_half,
+            reported,
+            atol=1e-8,
+        ), f"Turnover mismatch on {date.date()}: computed={turnover_half}, reported={reported}"
+
+        prev_post_trade = post_trade
+        prev_date = date

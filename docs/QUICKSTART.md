@@ -118,8 +118,14 @@ TURNOVER_PENALTY = 0.10  # penalidade de giro
 ### Escolher Método de Shrinkage
 
 ```python
-SHRINKAGE_METHOD = 'ledoit_wolf'  # ou 'nonlinear', 'tyler'
+SHRINKAGE_METHOD = 'ledoit_wolf'  # ou 'oas', 'nonlinear', 'tyler', 'mincovdet'
 ```
+
+- `Ledoit-Wolf`: mistura Σ amostral com identidade → ótima para T ≈ N e carteiras densas.
+- `OAS`: versão “quase bayesiana” que encolhe um pouco mais em janelas curtas.
+- `MinCovDet`: robusto, remove outliers extremos antes de ajustar Σ.
+- `Nonlinear`: aplica shrinkage espectral (Marchenko-Pastur) para estabilizar autovalores.
+- `Tyler`: scatter robusto para distribuições elípticas (trace normalizado).
 
 ---
 

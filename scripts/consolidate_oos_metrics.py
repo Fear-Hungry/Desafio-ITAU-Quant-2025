@@ -10,12 +10,14 @@ This script:
 """
 
 import argparse
-import pandas as pd
-import numpy as np
-import yaml
-from pathlib import Path
-from datetime import datetime
 import json
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import yaml
+
+from arara_quant.utils.psr_dsr import psr_dsr
 
 # Setup paths
 REPO_ROOT = Path(__file__).parent.parent
@@ -94,7 +96,13 @@ def _load_riskfree_daily(rf_csv: Path) -> pd.DataFrame:
     return out
 
 
-def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict, rf_daily: pd.DataFrame | None = None) -> dict:
+def compute_metrics_from_nav_daily(
+    df_nav: pd.DataFrame,
+    oos_config: dict,
+    rf_daily: pd.DataFrame | None = None,
+    *,
+    psr_n_trials: int = 1,
+) -> dict:
     """
     Compute all metrics directly from daily NAV series.
     This ensures consistent calculations with no divergences.
@@ -162,6 +170,13 @@ def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict, rf_da
     # Success rate (% of positive days)
     success_rate = np.sum(daily_returns > 0) / len(daily_returns)
 
+    psr_result = psr_dsr(
+        pd.Series(daily_returns),
+        S0=0.0,
+        N=max(1, psr_n_trials),
+        periods_per_year=252,
+    )
+
     metrics = {
         # Performance metrics
         "nav_final": nav_final,
@@ -170,6 +185,8 @@ def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict, rf_da
         "annualized_volatility": annualized_volatility,
         "sharpe_ratio": sharpe_ratio,
         "sharpe_excess_rf": sharpe_excess if sharpe_excess is not None else sharpe_ratio,
+        "psr": psr_result.psr,
+        "dsr": psr_result.dsr,
 
         # Risk metrics
         "max_drawdown": max_drawdown,
@@ -181,6 +198,9 @@ def compute_metrics_from_nav_daily(df_nav: pd.DataFrame, oos_config: dict, rf_da
         "n_days": n_days,
         "n_years": n_years,
         "success_rate": success_rate,
+        "psr_nu_eff": psr_result.nu_eff,
+        "psr_s_star": psr_result.s_star,
+        "psr_n_trials": psr_result.N,
 
         # Period metadata
         "period_start": dates[0],
@@ -338,6 +358,8 @@ def format_simple_metrics_table(metrics: dict) -> str:
         f"| Avg Drawdown | {metrics['avg_drawdown']:.2%} |",
         f"| CVaR 95% (daily) | {metrics['cvar_95']:.4f} ({metrics['cvar_95']:.2%}) |",
         f"| CVaR 95% (annual) | {metrics['cvar_95_annual']:.4f} ({metrics['cvar_95_annual']:.2%}) |",
+        f"| Probabilistic Sharpe (PSR) | {metrics['psr']:.4f} |",
+        f"| Deflated Sharpe (DSR) | {metrics['dsr']:.4f} |",
         f"| Success Rate | {metrics['success_rate']:.1%} |",
         f"| Days in Period | {metrics['n_days']} |",
         f"| Start Date | {metrics['period_start']} |",
@@ -354,6 +376,12 @@ def main():
     parser = argparse.ArgumentParser(description="Consolidate OOS metrics from nav_daily.csv")
     parser.add_argument("--riskfree-csv", type=str, default=None,
                         help="Optional CSV with daily or annual risk-free (T-Bill) series. Columns: date + rf_daily OR rf_annual/rf_rate/yield")
+    parser.add_argument(
+        "--psr-n-trials",
+        type=int,
+        default=1,
+        help="Effective number of strategy trials used when deflating the Sharpe ratio (DSR).",
+    )
     args = parser.parse_args()
 
     # Load OOS configuration
@@ -377,7 +405,12 @@ def main():
 
     # Compute metrics from daily NAV
     print("\nComputing consolidated metrics from nav_daily.csv...")
-    metrics = compute_metrics_from_nav_daily(df_nav, oos_config, rf_daily=rf_df)
+    metrics = compute_metrics_from_nav_daily(
+        df_nav,
+        oos_config,
+        rf_daily=rf_df,
+        psr_n_trials=max(1, args.psr_n_trials),
+    )
 
     # Display results
     print("\n" + format_simple_metrics_table(metrics))

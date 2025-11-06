@@ -540,18 +540,34 @@ def _estimate_inputs(
     else:
         raise ValueError(f"Unsupported mean estimator '{mu_method}'")
 
-    sigma_method = (sigma_config.get("method") or "ledoit_wolf").lower()
-    if sigma_method == "ledoit_wolf":
+    sigma_method = (sigma_config.get("method") or "ledoit_wolf")
+    sigma_key = sigma_method.strip().lower().replace("-", "_")
+    if sigma_key == "ledoit_wolf":
         nonlinear = bool(sigma_config.get("nonlinear", False))
         if nonlinear:
             cov_matrix = covariance_estimators.nonlinear_shrinkage(data_for_sigma)
         else:
             cov_matrix, _ = covariance_estimators.ledoit_wolf_shrinkage(data_for_sigma)
-    elif sigma_method == "sample":
+    elif sigma_key == "nonlinear":
+        cov_matrix = covariance_estimators.nonlinear_shrinkage(data_for_sigma)
+    elif sigma_key in {"sample", "empirical"}:
         cov_matrix = covariance_estimators.sample_cov(data_for_sigma)
-    elif sigma_method == "tyler":
+    elif sigma_key == "oas":
+        assume_centered = bool(sigma_config.get("assume_centered", False))
+        cov_matrix, _ = covariance_estimators.oas_shrinkage(
+            data_for_sigma, assume_centered=assume_centered
+        )
+    elif sigma_key in {"mincovdet", "mcd", "min_cov_det"}:
+        assume_centered = bool(sigma_config.get("assume_centered", False))
+        cov_matrix = covariance_estimators.min_cov_det(
+            data_for_sigma,
+            support_fraction=sigma_config.get("support_fraction"),
+            assume_centered=assume_centered,
+            random_state=sigma_config.get("random_state"),
+        )
+    elif sigma_key == "tyler":
         cov_matrix = covariance_estimators.tyler_m_estimator(data_for_sigma)
-    elif sigma_method in {"graphical_lasso", "graphical-lasso", "glasso"}:
+    elif sigma_key in {"graphical_lasso", "glasso"}:
         alpha = float(sigma_config.get("alpha", 0.01))
         max_iter = int(sigma_config.get("max_iter", 200))
         tol = float(sigma_config.get("tol", 1e-4))
@@ -573,14 +589,14 @@ def _estimate_inputs(
             off_diag = np.abs(precision_matrix.to_numpy()[mask])
             if off_diag.size > 0:
                 sparse_ratio = float(np.mean(off_diag < sparsity_tol))
-                logger.info(
-                    "Graphical Lasso alpha=%.4f produced %.1f%% sparse precision "
-                    "(tol=%g, mode=%s).",
-                    alpha,
-                    100.0 * sparse_ratio,
-                    sparsity_tol,
-                    mode,
-                )
+            logger.info(
+                "Graphical Lasso alpha=%.4f produced %.1f%% sparse precision "
+                "(tol=%g, mode=%s).",
+                alpha,
+                100.0 * sparse_ratio,
+                sparsity_tol,
+                mode,
+            )
     else:
         raise ValueError(f"Unsupported covariance estimator '{sigma_method}'")
 

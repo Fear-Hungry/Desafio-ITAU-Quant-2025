@@ -38,9 +38,9 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--cov-method",
-        choices=("ledoit_wolf", "sample"),
+        choices=("ledoit_wolf", "oas", "mincovdet", "sample"),
         default="ledoit_wolf",
-        help="Covariance estimator to apply.",
+        help="Covariance estimator to apply (Ledoit-Wolf, OAS, MinCovDet ou amostral).",
     )
     parser.add_argument(
         "--huber-delta",
