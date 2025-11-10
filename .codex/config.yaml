@@ -1,0 +1,56 @@
+model:
+  name: gpt-5-thinking
+  temperature: 0.1
+  max_tokens: 4000
+
+read_order:
+  - README.md
+  - docs/
+  - src/
+  - tests/
+  - pyproject.toml
+  - .pre-commit-config.yaml
+
+paths:
+  allowlist:
+    - "src/**"
+    - "tests/**"
+    - "docs/**"
+    - "notebooks/**"
+    - "data/processed/**"
+  denylist:
+    - "**/*.env"
+    - "secrets/**"
+    - "**/*.pem"
+    - "**/*.key"
+    - ".git/**"
+    - ".venv/**"
+    - "data/raw/**"
+
+policy:
+  max_changed_files: 10
+  max_total_added_lines: 500
+  require_branch_prefix: "codex/"
+  require_labels: ["codex"]
+  coverage_min: 0.80
+
+commands:
+  format: "poetry run ruff format ."
+  lint: "poetry run ruff check ."
+  typecheck: "poetry run mypy src"
+  test_quick: "poetry run pytest -q -m 'not slow'"
+  test_full: "poetry run pytest -q"
+  secrets: "bash ./.codex/checks/check_secrets.sh"
+  notebooks_clean: "poetry run python ./.codex/checks/check_notebooks_clean.py"
+  quant_rules: "poetry run python ./.codex/checks/check_quant_rules.py"
+  changed_files_gate: "poetry run python ./.codex/checks/check_changed_files.py"
+  ci_local: "bash ./.codex/tools/ci_local.sh"
+
+branching:
+  base: "main"
+  head_prefix: "codex/"
+
+dependencies:
+  allow_licenses: ["MIT", "BSD-3-Clause", "Apache-2.0"]
+  deny_licenses: ["AGPL-3.0", "SSPL-1.0"]
+  pin_versions: true
