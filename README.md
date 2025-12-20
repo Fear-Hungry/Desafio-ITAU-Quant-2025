@@ -3,7 +3,10 @@
 [![CI](https://github.com/Fear-Hungry/Desafio-ITAU-Quant/actions/workflows/ci.yml/badge.svg)](https://github.com/Fear-Hungry/Desafio-ITAU-Quant/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
 
-## Quickstart (reprodução do OOS canônico)
+## Language
+This repository follows an English-only policy for new and updated content. See `docs/LANGUAGE_POLICY.md`.
+
+## Quickstart (canonical OOS reproduction)
 ```bash
 poetry install
 poetry run python scripts/core/run_01_data_pipeline.py --force-download --start 2010-01-01
@@ -11,26 +14,26 @@ poetry run python scripts/research/run_backtest_walkforward.py
 poetry run python scripts/reporting/consolidate_oos_metrics.py --riskfree-csv data/processed/riskfree_tbill_daily.csv --psr-n-trials 1
 poetry run python scripts/reporting/generate_oos_figures.py
 ```
-> Ajuste `--psr-n-trials` para o número efetivo de estratégias/parametrizações testadas. Sem T-Bill disponível, remova `--riskfree-csv`.
-> Prefere um atalho? `make reproduce-oos` executa a sequência acima; `make oos-figures` regenera apenas as figuras a partir de `nav_daily.csv`.
+> Tune `--psr-n-trials` to the effective number of strategies/parameterisations tried. If you don't have a T‑Bill series, omit `--riskfree-csv`.
+> Shortcut: `make reproduce-oos` runs the full sequence above; `make oos-figures` regenerates only the figures from `nav_daily.csv`.
 
-## Smoke test em 60 segundos
-Garanta que o ambiente está pronto (sem rede, usando dados sintéticos) com:
+## 60-second smoke test
+Verify the environment is ready (no network, synthetic data) with:
 ```bash
 poetry install --sync
 poetry run pytest tests/backtesting/test_engine_walkforward.py::test_turnover_matches_half_l1_pretrade -q
 ```
-> O teste roda um walk-forward mínimo com dados gerados em memória e verifica se o turnover reportado bate a convenção one-way. Dura ~1–2 s numa máquina padrão.
+> Runs a minimal in-memory walk-forward and checks the reported turnover matches the one-way convention (~1–2s on a typical machine).
 
 ---
 
-## Resumo Executivo (1 página)
+## Executive Summary (1 page)
 
-- Objetivo: construir a carteira PRISM‑R maximizando retorno ajustado ao risco pós‑custos, com penalização explícita de turnover e budgets/limites conservadores; avaliação OOS canônica 2020‑01‑02 a 2025‑10‑09.
-- Universo: N=66 ETFs (USD), rebalance mensal, custos de 30 bps (round‑trip) aplicados por rebalance, mesmas convenções entre PRISM‑R e baselines.
-- Método: Mean‑Variance com shrinkage de retornos (Shrunk_50) e covariância Ledoit‑Wolf; penalização L1 de turnover; bounds 0–10% por ativo e budgets por classe.
-- Resultado OOS: NAV 1.0289 (+2.9%), vol 8.6% a.a., Sharpe (excesso T‑Bill) ≈ -0.21; com RF≈0 era ≈ 0.06. Preferimos reportar o Sharpe em excesso a RF real (T‑Bill diário).
-- Por que aquém e próximos passos: a combinação de shrinkage de retornos + restrições/budgets conservadores + custos explícitos reduziu a agressividade e o retorno relativo aos baselines. Trade‑off foi conscientemente escolhido para robustez/controle de risco. Próximos passos: calibrar λ/η e budgets, avaliar overlay defensivo e estimadores de μ mais informativos.
+- Goal: build PRISM‑R by maximising post-cost risk-adjusted performance with explicit turnover control and conservative budgets/limits; canonical OOS evaluation is 2020‑01‑02 to 2025‑10‑09.
+- Universe: N=66 ETFs (USD), monthly rebalance, 30 bps round-trip transaction costs applied per rebalance; consistent conventions across PRISM‑R and baselines.
+- Method: mean-variance with return shrinkage (Shrunk_50) and Ledoit‑Wolf covariance; L1 turnover penalty; 0–10% bounds per asset + class budgets.
+- OOS result: NAV 1.0289 (+2.9%), vol 8.6% p.a., Sharpe (excess T‑Bill) ≈ -0.21; with RF≈0 it was ≈ 0.06. We prefer reporting Sharpe in excess of the realised daily T‑Bill series.
+- Why underperformed + next steps: conservative shrinkage + budgets/limits + explicit costs reduced aggressiveness vs baselines. The trade-off was chosen for robustness/risk control; next steps include calibrating λ/η and budgets, evaluating defensive overlays, and using more informative μ estimators.
 
 ---
 
@@ -219,20 +222,20 @@ poetry run arara-quant optimize \
 
 ---
 
-## 5. Experimentos e Resultados
+## 5. Experiments and Results
 
-### 5.1 Tabela Principal (OOS 2020–2025)
+### 5.1 Main Table (OOS 2020–2025)
 
-Período OOS oficial:
-- Datas: 2020-01-02 → 2025-10-09 (1451 dias úteis)
-- Walk-forward: treino 252, teste 21, purge 2, embargo 2
-- Custos: 30 bps por round-trip, debitados no 1º dia de cada janela de teste
-- Universo: congelado aos ativos com cobertura completa no OOS (ETFs spot de cripto sem histórico completo foram excluídos)
-- **Universo final (N=66):** lista completa em `configs/universe_arara.yaml` (seção `tickers:`). A seleção exclui ativos sem cobertura completa no OOS.
+Official OOS period:
+- Dates: 2020-01-02 → 2025-10-09 (1,451 trading days)
+- Walk-forward: train 252, test 21, purge 2, embargo 2
+- Costs: 30 bps round-trip, debited on the 1st day of each test window
+- Universe: frozen to assets with full OOS coverage (spot crypto ETFs without full history are excluded)
+- **Final universe (N=66):** full list in `configs/universe_arara.yaml` (section `tickers:`).
 
-**Comparabilidade dos baselines.** Todas as estratégias da Tabela 5.1 usam **o mesmo universo congelado (N=66)**, **mesmo período OOS (2020-01-02 a 2025-10-09)**, **rebalance mensal** e **custos de 30 bps por round-trip aplicados por rebalance**.
+**Baseline comparability.** All strategies in Table 5.1 use the **same frozen universe (N=66)**, the **same OOS period**, **monthly rebalancing**, and **30 bps round-trip costs per rebalance**.
 
-| Estratégia | Total Return | Annual Return (geom) | Volatility | Sharpe (excesso T‑Bill, OOS) | CVaR 95% (anual) | Max Drawdown | Turnover médio (‖Δw‖₁) | Turnover mediano (‖Δw‖₁) | Turnover p95 (‖Δw‖₁) | Trading cost (bps, total OOS) | Trading cost (bps/ano) |
+| Strategy | Total Return | Annual Return (geom) | Volatility | Sharpe (excess T‑Bill, OOS) | CVaR 95% (annual) | Max Drawdown | Turnover mean (‖Δw‖₁) | Turnover median (‖Δw‖₁) | Turnover p95 (‖Δw‖₁) | Trading cost (bps, total OOS) | Trading cost (bps/year) |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | PRISM-R (Portfolio Optimization) | 2.89% | 0.50% | 8.60% | -0.2130 | -20.23% | -20.89% | 1.75e-03 | 6.75e-04 | 7.58e-03 | 2.20 | 8.79 |
 | Equal-Weight 1/N | 27.56% | 4.32% | 11.18% | 0.2618 | -25.88% | -19.09% | 1.92e-02 | 4.57e-04 | 9.71e-04 | 30.00 | 5.21 |

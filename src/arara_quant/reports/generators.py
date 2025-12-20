@@ -90,7 +90,7 @@ def _find_markdown_table(lines: list[str]) -> tuple[int, int]:
     start = -1
     for idx, line in enumerate(lines):
         header = line.strip()
-        if not header.startswith("| Estratégia"):
+        if not (header.startswith("| Estratégia") or header.lower().startswith("| strategy")):
             continue
         lower = header.lower()
         has_turnover = "turnover" in lower
@@ -210,7 +210,10 @@ def update_readme_turnover_stats(
 
     col_med = _find_column(header, parts=["turnover", "med"])
     col_p95 = _find_column(header, parts=["turnover", "p95"])
-    col_strategy = _find_column(header, parts=["estratégia"])
+    try:
+        col_strategy = _find_column(header, parts=["strategy"])
+    except ValueError:
+        col_strategy = _find_column(header, parts=["estratégia"])
 
     updated = 0
     for row in rows:
