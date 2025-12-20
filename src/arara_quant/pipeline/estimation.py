@@ -8,11 +8,12 @@ using robust estimators.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 import pandas as pd
 
 from arara_quant.config import Settings
+from arara_quant.config.params_default import DEFAULT_OPTIMIZER_YAML
 from arara_quant.estimators.cov import (
     ledoit_wolf_shrinkage,
     min_cov_det,
@@ -21,6 +22,7 @@ from arara_quant.estimators.cov import (
 )
 from arara_quant.estimators.mu import huber_mean, mean_return, shrunk_mean
 from arara_quant.utils.logging_config import get_logger
+from arara_quant.utils.yaml_loader import load_yaml_text
 
 __all__ = ["estimate_parameters"]
 
@@ -38,6 +40,7 @@ def estimate_parameters(
     annualize: bool = True,
     mu_output: str = "mu_estimate.parquet",
     cov_output: str = "cov_estimate.parquet",
+    config_path: str | Path | None = None,
     settings: Settings | None = None,
 ) -> dict[str, Any]:
     """Estimate expected returns (μ) and covariance (Σ) from historical data.
@@ -76,6 +79,54 @@ def estimate_parameters(
         >>> print(f"Shrinkage: {result['shrinkage']:.3f}")
     """
     settings = settings or Settings.from_env()
+
+    if config_path is not None:
+        candidate = Path(config_path)
+        if not candidate.is_absolute():
+            in_configs = settings.configs_dir / candidate
+            candidate = (
+                in_configs if in_configs.exists() else settings.project_root / candidate
+            )
+        if candidate.exists():
+            raw = load_yaml_text(candidate.read_text(encoding="utf-8"))
+            estimators_section = raw.get("estimators", {})
+            if isinstance(estimators_section, Mapping):
+                mu_section = (
+                    estimators_section.get("mu", {})
+                    if isinstance(estimators_section.get("mu", {}), Mapping)
+                    else {}
+                )
+                sigma_section = (
+                    estimators_section.get("sigma", {})
+                    if isinstance(estimators_section.get("sigma", {}), Mapping)
+                    else {}
+                )
+
+                mu_method = str(mu_section.get("method", mu_method))
+                cov_method = str(sigma_section.get("method", cov_method))
+
+                if "delta" in mu_section:
+                    huber_delta = float(mu_section["delta"])
+                if "strength" in mu_section:
+                    shrink_strength = float(mu_section["strength"])
+
+                mu_window = int(
+                    mu_section.get(
+                        "window_days", DEFAULT_OPTIMIZER_YAML.estimators_mu.window_days
+                    )
+                    or 0
+                )
+                sigma_window = int(
+                    sigma_section.get(
+                        "window_days",
+                        DEFAULT_OPTIMIZER_YAML.estimators_sigma.window_days,
+                    )
+                    or 0
+                )
+                if mu_window or sigma_window:
+                    window = max(int(window), mu_window, sigma_window)
+        else:
+            logger.warning("Estimator config not found at %s (skipping)", candidate)
 
     returns_path = Path(settings.processed_data_dir) / returns_file
     if not returns_path.exists():

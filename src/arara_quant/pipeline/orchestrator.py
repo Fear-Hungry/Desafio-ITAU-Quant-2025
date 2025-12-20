@@ -203,6 +203,7 @@ def run_full_pipeline(
         stage_start = time.perf_counter()
 
         estimation_kwargs: dict[str, Any] = {"settings": settings}
+        estimation_kwargs["config_path"] = config_path
         returns_file = data_result.get("returns_file")
         if returns_file:
             logger.info("Stage 2 will use returns artefact %s", returns_file)
