@@ -1,4 +1,4 @@
-.PHONY: help install install-dev clean clean-all test test-fast test-cov test-watch lint format type-check validate validate-configs data download preprocess backtest optimize report coverage docs serve-docs ci
+.PHONY: help install install-dev clean clean-all clean-outputs clean-reports clean-results clean-runtime test test-fast test-cov test-watch lint format type-check validate validate-configs data download preprocess backtest optimize report coverage docs serve-docs ci
 
 # Default target
 .DEFAULT_GOAL := help
@@ -259,6 +259,50 @@ clean-data: ## Clean processed data files
 	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
 		rm -rf data/processed/*.parquet; \
 		echo "$(GREEN)Data files cleaned!$(NC)"; \
+	else \
+		echo "$(BLUE)Cancelled.$(NC)"; \
+	fi
+
+clean-reports: ## Clean generated reports (outputs/reports)
+	@echo "$(YELLOW)Warning: This will delete outputs/reports/**/* (figures, markdown, JSON)!$(NC)"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		rm -rf outputs/reports; \
+		echo "$(GREEN)Reports cleaned!$(NC)"; \
+	else \
+		echo "$(BLUE)Cancelled.$(NC)"; \
+	fi
+
+clean-results: ## Clean generated results (outputs/results)
+	@echo "$(YELLOW)Warning: This will delete outputs/results/**/* (baselines, sweeps, metrics)!$(NC)"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		rm -rf outputs/results; \
+		echo "$(GREEN)Results cleaned!$(NC)"; \
+	else \
+		echo "$(BLUE)Cancelled.$(NC)"; \
+	fi
+
+clean-runtime: ## Clean runtime scratch directory (runtime/)
+	@echo "$(YELLOW)Warning: This will delete runtime/**/*!$(NC)"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		rm -rf runtime; \
+		echo "$(GREEN)Runtime cleaned!$(NC)"; \
+	else \
+		echo "$(BLUE)Cancelled.$(NC)"; \
+	fi
+
+clean-outputs: ## Clean all generated outputs (outputs/)
+	@echo "$(YELLOW)Warning: This will delete outputs/**/* (reports, results, logs)!$(NC)"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		rm -rf outputs; \
+		echo "$(GREEN)Outputs cleaned!$(NC)"; \
 	else \
 		echo "$(BLUE)Cancelled.$(NC)"; \
 	fi
