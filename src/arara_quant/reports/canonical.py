@@ -25,11 +25,13 @@ __all__ = [
     "load_oos_config",
     "load_oos_period",
     "load_walkforward_windows",
+    "load_walkforward_windows_raw",
     "resolve_baseline_metrics_path",
     "resolve_consolidated_metrics_path",
     "resolve_nav_daily_path",
     "resolve_oos_config_path",
     "resolve_walkforward_windows_path",
+    "resolve_walkforward_windows_raw_path",
     "subset_to_oos_period",
 ]
 
@@ -65,6 +67,11 @@ def resolve_nav_daily_path(settings: Settings | None = None) -> Path:
 def resolve_walkforward_windows_path(settings: Settings | None = None) -> Path:
     settings = _resolve_settings(settings)
     return settings.walkforward_dir / "per_window_results.csv"
+
+
+def resolve_walkforward_windows_raw_path(settings: Settings | None = None) -> Path:
+    settings = _resolve_settings(settings)
+    return settings.walkforward_dir / "per_window_results_raw.csv"
 
 
 def resolve_consolidated_metrics_path(settings: Settings | None = None) -> Path:
@@ -127,6 +134,17 @@ def load_walkforward_windows(settings: Settings | None = None) -> pd.DataFrame:
         if candidate in frame.columns:
             frame[candidate] = pd.to_datetime(frame[candidate])
             break
+    return frame
+
+
+def load_walkforward_windows_raw(settings: Settings | None = None) -> pd.DataFrame:
+    """Load the raw per-window split metrics table exported by the CLI."""
+
+    path = resolve_walkforward_windows_raw_path(settings)
+    frame = pd.read_csv(path)
+    for candidate in ("test_end", "test_start"):
+        if candidate in frame.columns:
+            frame[candidate] = pd.to_datetime(frame[candidate])
     return frame
 
 
