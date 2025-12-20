@@ -16,6 +16,13 @@ from typing import Dict, List, Optional, Tuple
 
 import cvxpy as cp
 import numpy as np
+import pandas as pd
+
+from arara_quant.optimization.constraints_group import (
+    GroupConstraint,
+    build_group_constraints as build_group_constraints_common,
+)
+from arara_quant.optimization.risk_parity import normalise_long_only_weights
 
 
 def build_group_constraints(
@@ -44,30 +51,24 @@ def build_group_constraints(
     List[cp.Constraint]
         Lista de constraints CVXPY
     """
-    constraints = []
+    asset_index = pd.Index(asset_names)
+    parsed: list[GroupConstraint] = []
 
     for group_name, spec in groups.items():
-        # Encontrar índices dos ativos no grupo
         group_assets = spec.get("assets", [])
-        indices = [i for i, a in enumerate(asset_names) if a in group_assets]
-
-        if not indices:
+        if not group_assets:
             continue
+        parsed.append(
+            GroupConstraint(
+                name=str(group_name),
+                max_weight=float(spec.get("max", spec.get("max_weight", 1.0))),
+                min_weight=float(spec.get("min", spec.get("min_weight", 0.0))),
+                assets=list(group_assets),
+                per_asset_max=spec.get("per_asset_max"),
+            )
+        )
 
-        # Max do grupo
-        if "max" in spec:
-            constraints.append(cp.sum(w[indices]) <= spec["max"])
-
-        # Min do grupo
-        if "min" in spec:
-            constraints.append(cp.sum(w[indices]) >= spec["min"])
-
-        # Max por ativo dentro do grupo
-        if "per_asset_max" in spec:
-            for idx in indices:
-                constraints.append(w[idx] <= spec["per_asset_max"])
-
-    return constraints
+    return build_group_constraints_common(w, parsed, asset_index)
 
 
 def solve_erc_core(
@@ -179,8 +180,7 @@ def solve_erc_core(
         raise RuntimeError(f"Solver failed with status: {problem.status}")
 
     weights = np.asarray(w.value).ravel()
-    weights = np.clip(weights, 0, None)
-    weights /= weights.sum()  # renormalize
+    weights = normalise_long_only_weights(weights)
 
     return weights, problem.status
 

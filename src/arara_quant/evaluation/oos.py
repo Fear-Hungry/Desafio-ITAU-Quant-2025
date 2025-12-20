@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Callable, Mapping, Sequence
 
 import numpy as np
 import pandas as pd
@@ -12,8 +12,8 @@ from arara_quant.costs.turnover import normalised_turnover
 from arara_quant.estimators.cov import ledoit_wolf_shrinkage
 from arara_quant.estimators.mu import shrunk_mean
 from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
-from arara_quant.optimization.core.risk_parity import risk_parity
 from arara_quant.optimization.heuristics.hrp import hierarchical_risk_parity
+from arara_quant.optimization.risk_parity import risk_parity
 
 __all__ = [
     "StrategySpec",
@@ -390,9 +390,13 @@ def compare_baselines(
         for spec in strategies:
             prev_post = prev_weights[spec.name].reindex(returns.columns).fillna(0.0)
             last_date = last_rebalance_date[spec.name]
-            drift_slice = returns.loc[
-                (returns.index > last_date) & (returns.index < rebalance_date)
-            ] if last_date is not None else returns.iloc[0:0]
+            drift_slice = (
+                returns.loc[
+                    (returns.index > last_date) & (returns.index < rebalance_date)
+                ]
+                if last_date is not None
+                else returns.iloc[0:0]
+            )
             prev_pretrade = _drift_weights(
                 prev_post, drift_slice, align_to=returns.columns
             )

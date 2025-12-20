@@ -198,15 +198,14 @@ result = solve_mean_variance(mu_bl, sigma_bl, config)
 ### Exemplo: Risk Parity
 
 ```python
-from arara_quant.optimization.core.risk_parity import risk_parity
+from arara_quant.optimization.risk_parity import risk_parity
 
-weights_rp = risk_parity(
-    cov=sigma,
-    method='iterative',  # ou 'log_barrier'
-    max_iter=100,
+result = risk_parity(
+    sigma,
+    config={"method": "iterative", "max_iter": 100},  # ou "log_barrier"
 )
 
-print(weights_rp)
+print(result.weights)
 ```
 
 ---
