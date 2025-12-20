@@ -262,7 +262,7 @@ portfolio:
 
 **Outputs:**
 ```
-results/adaptive_hedge/
+outputs/results/adaptive_hedge/
 ├── regime_classifications.csv     # Regime por data
 ├── hedge_performance.json          # Métricas de efetividade
 ├── summary.json                    # Estatísticas agregadas
@@ -284,7 +284,7 @@ poetry run python scripts/research/run_adaptive_hedge_experiment.py
 poetry run arara-quant backtest \
   --config configs/optimizer_regime_aware.yaml \
   --no-dry-run \
-  --json > reports/backtest_regime_aware.json
+  --json > outputs/reports/backtest_regime_aware.json
 ```
 
 **Comportamento Esperado:**
@@ -320,7 +320,7 @@ poetry run python scripts/production/run_portfolio_production_erc_v2.py \
 
 | Métrica | Target | Como Verificar |
 |---------|--------|----------------|
-| Trigger em COVID-20 | ✅ Ativo | `results/production/production_log.csv` → defensive_mode="critical" |
+| Trigger em COVID-20 | ✅ Ativo | `outputs/results/production/production_log.csv` → defensive_mode="critical" |
 | DD reduction | -25% → -18% | Compare backtest com/sem defensive mode |
 | False positives | < 5% do tempo | Count "defensive" != "normal" em períodos calm |
 
@@ -493,7 +493,7 @@ regime_detection:
 - `scripts/research/run_adaptive_hedge_experiment.py`
 
 **Documentação:**
-- PRD.md (linhas 302-305: defensive mode spec)
+- docs/specs/PRD.md (linhas 302-305: defensive mode spec)
 - README.md (linha 184: roadmap)
 - RESULTADOS_FINAIS.md (linha 234: regime detection results)
 

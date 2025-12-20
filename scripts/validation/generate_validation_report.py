@@ -27,8 +27,8 @@ print()
 # CARREGAR RESULTADOS DE VALIDAÇÃO
 # ============================================================================
 
-validation_dir = Path("results/validation")
-production_log = Path("results/production/production_log.csv")
+validation_dir = Path("outputs/results/validation")
+production_log = Path("outputs/results/production/production_log.csv")
 
 print("📥 Carregando resultados de validação...")
 print()
@@ -308,7 +308,7 @@ print("💾 SALVANDO RELATÓRIO")
 print("=" * 80)
 print()
 
-output_dir = Path("results/validation")
+output_dir = Path("outputs/results/validation")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

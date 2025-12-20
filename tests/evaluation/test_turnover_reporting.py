@@ -27,7 +27,7 @@ def _extract_first_match(text: str, label: str) -> float:
 def test_per_window_turnover_matches_readme_summary() -> None:
     """README turnover stats must match per-window CSV derived metrics."""
 
-    per_window = Path("reports/walkforward/per_window_results.csv")
+    per_window = Path("outputs/reports/walkforward/per_window_results.csv")
     readme = Path("README.md")
 
     assert per_window.exists(), "Expected per-window results CSV"

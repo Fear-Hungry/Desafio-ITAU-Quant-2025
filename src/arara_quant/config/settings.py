@@ -204,9 +204,9 @@ class Settings:
             "PROCESSED_DATA_DIR", default=data_dir / "processed", target=Path
         )
         notebooks_dir = pull("NOTEBOOKS_DIR", default="notebooks", target=Path)
-        reports_dir = pull("REPORTS_DIR", default="reports", target=Path)
+        reports_dir = pull("REPORTS_DIR", default="outputs/reports", target=Path)
         configs_dir = pull("CONFIGS_DIR", default="configs", target=Path)
-        logs_dir = pull("LOGS_DIR", default="logs", target=Path)
+        logs_dir = pull("LOGS_DIR", default="outputs/logs", target=Path)
         cache_dir = pull("CACHE_DIR", default=".cache", target=Path)
 
         environment = pull("ENVIRONMENT", default="development", target=str)

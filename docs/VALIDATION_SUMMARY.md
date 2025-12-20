@@ -262,10 +262,10 @@ VTV   :  3.86%  (US Value)
 - `configs/universe_arara_robust.yaml` - Universo 30 ativos
 
 **Resultados:**
-- `results/validation/strategy_comparison_*.csv` - Comparação de estratégias
-- `results/validation/returns_*.csv` - Séries temporais de retornos
-- `results/production/weights/weights_20251026.csv` - Última alocação
-- `results/production/production_log.csv` - Histórico de rebalances
+- `outputs/results/validation/strategy_comparison_*.csv` - Comparação de estratégias
+- `outputs/results/validation/returns_*.csv` - Séries temporais de retornos
+- `outputs/results/production/weights/weights_20251026.csv` - Última alocação
+- `outputs/results/production/production_log.csv` - Histórico de rebalances
 
 **Scripts de Validação:**
 - `scripts/validation/run_comprehensive_tests.py` - Bateria completa

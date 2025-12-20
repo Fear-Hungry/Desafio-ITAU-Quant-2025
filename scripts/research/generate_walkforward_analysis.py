@@ -6,7 +6,7 @@ Generate comprehensive walk-forward analysis figure with 4 subplots:
 3. Consistency metrics (hit rate, vol of returns)
 4. Turnover and Costs
 
-Output: reports/figures/walkforward_analysis_YYYYMMDD.png
+Output: outputs/reports/figures/walkforward_analysis_YYYYMMDD.png
 """
 
 from __future__ import annotations
@@ -21,7 +21,7 @@ import pandas as pd
 
 plt.style.use("seaborn-v0_8-darkgrid")
 
-REPORTS_DIR = Path("reports")
+REPORTS_DIR = Path("outputs/reports")
 WALKFORWARD_DIR = REPORTS_DIR / "walkforward"
 FIGURES_DIR = REPORTS_DIR / "figures"
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)

@@ -46,7 +46,6 @@ Analysis and experimentation scripts:
 - `run_grid_search_shrinkage.py` - Grid search for shrinkage parameters
 - `run_mu_skill_test.py` - Test μ forecasting skill
 - `run_backtest_walkforward.py` - Walk-forward backtest validation
-- `run_shrinkage_grid_search.py` - Alternative shrinkage grid search
 
 **CLI:**
 ```bash

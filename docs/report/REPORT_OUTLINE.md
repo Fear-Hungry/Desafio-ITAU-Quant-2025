@@ -28,7 +28,7 @@
   - `lambda` = 15.0 (baseline), 8.0, 6.0.
   - `eta` = 0.25, 0.15, 0.30.
   - Cardinalidade `[20, 35]`, `[18, 32]`, `[22, 34]`.
-- Resultado comparativo (ver `reports/backtest_optimizer_*`):
+- Resultado comparativo (ver `outputs/reports/backtest_optimizer_*`):
   - `example_trimmed`: Sharpe 0.41, DD -14.8%.
   - `tuning_a`: Sharpe 0.31, DD -19.0%.
   - `tuning_b`: Sharpe 0.37, DD -20.3%.
@@ -44,7 +44,7 @@
 
 ## 6. Regime Stress & Mitigações (1 pág)
 - Thresholds revisados (`vol calm 6%`, `stressed 10%`, `drawdown crash -8%`, multiplicadores 0.75/1.0/2.5/4.0).
-- Resultados (ver `results/regime_stress/*_metrics.csv`):
+- Resultados (ver `outputs/results/regime_stress/*_metrics.csv`):
   - Covid 2020: Sharpe -3.25, DD -1.19%, vol 4.3% (reduziu dd vs versão anterior, porém performance ainda negativa).
   - Inflação 2022: Sharpe -0.47, DD -1.12%, vol 3.6% (melhora sobre MV robusto, ainda abaixo de EW/RP).
 - Próximas ações: incorporar views/tail hedges para evitar Sharpe negativo mesmo com λ elevado.
@@ -52,14 +52,14 @@
 ## 7. Comparação com Baselines (1 pág)
 - **Convenção CVaR:** Todos os valores reportados são **anualizados** (CVaR_diário × √252) para consistência com volatilidade e retorno. CVaR diário disponível em `cvar_95` para debug/monitoramento.
 - Script agora baixa dados reais com `BASELINES_FORCE_DOWNLOAD=1` e `BASELINES_DOWNLOAD_SLEEP=1`, carregando os 69 tickers de `get_arara_universe()`.
-- Amostra OOS: 2019-10-01 a 2025-10-09 (`results/baselines/baseline_metrics_oos.csv`).
+- Amostra OOS: 2019-10-01 a 2025-10-09 (`outputs/results/baselines/baseline_metrics_oos.csv`).
   - Sharpe: Min-Var (0.69), Equal-Weight (0.69), Shrunk MV (0.69), ERC (0.65); drawdowns variam de -3.4% (Min-Var) a -21.7% (Shrunk MV).
   - Stress tests mostram Shrunk MV positivo em 2022 (+7.4%), demais estratégias negativas; 2023 banking stress favorável às carteiras defensivas.
 - Snapshot curto anterior (2024-07 → 2025-10) permanece no README apenas como smoke test; explicitar baixa confiabilidade.
 
 ## 8. Operação & Monitoramento (1 pág)
 - Descrever produção ERC v2: cash floor dinâmico 15%-40%, triggers (Sharpe 6M ≤0, CVaR diário <-2% ou ~-32% anual, DD<-10%).
-- Processo mensal + fallback 1/N, logs em `results/production/`.
+- Processo mensal + fallback 1/N, logs em `outputs/results/production/`.
 - Checklist warmup: rodar 3-6 rebalanceamentos usando pesos persistidos, verificar turnover médio <12%.
 
 ## 9. Uso de IA Generativa (0.5–1 pág)
@@ -78,13 +78,13 @@
 ---
 
 ### Artefatos de Suporte
-- Backtests: `reports/backtest_optimizer_example_trimmed_*.json`, `reports/backtest_optimizer_tuning_*.json`.
-- Regime stress: `results/regime_stress/*.csv`.
-- Baselines: `results/baselines/baseline_metrics_oos.csv`.
-- Produção: `results/production/production_log.csv`.
+- Backtests: `outputs/reports/backtest_optimizer_example_trimmed_*.json`, `outputs/reports/backtest_optimizer_tuning_*.json`.
+- Regime stress: `outputs/results/regime_stress/*.csv`.
+- Baselines: `outputs/results/baselines/baseline_metrics_oos.csv`.
+- Produção: `outputs/results/production/production_log.csv`.
 
 ### Checklist de Conteúdo
-- [ ] Inserir gráficos NAV/vol (usar `reports/figures/*` ou regenerar).
+- [ ] Inserir gráficos NAV/vol (usar `outputs/reports/figures/*` ou regenerar).
 - [ ] Exportar tabelas de métricas para LaTeX/Markdown.
 - [ ] Garantir seções ≤10 páginas (contagem aproximada acima = 8.5–9 págs).
 - [ ] Validar narrativa de riscos + seção GenAI com compliance interno.

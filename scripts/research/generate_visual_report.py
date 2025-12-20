@@ -12,15 +12,15 @@ import pandas as pd
 
 plt.style.use("seaborn-v0_8")
 
-RESULTS_DIR = Path("results")
-FIG_DIR = Path("reports") / "figures"
+RESULTS_DIR = Path("outputs/results")
+FIG_DIR = Path("outputs/reports") / "figures"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def latest_oos_file() -> Path:
     files = sorted(RESULTS_DIR.glob("oos_returns_all_strategies_*.csv"))
     if not files:
-        raise FileNotFoundError("No OOS returns file found in results/.")
+        raise FileNotFoundError("No OOS returns file found in outputs/results/.")
     return files[-1]
 
 

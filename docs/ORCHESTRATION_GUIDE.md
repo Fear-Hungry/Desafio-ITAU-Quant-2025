@@ -194,13 +194,13 @@ poetry run arara-quant backtest \
     --config configs/optimizer_example.yaml \
     --no-dry-run \
     --wf-report \
-    --json > reports/backtest_example.json
+    --json > outputs/reports/backtest_example.json
 ```
 
 **Outputs:**
 - `backtest_<config_name>.json` - Serialized backtest results
-- Walk-forward report in `reports/walkforward/`
-- Tearsheet visualizations in `reports/figures/`
+- Walk-forward report in `outputs/reports/walkforward/`
+- Tearsheet visualizations in `outputs/reports/figures/`
 
 **Key Metrics:**
 - Sharpe Ratio (HAC-adjusted)
@@ -227,8 +227,8 @@ poetry run arara-quant compare-baselines
 ```
 
 **Outputs:**
-- `results/baselines/comparison_metrics.csv`
-- `results/baselines/sharpe_comparison.csv`
+- `outputs/results/baselines/comparison_metrics.csv`
+- `outputs/results/baselines/sharpe_comparison.csv`
 
 **Success Criteria:**
 - Proposed Sharpe > Best Baseline Sharpe + 0.10
@@ -261,9 +261,9 @@ poetry run python scripts/research/run_cost_sensitivity.py
 ```
 
 **Outputs:**
-- `results/cost_sensitivity/metrics_by_cost.csv`
-- `results/window_sensitivity/metrics_by_window.csv`
-- `results/cov_sensitivity/metrics_by_estimator.csv`
+- `outputs/results/cost_sensitivity/metrics_by_cost.csv`
+- `outputs/results/window_sensitivity/metrics_by_window.csv`
+- `outputs/results/cov_sensitivity/metrics_by_estimator.csv`
 
 ---
 
@@ -298,8 +298,8 @@ poetry run python scripts/validation/run_comprehensive_tests.py
 ```
 
 **Outputs:**
-- `results/validation/constraint_violations.csv`
-- `results/validation/estimator_errors.csv`
+- `outputs/results/validation/constraint_violations.csv`
+- `outputs/results/validation/estimator_errors.csv`
 
 ---
 
@@ -327,7 +327,7 @@ import pandas as pd
 from pathlib import Path
 
 # Collect all backtest JSONs
-backtest_files = Path("reports/validation_XXX").glob("backtest_*.json")
+backtest_files = Path("outputs/reports/validation_XXX").glob("backtest_*.json")
 results = []
 for f in backtest_files:
     data = json.load(f.open())
@@ -398,7 +398,7 @@ df.to_csv("master_backtest_results.csv", index=False)
 ## Output Structure
 
 ```
-reports/validation_YYYYMMDD_HHMMSS/
+outputs/reports/validation_YYYYMMDD_HHMMSS/
 ├── VALIDATION_SUMMARY.md          # Executive summary
 ├── execution_log.json             # Detailed command log
 ├── backtest_optimizer_example.json
@@ -410,20 +410,20 @@ reports/validation_YYYYMMDD_HHMMSS/
 ├── master_window_sensitivity.csv  # Window tuning
 └── master_cov_sensitivity.csv     # Covariance sensitivity
 
-reports/walkforward/
+outputs/reports/walkforward/
 ├── summary_stats.md               # Walk-forward summary
 ├── per_window_results.csv         # Results per window
 ├── stress_periods.md              # Stress period analysis
 └── walkforward_analysis.png       # Visualization
 
-reports/figures/
+outputs/reports/figures/
 ├── tearsheet_portfolio.png
 ├── drawdown_evolution.png
 ├── turnover_tracking.png
 ├── regime_classification.png
 └── cumulative_returns.png
 
-results/
+outputs/results/
 ├── baselines/
 │   ├── comparison_metrics.csv
 │   └── sharpe_comparison.csv
@@ -661,7 +661,7 @@ Specify custom directory for results:
 ```bash
 poetry run python scripts/run_master_validation.py \
     --mode full \
-    --output-dir reports/custom_validation
+    --output-dir outputs/reports/custom_validation
 ```
 
 ---
@@ -713,7 +713,7 @@ To add a new research script to the pipeline:
 
    def main():
        # Your analysis
-       results.to_csv("results/my_experiment/metrics.csv")
+       results.to_csv("outputs/results/my_experiment/metrics.csv")
 
    if __name__ == "__main__":
        main()
@@ -734,7 +734,7 @@ To add a new research script to the pipeline:
    # In stage6_aggregate_results()
 
    if (RESULTS_DIR / "my_experiment").exists():
-       df = pd.read_csv("results/my_experiment/metrics.csv")
+       df = pd.read_csv("outputs/results/my_experiment/metrics.csv")
        df.to_csv(self.output_dir / "master_my_experiment.csv")
    ```
 
@@ -780,7 +780,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: validation-results
-          path: reports/validation_*/
+          path: outputs/reports/validation_*/
 ```
 
 ---
@@ -831,7 +831,7 @@ For issues or questions:
 - Review `VALIDATION_SUMMARY.md` in output directory
 - Check `execution_log.json` for detailed errors
 - Consult `docs/QUICKSTART.md` for basic usage
-- See `PRD.md` for mathematical formulation
+- See `docs/specs/PRD.md` for mathematical formulation
 - Review `IMPLEMENTACAO_ROBUSTA.md` for estimator details
 
 ---

@@ -4,7 +4,7 @@
 The script reuses the walk-forward evaluator while varying the training window
 length (126, 252, 504 dias) to show how sensitive the strategies are to the
 amount of historical data used for μ e Σ. Outputs land in
-``results/window_sensitivity/``.
+``outputs/results/window_sensitivity/``.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from pathlib import Path
 import pandas as pd
 from arara_quant.evaluation.oos import compare_baselines, default_strategies
 
-OUTPUT_DIR = Path("results") / "window_sensitivity"
+OUTPUT_DIR = Path("outputs/results") / "window_sensitivity"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 TRAIN_WINDOWS = [126, 252, 504]
@@ -23,7 +23,7 @@ TRAIN_WINDOWS = [126, 252, 504]
 def load_returns() -> pd.DataFrame:
     candidates = [
         Path("data") / "processed" / "returns_arara.parquet",
-        Path("results") / "baselines" / "baseline_returns_oos.parquet",
+        Path("outputs/results") / "baselines" / "baseline_returns_oos.parquet",
     ]
     min_count = max(TRAIN_WINDOWS) + 42  # train + safety margin
     for path in candidates:
@@ -76,7 +76,7 @@ def main() -> None:
             continue
         print(f"⏱  Rodando walk-forward com janela de treino = {window} dias…")
         run_window(window, returns)
-        print(f"   ↳ artefatos em results/window_sensitivity/metrics_window_{window}.csv")
+        print(f"   ↳ artefatos em outputs/results/window_sensitivity/metrics_window_{window}.csv")
 
     print("Done ✅")
 

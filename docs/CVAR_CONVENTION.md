@@ -9,7 +9,7 @@
 ### Problema Original
 
 O projeto tinha uma inconsistência entre:
-- **Targets** (CLAUDE.md, PRD.md): "CVaR (5%) ≤ 8%" → sem especificar horizonte
+- **Targets** (README.md, docs/specs/PRD.md): "CVaR (5%) ≤ 8%" → sem especificar horizonte
 - **Métricas reportadas** (README.md, código): "CVaR 95% (1 dia) = -1.27%" → escala diária
 - **Monitoramento** (production_monitor.py): CVaR diário < -2% como trigger operacional
 
@@ -56,7 +56,7 @@ metrics = {
 }
 ```
 
-### 2. Targets (PRD.md, CLAUDE.md)
+### 2. Targets (docs/specs/PRD.md, README.md)
 
 ```
 Target pós-custos:
@@ -116,7 +116,7 @@ if cvar_daily < -0.02:
 
 ## Validação de Métricas
 
-**Arquivo:** `reports/oos_consolidated_metrics.json`
+**Arquivo:** `outputs/reports/oos_consolidated_metrics.json`
 
 ```json
 {
@@ -171,7 +171,7 @@ CVaR_anual = CVaR_diário × √252
 | Data       | Versão | Mudança                                               |
 |------------|--------|-------------------------------------------------------|
 | 2025-01-XX | 1.0    | Padronização inicial: CVaR anualizado como padrão     |
-|            |        | - Updated PRD.md, CLAUDE.md, README.md                |
+|            |        | - Updated docs/specs/PRD.md, README.md                |
 |            |        | - Added `cvar_95_annual` to oos.py                    |
 |            |        | - Documented triggers in production_monitor.py        |
 
@@ -195,8 +195,8 @@ A: Sempre usar CVaR anualizado. Benchmarks de mercado reportam CVaR em base anua
 
 ## Checklist de Implementação
 
-- [x] PRD.md atualizado com "CVaR ≤ 8% a.a."
-- [x] CLAUDE.md atualizado com "CVaR ≤ 8% annual"
+- [x] docs/specs/PRD.md atualizado com "CVaR ≤ 8% a.a."
+- [x] README.md atualizado com "CVaR ≤ 8% a.a."
 - [x] src/arara_quant/evaluation/oos.py adiciona `cvar_95_annual`
 - [x] README.md reporta CVaR anualizado com fórmula
 - [x] production_monitor.py documenta equivalência diário ↔ anual

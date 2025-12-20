@@ -4,7 +4,7 @@
 For cada estimador calculamos µ via shrunk mean (strength 0.5) e resolvemos
 um programa média-variância com λ=4, max 10% por ativo, custos de 30 bps e
 rebalanço 252/21 dias. Os resultados são salvos em
-``results/cov_sensitivity/metrics.csv`` e ``returns.csv``.
+``outputs/results/cov_sensitivity/metrics.csv`` e ``returns.csv``.
 """
 
 from __future__ import annotations
@@ -30,14 +30,14 @@ from arara_quant.evaluation.oos import (
 from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 from sklearn.covariance import MinCovDet
 
-OUTPUT_DIR = Path("results") / "cov_sensitivity"
+OUTPUT_DIR = Path("outputs/results") / "cov_sensitivity"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_returns() -> pd.DataFrame:
     candidates = [
         Path("data") / "processed" / "returns_arara.parquet",
-        Path("results") / "baselines" / "baseline_returns_oos.parquet",
+        Path("outputs/results") / "baselines" / "baseline_returns_oos.parquet",
     ]
     for path in candidates:
         if not path.exists():
@@ -167,7 +167,7 @@ def main() -> None:
     metrics = result.metrics.sort_values("sharpe", ascending=False)
     metrics.to_csv(OUTPUT_DIR / "metrics.csv")
     result.returns.to_parquet(OUTPUT_DIR / "returns.parquet")
-    print("Métricas salvas em results/cov_sensitivity/metrics.csv")
+    print("Métricas salvas em outputs/results/cov_sensitivity/metrics.csv")
 
 
 if __name__ == "__main__":

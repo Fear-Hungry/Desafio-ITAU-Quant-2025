@@ -7,7 +7,7 @@ on market regime improves risk-adjusted returns compared to:
 2. Static hedge (fixed 5-12% allocation)
 3. Adaptive hedge (2-15% based on regime)
 
-Results are saved to `results/adaptive_hedge/` for analysis.
+Results are saved to `outputs/results/adaptive_hedge/` for analysis.
 
 Hypothesis
 ----------
@@ -48,7 +48,7 @@ print()
 # ============================================================================
 
 DATA_PATH = Path("data/processed/returns_arara.parquet")
-OUTPUT_DIR = Path("results/adaptive_hedge")
+OUTPUT_DIR = Path("outputs/results/adaptive_hedge")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 TRAIN_WINDOW = 252

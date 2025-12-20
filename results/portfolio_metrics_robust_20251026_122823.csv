@@ -1,2 +1,0 @@
-timestamp,version,n_assets,n_active,risk_aversion,max_position,turnover_cap,transaction_cost_bps,mu_estimator,huber_delta,sigma_estimator,ledoit_wolf_shrinkage,expected_return,volatility,sharpe_ratio,herfindahl,effective_n,solver_status,solver_time
-20251026_122823,robust,29,12,4.0,0.1,0.15,30,huber,1.5,ledoit_wolf,0.051991350741038646,0.33272412156131775,0.15735350949193574,2.114500799096379,0.08827124122839532,11.328718006950576,optimal,0.010221286999694712

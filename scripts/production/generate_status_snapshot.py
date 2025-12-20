@@ -119,8 +119,8 @@ def calculate_group_exposures(weights: pd.Series) -> Dict[str, float]:
 
 def generate_status_snapshot(
     output_path: Path = Path("docs/results/CARTEIRA_ARARA_STATUS.md"),
-    log_path: Path = Path("results/production/production_log.csv"),
-    weights_dir: Path = Path("results/production/weights"),
+    log_path: Path = Path("outputs/results/production/production_log.csv"),
+    weights_dir: Path = Path("outputs/results/production/weights"),
 ) -> None:
     """
     Gera snapshot de status da carteira a partir dos logs de produção.
@@ -174,7 +174,7 @@ def generate_status_snapshot(
         "**Pipeline:** `scripts/production/run_portfolio_production_erc_v2.py`"
     )
     md_lines.append(
-        f"**Fontes:** `results/production/production_log.csv` (linha {log_line_number}) e `{weights_file.name}`"
+        f"**Fontes:** `outputs/results/production/production_log.csv` (linha {log_line_number}) e `{weights_file.name}`"
     )
     md_lines.append("")
     md_lines.append("---")

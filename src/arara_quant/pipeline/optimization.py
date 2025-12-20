@@ -187,7 +187,7 @@ def optimize_portfolio(
     result = solve_mean_variance(mu, cov, config)
 
     # Save weights
-    output_path = Path(settings.project_root) / "results" / output_file
+    output_path = Path(settings.project_root) / "outputs" / "results" / output_file
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     weights_sorted = result.weights.sort_values(ascending=False)

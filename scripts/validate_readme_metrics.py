@@ -11,8 +11,8 @@ from pathlib import Path
 from datetime import datetime
 
 REPO_ROOT = Path(__file__).parent.parent
-REPORTS_DIR = REPO_ROOT / "reports"
-RESULTS_DIR = REPO_ROOT / "results"
+REPORTS_DIR = REPO_ROOT / "outputs" / "reports"
+RESULTS_DIR = REPO_ROOT / "outputs" / "results"
 WALKFORWARD_DIR = REPORTS_DIR / "walkforward"
 
 class MetricsValidator:

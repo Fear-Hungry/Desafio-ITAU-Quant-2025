@@ -9,7 +9,7 @@
 
 - [ ] **Moeda base:** Confirmado "USD base" (não BRL) em todo o documento
 - [ ] **Parâmetro η:** Confirmado η=0 na execução OOS canônica
-- [ ] **Custos:** Confirmado 30 bps em README.md e CLAUDE.md
+- [ ] **Custos:** Confirmado 30 bps em README.md e docs/specs/PRD.md
 - [ ] **162 vs 64 splits:** Esclarecido (162 histórico, 64 OOS oficial)
 - [ ] **Universo 69 vs 66:** Explicado ETHA/FBTC/IBIT excluídos
 - [ ] **Turnover:** Nota de investigação adicionada
@@ -53,9 +53,9 @@
 - [ ] `configs/asset_groups.yaml` - Existe e tem 6 grupos
 - [ ] `configs/oos_period.yaml` - Existe com período 2020-2025
 - [ ] `data/processed/returns_arara.parquet` - Existe
-- [ ] `reports/walkforward/nav_daily.csv` - Existe (1,451 linhas)
-- [ ] `reports/oos_consolidated_metrics.json` - Existe
-- [ ] `reports/walkforward/per_window_results.csv` - Existe (64 janelas)
+- [ ] `outputs/reports/walkforward/nav_daily.csv` - Existe (1,451 linhas)
+- [ ] `outputs/reports/oos_consolidated_metrics.json` - Existe
+- [ ] `outputs/reports/walkforward/per_window_results.csv` - Existe (64 janelas)
 
 ---
 
@@ -80,7 +80,7 @@ poetry run python scripts/generate_oos_figures.py
 - [ ] Comando 1 executado sem erros
 - [ ] Comando 2 executado sem erros
 - [ ] Comando 3 gerou `oos_consolidated_metrics.json`
-- [ ] Comando 4 gerou figuras em `reports/figures/`
+- [ ] Comando 4 gerou figuras em `outputs/reports/figures/`
   - Nota: o gráfico de comparação PRISM‑R vs baselines exibe Sharpe em excesso ao T‑Bill (usar `consolidate_oos_metrics.py --riskfree-csv ...`).
 
 ---

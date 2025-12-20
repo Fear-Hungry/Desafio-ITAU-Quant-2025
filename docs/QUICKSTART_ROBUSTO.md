@@ -36,8 +36,8 @@ Correções vs original:
 - Sharpe ex-ante ~ 1.5-2.2
 
 **Arquivos gerados:**
-- `results/portfolio_weights_robust_TIMESTAMP.csv`
-- `results/portfolio_metrics_robust_TIMESTAMP.csv`
+- `outputs/results/portfolio_weights_robust_TIMESTAMP.csv`
+- `outputs/results/portfolio_metrics_robust_TIMESTAMP.csv`
 
 ---
 
@@ -57,8 +57,8 @@ Correções vs original:
 - **N_eff ≥ 10** ✅
 
 **Arquivos gerados:**
-- `results/estimator_comparison_TIMESTAMP.csv`
-- `results/weights_{estimator}_TIMESTAMP.csv`
+- `outputs/results/estimator_comparison_TIMESTAMP.csv`
+- `outputs/results/weights_{estimator}_TIMESTAMP.csv`
 
 ---
 
@@ -80,9 +80,9 @@ Sharpe(MV Robust) ≥ Sharpe(1/N) + 0.2
 ```
 
 **Arquivos gerados:**
-- `results/oos_metrics_comparison_TIMESTAMP.csv`
-- `results/oos_returns_all_strategies_TIMESTAMP.csv`
-- `results/oos_cumulative_TIMESTAMP.csv`
+- `outputs/results/oos_metrics_comparison_TIMESTAMP.csv`
+- `outputs/results/oos_returns_all_strategies_TIMESTAMP.csv`
+- `outputs/results/oos_cumulative_TIMESTAMP.csv`
 
 ---
 

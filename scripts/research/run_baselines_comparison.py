@@ -221,7 +221,7 @@ else:
 # ============================================================================
 # SALVAR RESULTADOS
 # ============================================================================
-output_dir = Path("results") / "baselines"
+output_dir = Path("outputs/results") / "baselines"
 output_dir.mkdir(parents=True, exist_ok=True)
 
 returns_file = output_dir / "baseline_returns_oos.parquet"

@@ -40,7 +40,7 @@ class RebalanceLog:
 class ProductionLogger:
     """Logger estruturado para ambiente de produção"""
 
-    def __init__(self, log_dir: Path = Path("results/production")):
+    def __init__(self, log_dir: Path = Path("outputs/results/production")):
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
 
@@ -295,7 +295,7 @@ if __name__ == "__main__":
     print()
 
     # Criar logger de teste
-    logger = ProductionLogger(log_dir=Path("results/production_test"))
+    logger = ProductionLogger(log_dir=Path("outputs/results/production_test"))
 
     # Simular alguns rebalances
     tickers = ["SPY", "QQQ", "IEF", "GLD", "EMB"]
@@ -338,4 +338,4 @@ if __name__ == "__main__":
     logger.print_summary()
 
     print()
-    print("✅ Teste concluído! Verifique results/production_test/")
+    print("✅ Teste concluído! Verifique outputs/results/production_test/")

@@ -10,7 +10,7 @@ import pandas as pd
 
 plt.style.use("seaborn-v0_8-darkgrid")
 
-REPORTS_DIR = Path("reports")
+REPORTS_DIR = Path("outputs/reports")
 FIGURES_DIR = REPORTS_DIR / "figures"
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -196,7 +196,7 @@ def plot_risk_contribution(data: dict, output_name: str = "tearsheet_risk_contri
 
 def plot_walkforward_nav(output_name: str = "walkforward_nav_20251101.png"):
     """Create simplified walk-forward NAV plot from per-window results."""
-    wf_file = Path("reports/walkforward/per_window_results.csv")
+    wf_file = Path("outputs/reports/walkforward/per_window_results.csv")
     if not wf_file.exists():
         print("Walk-forward results not found")
         return

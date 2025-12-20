@@ -28,8 +28,8 @@ poetry run python production_logger.py
 ```
 
 **Resultado:**
-- ✅ CSV criado: `results/production_test/production_log.csv`
-- ✅ Pesos salvos: `results/production_test/weights/`
+- ✅ CSV criado: `outputs/results/production_test/production_log.csv`
+- ✅ Pesos salvos: `outputs/results/production_test/weights/`
 - ✅ Resumo gerado corretamente
 - ✅ Turnover médio: 8.83% (dentro do target ≤12%)
 
@@ -81,8 +81,8 @@ Custo: 39.7 bps
 ```
 
 **Logging:**
-- ✅ Rebalance registrado em `results/production/production_log.csv`
-- ✅ Pesos salvos em `results/production/weights/weights_20251022.csv`
+- ✅ Rebalance registrado em `outputs/results/production/production_log.csv`
+- ✅ Pesos salvos em `outputs/results/production/weights/weights_20251022.csv`
 
 ---
 
@@ -118,20 +118,20 @@ poetry run python test_production_system.py
 
 ```bash
 # Ver último rebalance
-tail -1 results/production/production_log.csv
+tail -1 outputs/results/production/production_log.csv
 
 # Ver histórico completo
-cat results/production/production_log.csv
+cat outputs/results/production/production_log.csv
 
 # Ver pesos mais recentes
-ls -lh results/production/weights/
+ls -lh outputs/results/production/weights/
 ```
 
 ### Monitorar Triggers
 
 ```bash
 # Verificar se fallback está ativo
-grep "fallback_active,True" results/production/production_log.csv
+grep "fallback_active,True" outputs/results/production/production_log.csv
 ```
 
 ---
@@ -139,7 +139,7 @@ grep "fallback_active,True" results/production/production_log.csv
 ## 📁 Arquivos Gerados (Verificados)
 
 ```
-results/production/
+outputs/results/production/
 ├── production_log.csv           ✅ Criado
 │   └── 1 rebalance registrado   ✅ Validado
 └── weights/

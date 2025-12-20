@@ -21,7 +21,7 @@ from arara_quant.config import get_settings
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIG = REPO_ROOT / "configs" / "optimizer_example.yaml"
 DEFAULT_OOS_CONFIG = REPO_ROOT / "configs" / "oos_period.yaml"
-DEFAULT_WF_DIR = REPO_ROOT / "reports" / "walkforward"
+DEFAULT_WF_DIR = REPO_ROOT / "outputs" / "reports" / "walkforward"
 
 
 def _read_oos_period(path: Path) -> tuple[str | None, str | None]:
@@ -84,7 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--output-dir",
         type=Path,
         default=DEFAULT_WF_DIR,
-        help="Directory to store walk-forward artefacts (default: reports/walkforward).",
+        help="Directory to store walk-forward artefacts (default: outputs/reports/walkforward).",
     )
     parser.add_argument(
         "--dry-run",

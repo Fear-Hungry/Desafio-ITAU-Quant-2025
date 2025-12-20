@@ -24,7 +24,7 @@ The project had conflicting CVaR conventions across different components:
 
 | Component | Original Convention | Value Example | Issue |
 |-----------|-------------------|---------------|-------|
-| **Targets** (PRD.md, CLAUDE.md) | "CVaR(5%) ≤ 8%" | 8% (unspecified horizon) | Ambiguous timeframe |
+| **Targets** (docs/specs/PRD.md, README.md) | "CVaR(5%) ≤ 8%" | 8% (unspecified horizon) | Ambiguous timeframe |
 | **Reported Metrics** (README.md) | "CVaR 95% (1d)" | -1.27% daily | Different scale than target |
 | **Code Output** (oos.py) | Daily only | `cvar_95: -0.0127` | Missing annualized version |
 | **Operational Triggers** (production_monitor.py) | "CVaR < -2% daily" | -2% daily | No annual equivalent noted |
@@ -68,8 +68,8 @@ Where:
 
 | File | Section | Change |
 |------|---------|--------|
-| `PRD.md` (L56, L258) | Target specifications | `CVaR(5%): ≤ 8%` → `CVaR(5%): ≤ 8% a.a. (anualizado √252 × CVaR diário)` |
-| `CLAUDE.md` (L392) | Performance targets table | `CVaR (5%) ≤ 8%` → `CVaR (5%) ≤ 8% annual` with formula note |
+| `docs/specs/PRD.md` (L56, L258) | Target specifications | `CVaR(5%): ≤ 8%` → `CVaR(5%): ≤ 8% a.a. (anualizado √252 × CVaR diário)` |
+| `README.md` (targets) | Performance targets table | `CVaR (5%) ≤ 8%` → `CVaR (5%) ≤ 8% a.a.` with formula note |
 
 ### 2. Core Metrics Calculation
 
@@ -350,7 +350,7 @@ A: CVaR (Expected Shortfall) is coherent; VaR is not. We use CVaR exclusively. I
 
 1. **Rockafellar & Uryasev (2000):** "Optimization of Conditional Value-at-Risk" — CVaR theory
 2. **Ledoit & Wolf (2004):** "Honey, I Shrunk the Sample Covariance Matrix" — Covariance estimation
-3. **PRD.md (L55-63):** PRISM-R target specifications
+3. **docs/specs/PRD.md (L55-63):** PRISM-R target specifications
 4. **docs/CVAR_CONVENTION.md:** Complete reference (this standardization)
 
 ---
@@ -360,7 +360,7 @@ A: CVaR (Expected Shortfall) is coherent; VaR is not. We use CVaR exclusively. I
 | Date | Version | Change |
 |------|---------|--------|
 | 2025-01-XX | 1.0 | Initial standardization: all CVaR annualized |
-| | | - PRD.md, CLAUDE.md targets clarified |
+| | | - docs/specs/PRD.md, README.md targets clarified |
 | | | - oos.py adds cvar_95_annual metric |
 | | | - README.md table/summary updated |
 | | | - production_monitor.py triggers documented |

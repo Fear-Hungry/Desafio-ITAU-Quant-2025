@@ -1,10 +1,10 @@
 #!/usr/bin/env python
 """Compute tracking error and monthly hit-rate versus benchmark for OOS returns.
 
-The script expects `results/oos_returns_all_strategies_*.csv` produced by the
+The script expects `outputs/results/oos_returns_all_strategies_*.csv` produced by the
 baseline comparison harness. By default it uses the latest file, treats
 `Risk Parity` as the portfolio and `60/40` as benchmark, and saves a CSV +
-JSON summary under `results/tracking_metrics/`.
+JSON summary under `outputs/results/tracking_metrics/`.
 """
 
 from __future__ import annotations
@@ -17,14 +17,14 @@ import pandas as pd
 
 PORTFOLIO_COLUMN = "Risk Parity"
 BENCHMARK_COLUMN = "60/40"
-OUTPUT_DIR = Path("results") / "tracking_metrics"
+OUTPUT_DIR = Path("outputs/results") / "tracking_metrics"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _latest_oos_file() -> Path:
-    candidates = sorted(Path("results").glob("oos_returns_all_strategies_*.csv"))
+    candidates = sorted(Path("outputs/results").glob("oos_returns_all_strategies_*.csv"))
     if not candidates:
-        raise FileNotFoundError("No OOS returns file found in results/ directory.")
+        raise FileNotFoundError("No OOS returns file found in outputs/results/ directory.")
     return candidates[-1]
 
 

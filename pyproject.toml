@@ -58,7 +58,7 @@ ignore = [
     "PLW2901",   # Loop variable overwritten
     "PLE0605",   # Invalid __all__ format
 ]
-per-file-ignores = { "scripts/**/*.py": ["E501", "D"] }
+per-file-ignores = { "scripts/**/*.py" = ["E501", "D"] }
 
 [tool.black]
 line-length = 88

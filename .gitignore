@@ -148,21 +148,24 @@ data/processed/**
 *.feather
 *.npz
 *.npy
-reports/**/*.pdf
-reports/**/*.html
-reports/**/*.json
-reports/**/*.png
-!reports/figures/*.png
-reports/**/*.md
-!reports/walkforward/*.md
-reports/walkforward/*.csv
+# Legacy artifact folders (pre-outputs)
+reports/
+results/
+outputs/reports/**/*.pdf
+outputs/reports/**/*.html
+outputs/reports/**/*.json
+outputs/reports/**/*.png
+!outputs/reports/figures/*.png
+outputs/reports/**/*.md
+!outputs/reports/walkforward/*.md
+outputs/reports/walkforward/*.csv
 notebooks/.ipynb_checkpoints/**
 notebooks/**.ipynb
 !notebooks/README.md
-logs/**
+outputs/logs/**
 runtime/**
-results/**/*.json
-results/**/*.csv
+outputs/results/**/*.json
+outputs/results/**/*.csv
 # Credentials & local configs
 secrets/**
 *.key
@@ -185,10 +188,10 @@ secrets/**
 
 # === Committed artifacts exceptions (allow committing canonical results) ===
 # Unignore canonical reports files
-!reports/walkforward/nav_daily.csv
-!reports/oos_consolidated_metrics.json
-!reports/oos_consolidated_metrics.csv
+!outputs/reports/walkforward/nav_daily.csv
+!outputs/reports/oos_consolidated_metrics.json
+!outputs/reports/oos_consolidated_metrics.csv
 
 # Unignore all results CSV/JSON artifacts
-!results/**/*.csv
-!results/**/*.json
+!outputs/results/**/*.csv
+!outputs/results/**/*.json

@@ -2,7 +2,7 @@
 
 The functions below are deliberately pandas-friendly: they accept ``Series`` or
 ``DataFrame`` inputs, preserve column labels, tolerate missing observations, and
-return results in structures that can be fed directly into reports/plots.  All
+return results in structures that can be fed directly into outputs/reports/plots.  All
 returns are assumed to be expressed in decimal form (``0.01 == 1%``).
 
 The module is intentionally self-contained so the same primitives can be

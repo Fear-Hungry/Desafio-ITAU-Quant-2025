@@ -2,8 +2,11 @@
 	"name": "PRISM-R Portfolio Optimizer (Python 3.11 + Poetry)",
 	"build": {
 		"context": "..",
-		"dockerfile": "Dockerfile"
+		"dockerfile": "../Dockerfile"
 	},
+
+	"workspaceFolder": "/workspace",
+	"workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind",
 
 	// Configure tool-specific properties
 	"customizations": {
@@ -21,7 +24,7 @@
 			],
 			// Configure VS Code settings
 			"settings": {
-				"python.defaultInterpreterPath": "/workspace/.venv/bin/python",
+				"python.defaultInterpreterPath": "/usr/local/bin/python",
 				"python.formatting.provider": "black",
 				"python.linting.enabled": true,
 				"python.linting.ruffEnabled": true,

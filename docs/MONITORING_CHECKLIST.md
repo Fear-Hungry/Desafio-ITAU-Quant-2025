@@ -41,10 +41,10 @@
 
 ### 3. VALIDAÇÕES PÓS-REBALANCE (T)
 
-- [ ] **Arquivo de Pesos** (`results/production/weights/weights_YYYYMMDD.csv`)
+- [ ] **Arquivo de Pesos** (`outputs/results/production/weights/weights_YYYYMMDD.csv`)
   ```python
   import pandas as pd
-  w = pd.read_csv('results/production/weights/weights_YYYYMMDD.csv', index_col=0)
+  w = pd.read_csv('outputs/results/production/weights/weights_YYYYMMDD.csv', index_col=0)
   
   # Check 1: Soma = 100%
   assert abs(w['weight'].sum() - 1.0) < 1e-6
@@ -60,9 +60,9 @@
   assert w['weight'].max() <= 0.08
   ```
 
-- [ ] **Production Log** (`results/production/production_log.csv`)
+- [ ] **Production Log** (`outputs/results/production/production_log.csv`)
   ```python
-  log = pd.read_csv('results/production/production_log.csv')
+  log = pd.read_csv('outputs/results/production/production_log.csv')
   last_row = log.iloc[-1]
   
   # Verificar métricas
@@ -186,7 +186,7 @@
 
 - [ ] **Criar Relatório Mensal**
   ```
-  results/production/reports/YYYY_MM_monthly_report.md
+  outputs/results/production/outputs/reports/YYYY_MM_monthly_report.md
   ```
   
   Conteúdo mínimo:
@@ -201,7 +201,7 @@
 
 - [ ] **Commit Changes**
   ```bash
-  git add results/production/
+  git add outputs/results/production/
   git commit -m "chore: monthly rebalance YYYY-MM-DD - K=22, turnover=XX%, vol=XX%"
   git push
   ```
@@ -282,12 +282,12 @@ poetry run python -m arara_quant.cli walkforward
 # 5. Análise rápida de pesos
 poetry run python -c "
 import pandas as pd
-w = pd.read_csv('results/production/weights/weights_$(date +%Y%m%d).csv', index_col=0)
+w = pd.read_csv('outputs/results/production/weights/weights_$(date +%Y%m%d).csv', index_col=0)
 print(w[w['weight'] > 1e-10].sort_values('weight', ascending=False))
 "
 
 # 6. Ver log de produção
-tail -5 results/production/production_log.csv | column -t -s,
+tail -5 outputs/results/production/production_log.csv | column -t -s,
 ```
 
 ---

@@ -4,7 +4,7 @@
 This research script consumes the cached ARARA return matrix and performs a
 walk-forward evaluation focused on tail control. Two CVaR variants are tested:
 one with an explicit return target and another with a hard CVaR cap. Results
-are written to ``results/cvar_experiment`` for inclusion in reports.
+are written to ``outputs/results/cvar_experiment`` for inclusion in reports.
 """
 
 from __future__ import annotations
@@ -217,7 +217,7 @@ print()
 # 4. SALVAR RESULTADOS
 # ============================================================================
 
-output_dir = Path("results") / "cvar_experiment"
+output_dir = Path("outputs/results") / "cvar_experiment"
 output_dir.mkdir(parents=True, exist_ok=True)
 
 metrics_file = output_dir / "metrics_oos.csv"

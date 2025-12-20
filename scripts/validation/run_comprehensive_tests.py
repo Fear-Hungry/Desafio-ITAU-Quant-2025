@@ -482,7 +482,7 @@ print("💾 [7/7] Salvando resultados")
 print("=" * 80)
 print()
 
-output_dir = Path("results/validation")
+output_dir = Path("outputs/results/validation")
 output_dir.mkdir(parents=True, exist_ok=True)
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

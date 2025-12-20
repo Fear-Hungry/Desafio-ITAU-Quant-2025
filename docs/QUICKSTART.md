@@ -45,8 +45,8 @@ poetry run python run_portfolio_arara.py
 ```
 
 **Arquivos gerados:**
-- `results/portfolio_weights_YYYYMMDD_HHMMSS.csv` - Pesos do portfolio
-- `results/portfolio_metrics_YYYYMMDD_HHMMSS.csv` - Métricas
+- `outputs/results/portfolio_weights_YYYYMMDD_HHMMSS.csv` - Pesos do portfolio
+- `outputs/results/portfolio_metrics_YYYYMMDD_HHMMSS.csv` - Métricas
 
 ---
 
@@ -75,8 +75,8 @@ poetry run python run_backtest_walkforward.py
 ```
 
 **Arquivos gerados:**
-- `results/backtest_returns_YYYYMMDD_HHMMSS.csv` - Série temporal de retornos
-- `results/backtest_metrics_YYYYMMDD_HHMMSS.csv` - Métricas de performance
+- `outputs/results/backtest_returns_YYYYMMDD_HHMMSS.csv` - Série temporal de retornos
+- `outputs/results/backtest_metrics_YYYYMMDD_HHMMSS.csv` - Métricas de performance
 
 ---
 
@@ -233,7 +233,7 @@ poetry run pytest --cov=src/arara_quant
 ## 📁 Estrutura de Saída
 
 ```
-results/
+outputs/results/
 ├── portfolio_weights_20251019_120000.csv
 ├── portfolio_metrics_20251019_120000.csv
 ├── backtest_returns_20251019_120000.csv
@@ -352,7 +352,7 @@ from arara_quant.evaluation.report import build_and_export_report
 build_and_export_report(
     returns=portfolio_returns,
     benchmark_returns=spy_returns,
-    output_file='results/report.html',
+    output_file='outputs/results/report.html',
 )
 ```
 
@@ -360,7 +360,7 @@ build_and_export_report(
 
 ## 📞 Suporte
 
-- 📖 Documentação: Ver `CLAUDE.md` e `PRD.md`
+- 📖 Documentação: Ver `docs/README.md` e `docs/specs/PRD.md`
 - 🧪 Testes: `tests/` contém 230+ testes
 - 🐛 Issues: Verificar logs em `poetry run pytest -v`
 

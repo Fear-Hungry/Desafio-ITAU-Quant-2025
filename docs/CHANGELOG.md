@@ -61,12 +61,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Documentation**
   - Comprehensive README with results and methodology
   - Walk-forward analysis section with 162 windows stats
-  - CLAUDE.md for AI assistant guidance
+  - docs/README.md for documentation index and navigation
   - Reproducibility instructions
 
 ### Changed
 - Updated pyproject.toml with proper authors and license field
-- Corrected .gitignore to exclude artifacts (reports/*.json, *.png)
+- Corrected .gitignore to exclude artifacts (outputs/reports/*.json, *.png)
 - Removed poetry.lock from .gitignore (proper for applications)
 
 ### Fixed

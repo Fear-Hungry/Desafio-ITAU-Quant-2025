@@ -87,8 +87,8 @@ As budget constraints agora fazem parte da formulação do QP — violações in
 3. N_eff ≥ 10 (alta diversificação)
 
 **Outputs:**
-- `results/estimator_comparison_TIMESTAMP.csv`
-- `results/weights_{estimator}_TIMESTAMP.csv` (para cada estimador)
+- `outputs/results/estimator_comparison_TIMESTAMP.csv`
+- `outputs/results/weights_{estimator}_TIMESTAMP.csv` (para cada estimador)
 
 ---
 
@@ -131,9 +131,9 @@ Sharpe(MV Robust) ≥ Sharpe(1/N) + 0.2
 ```
 
 **Outputs:**
-- `results/oos_metrics_comparison_TIMESTAMP.csv`
-- `results/oos_returns_all_strategies_TIMESTAMP.csv`
-- `results/oos_cumulative_TIMESTAMP.csv`
+- `outputs/results/oos_metrics_comparison_TIMESTAMP.csv`
+- `outputs/results/oos_returns_all_strategies_TIMESTAMP.csv`
+- `outputs/results/oos_cumulative_TIMESTAMP.csv`
 
 ---
 
@@ -153,7 +153,7 @@ Sharpe(MV Robust) ≥ Sharpe(1/N) + 0.2
 ⚠️ ATENÇÃO:
 - Sharpe ex-ante: 2.26 (ainda alto, mas com estimador robusto)
 - Precisa validar regimes e shrinkage para não superestimar retorno
-- **Atualização (2025-10-31):** `risk.regime.detect_regime` implementado e integrado na etapa de rebalance. Configuração `optimizer.regime_detection` permite mapear volatilidade/drawdown para multiplicadores de λ; resultados de stress em `results/regime_stress/` auxiliam na calibração.
+- **Atualização (2025-10-31):** `risk.regime.detect_regime` implementado e integrado na etapa de rebalance. Configuração `optimizer.regime_detection` permite mapear volatilidade/drawdown para multiplicadores de λ; resultados de stress em `outputs/results/regime_stress/` auxiliam na calibração.
 
 ✅ CORREÇÃO:
 - Budget constraints agora integradas diretamente no solver
@@ -196,8 +196,8 @@ poetry run python run_portfolio_arara_robust.py
 ```
 
 **Output:**
-- `results/portfolio_weights_robust_TIMESTAMP.csv`
-- `results/portfolio_metrics_robust_TIMESTAMP.csv`
+- `outputs/results/portfolio_weights_robust_TIMESTAMP.csv`
+- `outputs/results/portfolio_metrics_robust_TIMESTAMP.csv`
 
 **Tempo:** ~10-15 segundos
 
@@ -210,8 +210,8 @@ poetry run python run_estimator_comparison.py
 ```
 
 **Output:**
-- `results/estimator_comparison_TIMESTAMP.csv`
-- `results/weights_{sample|huber|shrunk_50|bl_neutral}_TIMESTAMP.csv`
+- `outputs/results/estimator_comparison_TIMESTAMP.csv`
+- `outputs/results/weights_{sample|huber|shrunk_50|bl_neutral}_TIMESTAMP.csv`
 
 **Tempo:** ~30-60 segundos
 
@@ -226,9 +226,9 @@ poetry run python run_baselines_comparison.py
 ```
 
 **Output:**
-- `results/oos_metrics_comparison_TIMESTAMP.csv`
-- `results/oos_returns_all_strategies_TIMESTAMP.csv`
-- `results/oos_cumulative_TIMESTAMP.csv`
+- `outputs/results/oos_metrics_comparison_TIMESTAMP.csv`
+- `outputs/results/oos_returns_all_strategies_TIMESTAMP.csv`
+- `outputs/results/oos_cumulative_TIMESTAMP.csv`
 
 **Tempo:** ~5-10 minutos (depende de quantos períodos walk-forward)
 
@@ -398,8 +398,8 @@ RiskBudget(
 - [x] Walk-forward framework implementado
 - [x] Budget constraints integradas ao solver
 - [x] Turnover cap funcionando (reformulado com variáveis auxiliares)
-- [x] Validação OOS executada e documentada (`results/baselines/baseline_metrics_oos.csv`, README.md §1)
-- [x] IC de Sharpe via bootstrap (`results/bootstrap_ci/bootstrap_sharpe_20251031_151937.json`)
+- [x] Validação OOS executada e documentada (`outputs/results/baselines/baseline_metrics_oos.csv`, README.md §1)
+- [x] IC de Sharpe via bootstrap (`outputs/results/bootstrap_ci/bootstrap_sharpe_20251031_151937.json`)
 
 ---
 

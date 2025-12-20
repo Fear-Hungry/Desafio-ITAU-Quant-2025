@@ -110,7 +110,9 @@ def build_parser() -> argparse.ArgumentParser:
         help="Não executa backtest (apenas otimização)",
     )
     pipeline.add_argument(
-        "--output-dir", default="reports", help="Diretório para salvar resultados"
+        "--output-dir",
+        default="outputs/reports",
+        help="Diretório para salvar resultados",
     )
     pipeline.add_argument("--json", action="store_true", help="Output em formato JSON")
 
@@ -199,7 +201,7 @@ def _run_script(script_path: Path) -> int:
 
 
 def _generate_wf_report(
-    result: BacktestResult, output_dir: str = "reports/walkforward"
+    result: BacktestResult, output_dir: str = "outputs/reports/walkforward"
 ) -> None:
     """Generate comprehensive walk-forward report with visualizations and tables.
 
@@ -334,7 +336,7 @@ def main(argv: Iterable[str] | None = None) -> int:
 
             # Generate walk-forward report if requested
             if hasattr(args, "wf_report") and args.wf_report and not args.dry_run:
-                _generate_wf_report(result, output_dir="reports/walkforward")
+                _generate_wf_report(result, output_dir="outputs/reports/walkforward")
 
             payload = result.to_dict(include_timeseries=args.json)
             _print_payload(payload, as_json=args.json)

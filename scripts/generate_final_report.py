@@ -6,7 +6,7 @@ This script:
 1. Loads oos_consolidated_metrics.json (single source of truth)
 2. Formats metrics in markdown table
 3. Includes CVaR convention (annualized values)
-4. Saves to reports/FINAL_OOS_METRICS_REPORT.md
+4. Saves to outputs/reports/FINAL_OOS_METRICS_REPORT.md
 """
 
 import json
@@ -15,7 +15,7 @@ from datetime import datetime
 
 # Setup paths
 REPO_ROOT = Path(__file__).parent.parent
-REPORTS_DIR = REPO_ROOT / "reports"
+REPORTS_DIR = REPO_ROOT / "outputs" / "reports"
 METRICS_JSON = REPORTS_DIR / "oos_consolidated_metrics.json"
 OUTPUT_MD = REPORTS_DIR / "FINAL_OOS_METRICS_REPORT.md"
 
@@ -88,7 +88,7 @@ CVaR_annual = CVaR_daily × √252
 
 - **Daily CVaR:** {metrics['cvar_95']:.4f} ({metrics['cvar_95']:.2%})
 - **Annual CVaR:** {metrics['cvar_95_annual']:.4f} ({metrics['cvar_95_annual']:.2%})
-- **Target:** ≤ 8% a.a. (from PRD.md)
+- **Target:** ≤ 8% a.a. (from docs/specs/PRD.md)
 - **Status:** ⚠️ Violation — observed is 2.5x above target
 
 **Interpretation:**
@@ -139,7 +139,7 @@ CVaR_annual = CVaR_daily × √252
 
 **Single Source of Truth Architecture:**
 
-1. **Input:** `reports/walkforward/nav_daily.csv` (1,451 daily NAV observations)
+1. **Input:** `outputs/reports/walkforward/nav_daily.csv` (1,451 daily NAV observations)
 2. **Processing:** `scripts/consolidate_oos_metrics.py`
 3. **Output:** `{METRICS_JSON.relative_to(REPO_ROOT)}`
 4. **Report:** `{OUTPUT_MD.relative_to(REPO_ROOT)}` (this file)
@@ -154,7 +154,7 @@ CVaR_annual = CVaR_daily × √252
 
 ## 📚 References
 
-- **PRD.md:** Performance targets and CVaR ≤ 8% a.a. specification
+- **docs/specs/PRD.md:** Performance targets and CVaR ≤ 8% a.a. specification
 - **docs/CVAR_CONVENTION.md:** Complete CVaR calculation reference
 - **docs/CVAR_STANDARDIZATION_SUMMARY.md:** Standardization details
 - **README.md Section 6.4:** Complete methodology and traceability
@@ -167,7 +167,7 @@ To regenerate this report:
 
 ```bash
 # Step 1: Ensure nav_daily.csv exists
-ls reports/walkforward/nav_daily.csv
+ls outputs/reports/walkforward/nav_daily.csv
 
 # Step 2: Regenerate consolidated metrics
 poetry run python scripts/consolidate_oos_metrics.py
@@ -176,7 +176,7 @@ poetry run python scripts/consolidate_oos_metrics.py
 poetry run python scripts/generate_final_report.py
 
 # Step 4: Verify values
-cat reports/oos_consolidated_metrics.json | jq '.nav_final, .cvar_95_annual'
+cat outputs/reports/oos_consolidated_metrics.json | jq '.nav_final, .cvar_95_annual'
 ```
 
 ---

@@ -93,7 +93,7 @@ print()
 
 # Logging
 print("💾 Testando logging...")
-logger = ProductionLogger(log_dir=Path("results/production"))
+logger = ProductionLogger(log_dir=Path("outputs/results/production"))
 
 previous_weights = pd.Series(1.0 / len(valid_tickers), index=valid_tickers)
 turnover_realized = np.abs(weights - previous_weights).sum()

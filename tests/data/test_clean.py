@@ -102,6 +102,25 @@ def test_filter_liquid_assets_removes_sparse_assets():
     assert not stats.loc["SHORT", "is_liquid"]
 
 
+def test_filter_liquid_assets_respects_per_asset_override():
+    idx = pd.bdate_range("2023-01-02", periods=300)
+    df = pd.DataFrame({"FULL": range(300)}, index=idx, dtype=float)
+    short = pd.Series(float("nan"), index=idx)
+    short.iloc[-80:] = range(80)
+    df["SHORT"] = short
+
+    filtered_default, _ = filter_liquid_assets(df)
+    assert list(filtered_default.columns) == ["FULL"]
+
+    filtered_override, stats_override = filter_liquid_assets(
+        df,
+        per_asset_min_history={"SHORT": 60},
+    )
+
+    assert "SHORT" in filtered_override.columns
+    assert stats_override.loc["SHORT", "is_liquid"]
+
+
 def test_winsorize_outliers_series():
     series = pd.Series([1.0, 2.0, 100.0, 3.0, -50.0])
     out = winsorize_outliers(series, lower=0.1, upper=0.9)

@@ -42,4 +42,4 @@ fi
 
 # Install project dependencies with Poetry
 echo "[post-create] Installing Poetry dependencies..."
-poetry install
+poetry install --with dev --no-interaction --no-ansi

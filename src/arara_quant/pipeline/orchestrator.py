@@ -54,7 +54,7 @@ def validate_write_permissions(output_dir: Path) -> None:
         PipelineError: If directory cannot be created or written to
 
     Examples:
-        >>> validate_write_permissions(Path("reports"))
+        >>> validate_write_permissions(Path("outputs/reports"))
     """
     try:
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -104,7 +104,7 @@ def run_full_pipeline(
     end: str | None = None,
     skip_download: bool = False,
     skip_backtest: bool = False,
-    output_dir: str | Path = "reports",
+    output_dir: str | Path = "outputs/reports",
     settings: Settings | None = None,
 ) -> dict[str, Any]:
     """Execute the complete portfolio construction pipeline.

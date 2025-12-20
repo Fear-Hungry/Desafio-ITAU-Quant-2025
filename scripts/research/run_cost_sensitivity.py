@@ -13,10 +13,10 @@ from arara_quant.evaluation.oos import (
     default_strategies,
 )
 
-UNIVERSE_RETURNS = Path("results/baselines/baseline_returns_oos.parquet")
+UNIVERSE_RETURNS = Path("outputs/results/baselines/baseline_returns_oos.parquet")
 COST_GRID = [30.0, 50.0, 75.0]
 TURNOVER_CAP_GRID = [None, 0.25, 0.20]
-OUTPUT_DIR = Path("results") / "cost_sensitivity"
+OUTPUT_DIR = Path("outputs/results") / "cost_sensitivity"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -24,7 +24,8 @@ def load_returns() -> pd.DataFrame:
     if UNIVERSE_RETURNS.exists():
         return pd.read_parquet(UNIVERSE_RETURNS)
     raise FileNotFoundError(
-        "Baseline returns parquet not found. Run `run_baselines_comparison.py` first."
+        "Baseline returns parquet not found. Run "
+        "`scripts/research/run_baselines_comparison.py` first."
     )
 
 

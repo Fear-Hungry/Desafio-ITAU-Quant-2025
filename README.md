@@ -42,7 +42,7 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 
 [^1]: Universo configurado com 69 ETFs em `configs/universe_arara.yaml`. O universo OOS final utiliza 66 ativos após exclusão de ETHA, FBTC e IBIT por falta de histórico completo no período 2020-2025.
 
-> **📊 Convenção CVaR:** Todo CVaR neste documento é reportado **anualizado** (CVaR_diário × √252) para consistência com volatilidade e retorno. Target: CVaR 95% ≤ 8% a.a. (PRD.md). Referência detalhada: [`docs/CVAR_CONVENTION.md`](docs/CVAR_CONVENTION.md).
+> **📊 Convenção CVaR:** Todo CVaR neste documento é reportado **anualizado** (CVaR_diário × √252) para consistência com volatilidade e retorno. Target: CVaR 95% ≤ 8% a.a. (docs/specs/PRD.md). Referência detalhada: [`docs/CVAR_CONVENTION.md`](docs/CVAR_CONVENTION.md).
 
 **Validação Walk-Forward:** Treino 252 dias, teste 21 dias, purge/embargo 2 dias. Período oficial OOS: 2020-01-02 a 2025-10-09 (1,451 dias úteis).
 
@@ -50,34 +50,34 @@ Implementamos uma estratégia mean-variance penalizada para o universo multiativ
 
 | Métrica | Valor | Artefato (chave/coluna) | Script/Função |
 | --- | --- | --- | --- |
-| NAV Final | 1.0288657188001502 | `reports/oos_consolidated_metrics.json` (`nav_final`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| Retorno Total | 0.02886571880015021 (≈2.89%) | `reports/oos_consolidated_metrics.json` (`total_return`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| Retorno Anualizado | 0.004954446381679967 (≈0.50%) | `reports/oos_consolidated_metrics.json` (`annualized_return`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| Volatilidade Anualizada | 0.08596241615802391 (≈8.60%) | `reports/oos_consolidated_metrics.json` (`annualized_volatility`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| Sharpe (excesso T‑Bill) | -0.21300083657353924 | `reports/oos_consolidated_metrics.json` (`sharpe_excess_rf`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| Drawdown Máximo | -0.20886843865285545 | `reports/oos_consolidated_metrics.json` (`max_drawdown`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| Drawdown Médio | -0.11917215346729178 | `reports/oos_consolidated_metrics.json` (`avg_drawdown`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| CVaR 95% (diário) | -0.012746570427993225 | `reports/oos_consolidated_metrics.json` (`cvar_95`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| CVaR 95% (anual) | -0.2023455325286413 | `reports/oos_consolidated_metrics.json` (`cvar_95_annual`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| Taxa de Acerto | 0.5203308063404548 | `reports/oos_consolidated_metrics.json` (`success_rate`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| PSR (S₀=0, N=1) | 0.9999869327988864 | `reports/oos_consolidated_metrics.json` (`psr`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| DSR | 0.9999869327988864 | `reports/oos_consolidated_metrics.json` (`dsr`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
-| Nº dias OOS | 1451 | `reports/oos_consolidated_metrics.json` (`n_days`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| NAV Final | 1.0288657188001502 | `outputs/reports/oos_consolidated_metrics.json` (`nav_final`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| Retorno Total | 0.02886571880015021 (≈2.89%) | `outputs/reports/oos_consolidated_metrics.json` (`total_return`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| Retorno Anualizado | 0.004954446381679967 (≈0.50%) | `outputs/reports/oos_consolidated_metrics.json` (`annualized_return`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| Volatilidade Anualizada | 0.08596241615802391 (≈8.60%) | `outputs/reports/oos_consolidated_metrics.json` (`annualized_volatility`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| Sharpe (excesso T‑Bill) | -0.21300083657353924 | `outputs/reports/oos_consolidated_metrics.json` (`sharpe_excess_rf`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| Drawdown Máximo | -0.20886843865285545 | `outputs/reports/oos_consolidated_metrics.json` (`max_drawdown`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| Drawdown Médio | -0.11917215346729178 | `outputs/reports/oos_consolidated_metrics.json` (`avg_drawdown`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| CVaR 95% (diário) | -0.012746570427993225 | `outputs/reports/oos_consolidated_metrics.json` (`cvar_95`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| CVaR 95% (anual) | -0.2023455325286413 | `outputs/reports/oos_consolidated_metrics.json` (`cvar_95_annual`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| Taxa de Acerto | 0.5203308063404548 | `outputs/reports/oos_consolidated_metrics.json` (`success_rate`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| PSR (S₀=0, N=1) | 0.9999869327988864 | `outputs/reports/oos_consolidated_metrics.json` (`psr`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| DSR | 0.9999869327988864 | `outputs/reports/oos_consolidated_metrics.json` (`dsr`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| Nº dias OOS | 1451 | `outputs/reports/oos_consolidated_metrics.json` (`n_days`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
 
 **Distribuição de turnover/custos (per-window OOS):**
 
 | Métrica | Valor | Artefato (coluna) | Script/Função |
 | --- | --- | --- | --- |
-| Turnover mediano (‖Δw‖₁ one-way) | 0.0006745216538395 | `reports/walkforward/per_window_results.csv` (`Turnover`) | `arara_quant.cli._generate_wf_report` ↔ `scripts/update_readme_turnover_stats.py::compute_prism_turnover_from_windows` |
-| Turnover p95 | 0.007582712824124227 | `reports/walkforward/per_window_results.csv` (`Turnover`) | `arara_quant.cli._generate_wf_report` ↔ `scripts/update_readme_turnover_stats.py::compute_prism_turnover_from_windows` |
-| Custo médio por rebalance | 3.488352064395853e-06 | `reports/walkforward/per_window_results.csv` (`Cost`) | `arara_quant.cli._generate_wf_report` |
-| Custo anualizado (bps) | 8.79064720227755 | `reports/walkforward/per_window_results.csv` (`Cost`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
+| Turnover mediano (‖Δw‖₁ one-way) | 0.0006745216538395 | `outputs/reports/walkforward/per_window_results.csv` (`Turnover`) | `arara_quant.cli._generate_wf_report` ↔ `scripts/update_readme_turnover_stats.py::compute_prism_turnover_from_windows` |
+| Turnover p95 | 0.007582712824124227 | `outputs/reports/walkforward/per_window_results.csv` (`Turnover`) | `arara_quant.cli._generate_wf_report` ↔ `scripts/update_readme_turnover_stats.py::compute_prism_turnover_from_windows` |
+| Custo médio por rebalance | 3.488352064395853e-06 | `outputs/reports/walkforward/per_window_results.csv` (`Cost`) | `arara_quant.cli._generate_wf_report` |
+| Custo anualizado (bps) | 8.79064720227755 | `outputs/reports/walkforward/per_window_results.csv` (`Cost`) | `scripts/consolidate_oos_metrics.py::compute_metrics_from_nav_daily` |
 
-**\* Convenção de turnover:** Estatísticas derivadas de `reports/walkforward/per_window_results.csv`, calculadas como média/quantis do ‖Δw‖₁ (one-way) usando pesos pré-trade e drift entre rebalances.
+**\* Convenção de turnover:** Estatísticas derivadas de `outputs/reports/walkforward/per_window_results.csv`, calculadas como média/quantis do ‖Δw‖₁ (one-way) usando pesos pré-trade e drift entre rebalances.
 
 **Determinismo/Seeds:** Experimentos e smokes utilizam `numpy.random.default_rng` com seeds explícitos (`0` em testes unitários, `42` nos smokes offline, `777` nos experimentos de GA em `scripts/research/run_ga_mv_walkforward.py`). Documente qualquer novo seed nos relatórios correspondentes.
 
-**Fonte:** Todos os valores são calculados a partir de `reports/walkforward/nav_daily.csv` (canonical single source of truth), consolidados em `reports/oos_consolidated_metrics.json`. Para detalhes completos sobre metodologia, rastreabilidade e validação, ver seção 6.4.
+**Fonte:** Todos os valores são calculados a partir de `outputs/reports/walkforward/nav_daily.csv` (canonical single source of truth), consolidados em `outputs/reports/oos_consolidated_metrics.json`. Para detalhes completos sobre metodologia, rastreabilidade e validação, ver seção 6.4.
 
 > Moeda base e RF. Todos os cálculos estão em **USD**. Não houve conversão para BRL nesta execução.  
 > Taxa livre de risco: a leitura correta no período OOS (2020–2025) usa excesso ao T‑Bill diário (RF > 0 em 2022–2024). Onde indicado, mantemos a série com RF≈0 por compatibilidade dos artefatos; ao recalcular com T‑Bill, o Sharpe cai um pouco. Preferimos reportar este ajuste explicitamente à custa de reduzir o Sharpe.  
@@ -199,7 +199,7 @@ Nota de clarificação — modo defensivo. No OOS canônico 2020–2025, o modo 
 | Purge / embargo              | 2d / 2d                                                |
 | Rebalance                    | Mensal (primeiro business day)                        |
 | Custos                       | 30 bps por round-trip                                  |
-| Arquivos de saída            | `reports/backtest_*.json`, `reports/figures/*.png`     |
+| Arquivos de saída            | `outputs/reports/backtest_*.json`, `outputs/reports/figures/*.png`     |
 | Scripts auxiliares           | `scripts/research/run_regime_stress.py`, `run_ga_*.py` |
 
 ### 4.1 Meta-heurística (GA) integrada
@@ -253,7 +253,7 @@ Por que PRISM‑R ficou aquém dos baselines (síntese):
 - Custos explícitos e penalização de turnover atuaram como freio adicional.
 - Trade‑off foi deliberado (robustez/controle de risco > retorno) e será recalibrado.
 
-**Nota:** Turnover e custos são calculados com pesos pré-trade, considerando o drift entre rebalances; métricas completas estão em `reports/walkforward/per_window_results.csv`.
+**Nota:** Turnover e custos são calculados com pesos pré-trade, considerando o drift entre rebalances; métricas completas estão em `outputs/reports/walkforward/per_window_results.csv`.
 
 **📊 Análise CVaR (Target: ≤ 8% a.a.):**
 - **PRISM-R:** -20.23% a.a. ⚠️ **Violação (2.5x acima do target)**
@@ -263,8 +263,8 @@ Por que PRISM‑R ficou aquém dos baselines (síntese):
 - **Interpretação:** PRISM-R apresenta risco de cauda moderado (melhor que 6 de 8 baselines), mas ainda viola significativamente o target de 8% a.a. estabelecido no PRD. Estratégias defensivas (Min-Var, HRP) apresentam CVaR superior.
 
 Notas:
-- PRISM-R (linha 1) vem da série diária oficial (nav_daily.csv) consolidada em reports/oos_consolidated_metrics.json.
-- As 8 estratégias baseline foram recalculadas com a MESMA pipeline do OOS oficial (walk-forward, purge/embargo, custos e universo congelado) e estão em results/oos_canonical/metrics_oos_canonical.csv.
+- PRISM-R (linha 1) vem da série diária oficial (nav_daily.csv) consolidada em outputs/reports/oos_consolidated_metrics.json.
+- As 8 estratégias baseline foram recalculadas com a MESMA pipeline do OOS oficial (walk-forward, purge/embargo, custos e universo congelado) e estão em outputs/results/oos_canonical/metrics_oos_canonical.csv.
 - Diferenças residuais de universo vs. versões anteriores se devem à exclusão de ativos sem cobertura completa no OOS (ex.: ETHA, FBTC, IBIT).
 - O Sharpe (mediano por janela, WF) foi omitido intencionalmente para evitar confusão com o Sharpe calculado na série diária OOS; se necessário, pode ser reportado na seção 5.2.
 - **Convenção CVaR:** Todos os valores são **anualizados** (CVaR_diário × √252). CVaR diário disponível em `cvar_95` para monitoramento operacional. Referência detalhada: [`docs/CVAR_CONVENTION.md`](docs/CVAR_CONVENTION.md).
@@ -273,14 +273,14 @@ Notas:
 ### 5.2 Análise Walk-Forward Detalhada (63 janelas OOS)
 
 Os detalhes por janela (estatísticas, curvas e períodos de estresse) estão disponíveis nos artefatos canônicos:
-- reports/walkforward/summary_stats.md
-- reports/walkforward/per_window_results.md
-- reports/walkforward/stress_periods.md
+- outputs/reports/walkforward/summary_stats.md
+- outputs/reports/walkforward/per_window_results.md
+- outputs/reports/walkforward/stress_periods.md
 
-As métricas consolidadas do período OOS canônico (2020-01-02 a 2025-10-09) são calculadas a partir de reports/walkforward/nav_daily.csv e publicadas em reports/oos_consolidated_metrics.json. O período é definido centralmente em configs/oos_period.yaml.
+As métricas consolidadas do período OOS canônico (2020-01-02 a 2025-10-09) são calculadas a partir de outputs/reports/walkforward/nav_daily.csv e publicadas em outputs/reports/oos_consolidated_metrics.json. O período é definido centralmente em configs/oos_period.yaml.
 
 ### 5.3 Gráficos
-![Análise Walk-Forward Completa (parameter evolution, Sharpe por janela, consistency, turnover/cost)](reports/figures/walkforward_analysis_20251104.png)
+![Análise Walk-Forward Completa (parameter evolution, Sharpe por janela, consistency, turnover/cost)](outputs/reports/figures/walkforward_analysis_20251104.png)
 
 ### 5.4 Ablations e sensibilidade
 
@@ -289,7 +289,7 @@ As métricas consolidadas do período OOS canônico (2020-01-02 a 2025-10-09) s�
 - **Turnover reportado:** ~0.2% ao mês (one-way, pós-custos) — valor esperado dado η=0 e penalização apenas via custo linear; baselines variam entre 0.04-0.07%.
 
 **Experimentos de sensibilidade:**
-- **Custos:** elevar para 15 bps derruba Sharpe do MV penalizado para ≈ 0.35 (experimentos `results/cost_sensitivity`).
+- **Custos:** elevar para 15 bps derruba Sharpe do MV penalizado para ≈ 0.35 (experimentos `outputs/results/cost_sensitivity`).
 - **Penalização L1 (η):** testar η = 0.25 adiciona penalidade explícita de turnover além dos custos, reduzindo turnover em ~30% mas com impacto marginal no Sharpe (experimentos exploratórios, não OOS canônico).
 - **Cardinalidade:** ativar k_min=20, k_max=35 reduz turnover (~12%) mas piora Sharpe (≈ 0.45). Heurística GA documentada em `scripts/research/run_ga_mv_walkforward.py`.
 - **Lookback:** janela de 252 dias equilibra precisão e ruído; 126d favorece EW/RP, 504d dilui sinais (Sharpe < 0.4).
@@ -352,7 +352,7 @@ Implementamos e testamos um sistema de alocação dinâmica de tail hedge basead
 
 **Artefatos Gerados:**
 ```
-results/adaptive_hedge/
+outputs/results/adaptive_hedge/
 ├── regime_classifications.csv     # 1,403 regimes identificados
 ├── hedge_performance.json          # Métricas detalhadas
 ├── summary.json                    # Estatísticas agregadas
@@ -434,7 +434,7 @@ poetry run python scripts/research/run_adaptive_hedge_experiment.py
 # Regime-aware backtest
 poetry run arara-quant backtest \
   --config configs/optimizer_regime_aware.yaml \
-  --no-dry-run --json > reports/backtest_regime_aware.json
+  --no-dry-run --json > outputs/reports/backtest_regime_aware.json
 ```
 
 ---
@@ -442,13 +442,13 @@ poetry run arara-quant backtest \
 ## 5.6 Consolidação Final de Métricas OOS (2020-2025) — SINGLE SOURCE OF TRUTH
 
 **Período OOS oficial:** 2020-01-02 a 2025-10-09 (1,451 dias úteis)
-**Fonte de dados canônica:** `reports/walkforward/nav_daily.csv` (série diária de NAV)
-**Consolidação:** `reports/oos_consolidated_metrics.json`
+**Fonte de dados canônica:** `outputs/reports/walkforward/nav_daily.csv` (série diária de NAV)
+**Consolidação:** `outputs/reports/oos_consolidated_metrics.json`
 
 ### Build info (reprodutibilidade)
 - Commit: `b4cd6ea`
 - Gerado em: 2025-11-04T05:03Z
-- Artefatos: `reports/walkforward/nav_daily.csv`, `reports/oos_consolidated_metrics.json`, figuras em `reports/figures/*`
+- Artefatos: `outputs/reports/walkforward/nav_daily.csv`, `outputs/reports/oos_consolidated_metrics.json`, figuras em `outputs/reports/figures/*`
 
 ### Resultados Consolidados — PRISM-R (nav_daily.csv)
 
@@ -488,16 +488,16 @@ Tabela compacta — PRISM-R (JSON keys, fração)
 
 Os gráficos abaixo refletem exatamente os artefatos atuais (período OOS filtrado em nav_daily.csv e métricas em oos_consolidated_metrics.json):
 
-![NAV Cumulativo OOS](reports/figures/oos_nav_cumulative_20251009.png)
+![NAV Cumulativo OOS](outputs/reports/figures/oos_nav_cumulative_20251009.png)
 
-![Drawdown Underwater](reports/figures/oos_drawdown_underwater_20251009.png)
+![Drawdown Underwater](outputs/reports/figures/oos_drawdown_underwater_20251009.png)
 
-![Distribuição Diária de Retornos](reports/figures/oos_daily_distribution_20251009.png)
+![Distribuição Diária de Retornos](outputs/reports/figures/oos_daily_distribution_20251009.png)
 
 ### Artefatos de Consolidação OOS
 
 ```
-reports/
+outputs/reports/
 ├── walkforward/
 │   └── nav_daily.csv                 # ★ CANONICAL SOURCE (1,451 dias)
 ├── oos_consolidated_metrics.json     # Métricas agregadas
@@ -525,14 +525,14 @@ Os seguintes arquivos foram gerados e validados:
 
 ```bash
 # 1. Verifique os arquivos existem
-ls -lh reports/FINAL_OOS_METRICS_REPORT.md
-ls -lh reports/oos_consolidated_metrics.json
-cat reports/oos_consolidated_metrics.json | jq '.nav_final, .annualized_return, .sharpe_ratio, .n_days'
+ls -lh outputs/reports/FINAL_OOS_METRICS_REPORT.md
+ls -lh outputs/reports/oos_consolidated_metrics.json
+cat outputs/reports/oos_consolidated_metrics.json | jq '.nav_final, .annualized_return, .sharpe_ratio, .n_days'
 
 # 2. Valide consistência da matemática
 python3 << 'EOF'
 import json
-with open('reports/oos_consolidated_metrics.json') as f:
+with open('outputs/reports/oos_consolidated_metrics.json') as f:
     m = json.load(f)
 # Verificar anualização: (NAV)^(252/days) - 1
 annualized = (m['nav_final'] ** (252 / m['n_days'])) - 1
@@ -543,9 +543,9 @@ print(f"Match: {abs(annualized - m['annualized_return']) < 1e-6}")
 EOF
 
 # 3. Verifique janelas OOS
-wc -l reports/oos_consolidated_metrics.csv  # Deve ter 1 linha (apenas summary)
-head -1 reports/oos_consolidated_metrics.csv
-tail -5 reports/oos_consolidated_metrics.csv
+wc -l outputs/reports/oos_consolidated_metrics.csv  # Deve ter 1 linha (apenas summary)
+head -1 outputs/reports/oos_consolidated_metrics.csv
+tail -5 outputs/reports/oos_consolidated_metrics.csv
 ```
 
 ### 6.2 Próximos Passos de Validação
@@ -557,7 +557,7 @@ tail -5 reports/oos_consolidated_metrics.csv
    # Confirmar janelas do per-window (esperado ≈ 63 no período OOS atual)
    python3 << 'EOF'
    import pandas as pd
-   df = pd.read_csv('reports/oos_consolidated_metrics.csv')
+   df = pd.read_csv('outputs/reports/oos_consolidated_metrics.csv')
    df_windows = df[df['Type'] == 'WINDOW'].copy()
    df_windows['Window End'] = pd.to_datetime(df_windows['Window End'])
    print(f"First window: {df_windows['Window End'].min()}")
@@ -569,10 +569,10 @@ tail -5 reports/oos_consolidated_metrics.csv
 2. **Validar arquivo de retornos diários original**
    ```bash
    # Verificar que existe arquivo de backtest_returns mais recente
-   ls -lh results/backtest_returns_*.csv | tail -1
+   ls -lh outputs/results/backtest_returns_*.csv | tail -1
 
    # Contar dias na série
-   wc -l results/backtest_returns_20251031_145518.csv
+   wc -l outputs/results/backtest_returns_20251031_145518.csv
    ```
 
 3. **Cross-check de NAV**
@@ -582,7 +582,7 @@ tail -5 reports/oos_consolidated_metrics.csv
    import numpy as np
 
    # Carregar retornos diários (se disponível)
-   df_returns = pd.read_csv('results/backtest_returns_20251031_145518.csv')
+   df_returns = pd.read_csv('outputs/results/backtest_returns_20251031_145518.csv')
    df_returns['date'] = pd.to_datetime(df_returns['date'])
 
    # Filtrar período 2020-01-02 a 2025-10-09
@@ -607,7 +607,7 @@ tail -5 reports/oos_consolidated_metrics.csv
    from scipy.stats import norm
 
    # Carregar janelas
-   df = pd.read_csv('reports/walkforward/per_window_results.csv')
+   df = pd.read_csv('outputs/reports/walkforward/per_window_results.csv')
    df['Window End'] = pd.to_datetime(df['Window End'])
 
    # Filtrar 2020-01-22 a 2025-10-27
@@ -633,7 +633,7 @@ tail -5 reports/oos_consolidated_metrics.csv
    import pandas as pd
    import numpy as np
 
-   df = pd.read_csv('reports/walkforward/per_window_results.csv')
+   df = pd.read_csv('outputs/reports/walkforward/per_window_results.csv')
    drawdowns = df['Drawdown (OOS)'].values
 
    cvar_95 = drawdowns[np.argsort(drawdowns)[:int(0.05*len(drawdowns))]].mean()
@@ -649,7 +649,7 @@ tail -5 reports/oos_consolidated_metrics.csv
    python3 << 'EOF'
    import pandas as pd
 
-   comparison = pd.read_csv('reports/strategy_comparison_final.csv')
+   comparison = pd.read_csv('outputs/reports/strategy_comparison_final.csv')
    print(comparison[['Strategy', 'Sharpe (mean)', 'Volatility', 'Turnover']])
 
    # Verificar que PRISM-R tem melhor Sharpe
@@ -680,7 +680,7 @@ tail -5 reports/oos_consolidated_metrics.csv
    python3 << 'EOF'
    import pandas as pd
 
-   df = pd.read_csv('reports/oos_consolidated_metrics.csv')
+   df = pd.read_csv('outputs/reports/oos_consolidated_metrics.csv')
    df['Window End'] = pd.to_datetime(df['Window End'])
    df_windows = df[df['Type'] == 'WINDOW'].copy()
 
@@ -705,7 +705,7 @@ poetry run python scripts/consolidate_oos_metrics.py --riskfree-csv data/process
 poetry run python scripts/generate_final_metrics_report.py
 
 # Valide que os arquivos foram recriados
-diff -q reports/FINAL_OOS_METRICS_REPORT.md.bak reports/FINAL_OOS_METRICS_REPORT.md
+diff -q outputs/reports/FINAL_OOS_METRICS_REPORT.md.bak outputs/reports/FINAL_OOS_METRICS_REPORT.md
 ```
 
 ### 6.3 Reprodutibilidade
@@ -722,7 +722,7 @@ poetry run python scripts/run_01_data_pipeline.py --force-download --start 2010-
 # 3. Backtest principal (gera artefatos OOS; consolidação lê o JSON)
 poetry run arara-quant backtest \
   --config configs/optimizer_example.yaml \
-  --no-dry-run --json > reports/backtest_$(date -u +%Y%m%dT%H%M%SZ).json
+  --no-dry-run --json > outputs/reports/backtest_$(date -u +%Y%m%dT%H%M%SZ).json
 
 # 4. Consolidação de métricas OOS
 poetry run python scripts/consolidate_oos_metrics.py \
@@ -734,8 +734,8 @@ poetry run python scripts/generate_final_metrics_report.py
 
 # 6. Validação
 poetry run pytest
-cat reports/FINAL_OOS_METRICS_REPORT.md
-cat reports/oos_consolidated_metrics.json | jq '.nav_final, .annualized_return, .sharpe_ratio, .n_days'
+cat outputs/reports/FINAL_OOS_METRICS_REPORT.md
+cat outputs/reports/oos_consolidated_metrics.json | jq '.nav_final, .annualized_return, .sharpe_ratio, .n_days'
 ```
 
 Seeds: `PYTHONHASHSEED=0`, NumPy/torch seeds setados via `arara_quant.utils.random.set_global_seed`. Configuráveis via `.env`.
@@ -756,9 +756,9 @@ Troubleshooting rápido:
 ```
 configs/oos_period.yaml (período OOS imutável)
         ↓
-reports/walkforward/nav_daily.csv (série diária canônica, 1,451 dias)
+outputs/reports/walkforward/nav_daily.csv (série diária canônica, 1,451 dias)
         ↓
-reports/oos_consolidated_metrics.json (métricas agregadas)
+outputs/reports/oos_consolidated_metrics.json (métricas agregadas)
         ↓
 README.md (este documento, sem cálculos independentes)
 ```
@@ -778,7 +778,7 @@ Define período oficial: 2020-01-02 a 2025-10-09 (1,451 dias úteis)
 poetry run python scripts/research/run_backtest_walkforward.py
 ```
 - Lê período de `configs/oos_period.yaml`
-- Gera série diária canônica: `reports/walkforward/nav_daily.csv` (1,470 observações)
+- Gera série diária canônica: `outputs/reports/walkforward/nav_daily.csv` (1,470 observações)
 - Filtra ao período OOS: 1,451 dias
 
 **Passo 3: Consolidar Métricas da Série Diária**
@@ -788,11 +788,11 @@ poetry run python scripts/consolidate_oos_metrics.py \
   --psr-n-trials 1
 ```
 - Lê `configs/oos_period.yaml` (período)
-- Lê `reports/walkforward/nav_daily.csv` (dados canônicos)
+- Lê `outputs/reports/walkforward/nav_daily.csv` (dados canônicos)
 - Calcula TODAS as métricas diretamente do NAV diário
 - Outputs:
-  - `reports/oos_consolidated_metrics.json` (¡FONTE PARA TODO RELATÓRIO!)
-  - `reports/oos_consolidated_metrics.csv`
+  - `outputs/reports/oos_consolidated_metrics.json` (¡FONTE PARA TODO RELATÓRIO!)
+  - `outputs/reports/oos_consolidated_metrics.csv`
   - `--psr-n-trials` controla a deflação do Sharpe (DSR) conforme o número efetivo de buscas
 
 **Passo 4: Gerar Figuras da Série Diária**
@@ -800,7 +800,7 @@ poetry run python scripts/consolidate_oos_metrics.py \
 poetry run python scripts/generate_oos_figures.py
 ```
 - Lê `configs/oos_period.yaml`
-- Lê `reports/oos_consolidated_metrics.json` (fonte para figuras)
+- Lê `outputs/reports/oos_consolidated_metrics.json` (fonte para figuras)
 - Gera 4 PNG figures diretamente de dados reais (não sintéticos)
 
 **Passo 5: Atualizar README com JSON**
@@ -877,7 +877,7 @@ Onde:
 - √252 ≈ 15.87 (fator de anualização, mesmo usado para volatilidade)
 ```
 
-**Target:** CVaR 95% ≤ 8% a.a. (conforme PRD.md)
+**Target:** CVaR 95% ≤ 8% a.a. (conforme docs/specs/PRD.md)
 
 **Monitoramento operacional:** Triggers de fallback usam CVaR diário (< -2%, equiv. -32% anual) disponível em `cvar_95`. Referência detalhada: [`docs/CVAR_CONVENTION.md`](docs/CVAR_CONVENTION.md).
 
@@ -920,10 +920,10 @@ oos_evaluation:
   n_windows: 64
 ```
 
-**Dados Canônicos:** `reports/walkforward/nav_daily.csv`
+**Dados Canônicos:** `outputs/reports/walkforward/nav_daily.csv`
 - 1,451 linhas (dados OOS filtrados)
 - Colunas: date, nav, daily_return, cumulative_return
-- Fonte: `run_backtest_walkforward.py` com período de config
+- Fonte: `scripts/research/run_backtest_walkforward.py` com período de config
 
 ---
 
@@ -931,17 +931,17 @@ oos_evaluation:
 
 **1. NAV Cumulativo OOS (2020-01-02 a 2025-10-09)**
 
-![NAV Cumulativo OOS](reports/figures/oos_nav_cumulative_20251009.png)
+![NAV Cumulativo OOS](outputs/reports/figures/oos_nav_cumulative_20251009.png)
 
 NAV: 1.0 → 1.0289 | Max DD: -20.89%
 
 **2. Drawdown Underwater**
 
-![Drawdown Underwater](reports/figures/oos_drawdown_underwater_20251009.png)
+![Drawdown Underwater](outputs/reports/figures/oos_drawdown_underwater_20251009.png)
 
 **3. Distribuição Diária de Retornos (4-painel)**
 
-![Distribuição Daily](reports/figures/oos_daily_distribution_20251009.png)
+![Distribuição Daily](outputs/reports/figures/oos_daily_distribution_20251009.png)
 
 ---
 
@@ -953,16 +953,16 @@ Arquivos de Configuração:
   └── oos_period.yaml              # ★ CENTRAL: Define período OOS
 
 Dados Canônicos:
-  reports/walkforward/
+  outputs/reports/walkforward/
   └── nav_daily.csv               # ★ SOURCE OF TRUTH: Série diária NAV
 
 Métricas Consolidadas:
-  reports/
+  outputs/reports/
   ├── oos_consolidated_metrics.json    # ★ Lido por README
   └── oos_consolidated_metrics.csv     # CSV para auditoria
 
 Figuras (Geradas de nav_daily.csv):
-  reports/figures/
+  outputs/reports/figures/
   ├── oos_nav_cumulative_20251009.png
   ├── oos_drawdown_underwater_20251009.png
   └── oos_daily_distribution_20251009.png
@@ -978,7 +978,7 @@ Scripts de Consolidação:
 ### Checklist de Rastreabilidade
 
 - [x] Período OOS definido em único YAML (configs/oos_period.yaml)
-- [x] Serie diária salva em único CSV (reports/walkforward/nav_daily.csv)
+- [x] Serie diária salva em único CSV (outputs/reports/walkforward/nav_daily.csv)
 - [x] Todas as métricas calculadas de nav_daily.csv
 - [x] Consolidação salva em JSON (oos_consolidated_metrics.json)
 - [x] Figuras geradas de nav_daily.csv (não sintéticas)
@@ -996,10 +996,11 @@ Scripts de Consolidação:
 ├── data/
 │   ├── raw/                    # dumps originais (prices_*.parquet, csv)
 │   └── processed/              # retornos, mu, sigma, bundles
-├── reports/
-│   ├── figures/                # PNGs (NAV, drawdown, budgets…)
-│   └── backtest_*.json         # artefatos seriados
-├── results/                    # pesos, métricas, baselines
+├── outputs/
+│   ├── reports/
+│   │   ├── figures/            # PNGs (NAV, drawdown, budgets…)
+│   │   └── backtest_*.json     # artefatos seriados
+│   └── results/                # pesos, métricas, baselines
 ├── scripts/                    # CLI (pipeline, pesquisa, GA, stress)
 ├── src/arara_quant/             # código da lib (data, optimization, backtesting, evaluation)
 ├── tests/                      # pytest (unit + integração)

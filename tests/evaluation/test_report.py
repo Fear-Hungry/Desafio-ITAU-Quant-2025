@@ -99,6 +99,38 @@ def test_build_report_bundle_generates_tearsheet_figures():
     plt.close("all")
 
 
+def test_build_report_bundle_uses_metadata_overrides():
+    perf, risk_summary, figures, metadata = _bundle_components()
+    metadata = {
+        **metadata,
+        "returns": pd.Series(
+            [0.01, -0.004],
+            index=pd.date_range("2024-01-01", periods=2),
+            name="strategy",
+        ),
+        "risk_budgets": {"core": ["strategy"]},
+    }
+    contrib_index = pd.DatetimeIndex([pd.Timestamp("2024-01-02")])
+    risk_contribution = RiskContributionResult(
+        component=pd.DataFrame([[0.4]], index=contrib_index, columns=["strategy"]),
+        marginal=pd.DataFrame([[0.4]], index=contrib_index, columns=["strategy"]),
+        percentage=pd.DataFrame([[1.0]], index=contrib_index, columns=["strategy"]),
+        portfolio_volatility=pd.Series(
+            [0.1], index=contrib_index, name="portfolio_volatility"
+        ),
+    )
+    risk_summary = RiskSummary(
+        metrics=risk_summary.metrics,
+        drawdowns=risk_summary.drawdowns,
+        risk_contribution=risk_contribution,
+    )
+    bundle = build_report_bundle(perf, risk_summary, figures, metadata)
+    assert bundle.returns is not None
+    assert "Cumulative NAV" in {title for title, _ in bundle.figures}
+    assert bundle.risk_budgets == {"core": ["strategy"]}
+    plt.close("all")
+
+
 def test_render_html_contains_sections():
     perf, risk_summary, figures, metadata = _bundle_components()
     bundle = build_report_bundle(perf, risk_summary, figures, metadata)
@@ -129,6 +161,24 @@ def test_build_and_export_report_creates_files(tmp_path):
     assert artifacts.table_paths
     for path in artifacts.table_paths.values():
         assert path.exists()
+    plt.close("all")
+
+
+def test_build_and_export_report_respects_auto_toggle(tmp_path):
+    perf, risk_summary, figures, metadata = _bundle_components()
+    artifacts = build_and_export_report(
+        perf,
+        risk_summary,
+        figures,
+        metadata,
+        tmp_path,
+        filename="no_auto",
+        auto_tearsheet=False,
+        returns=pd.Series(
+            [0.01], index=pd.date_range("2024-01-01", periods=1), name="strategy"
+        ),
+    )
+    assert len(artifacts.bundle.figures) == len(figures)
     plt.close("all")
 
 

@@ -21,9 +21,9 @@ from arara_quant.utils.psr_dsr import psr_dsr
 
 # Setup paths
 REPO_ROOT = Path(__file__).parent.parent
-REPORTS_DIR = REPO_ROOT / "reports"
+REPORTS_DIR = REPO_ROOT / "outputs" / "reports"
 WALKFORWARD_DIR = REPORTS_DIR / "walkforward"
-RESULTS_DIR = REPO_ROOT / "results"
+RESULTS_DIR = REPO_ROOT / "outputs" / "results"
 CONFIG_DIR = REPO_ROOT / "configs"
 
 def load_oos_config():

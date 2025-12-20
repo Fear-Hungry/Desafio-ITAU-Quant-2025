@@ -8,8 +8,8 @@ from pathlib import Path
 import json
 
 REPO_ROOT = Path(__file__).parent.parent
-REPORTS_DIR = REPO_ROOT / "reports"
-RESULTS_DIR = REPO_ROOT / "results"
+REPORTS_DIR = REPO_ROOT / "outputs" / "reports"
+RESULTS_DIR = REPO_ROOT / "outputs" / "results"
 
 def generate_comparison_table():
     """Generate comprehensive comparison table with PRISM-R vs baselines."""

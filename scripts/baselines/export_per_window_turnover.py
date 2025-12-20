@@ -13,8 +13,8 @@ Definitions
   pesos após drift desde o último rebalance (isto é, pesos após evolução com retornos).
 
 Outputs
-- results/oos_canonical/per_window/turnover_<strategy>.csv → columns: date, turnover
-- results/oos_canonical/turnover_dist_stats.csv            → median, p95 por estratégia
+- outputs/results/oos_canonical/per_window/turnover_<strategy>.csv → columns: date, turnover
+- outputs/results/oos_canonical/turnover_dist_stats.csv            → median, p95 por estratégia
 
 Defaults
 - Período OOS: carregado de configs/oos_period.yaml (start_date, end_date)
@@ -44,8 +44,8 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_CONFIGS = REPO_ROOT / "configs"
-DEFAULT_REPORTS = REPO_ROOT / "reports"
-DEFAULT_RESULTS = REPO_ROOT / "results"
+DEFAULT_REPORTS = REPO_ROOT / "outputs" / "reports"
+DEFAULT_RESULTS = REPO_ROOT / "outputs" / "results"
 DEFAULT_DATA = REPO_ROOT / "data" / "processed"
 
 DEFAULT_OOS_CONFIG = DEFAULT_CONFIGS / "oos_period.yaml"

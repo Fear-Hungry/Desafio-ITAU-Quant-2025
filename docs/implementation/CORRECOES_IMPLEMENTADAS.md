@@ -77,7 +77,7 @@ Crypto (≤12%): 0.00% ✅ OK
 
 **Atualização (2025-10-31):**
 - “Hard cap” de turnover substituído por penalidade suave (`η·‖Δw‖₁`) com meta `τ` tratada como alvo soft (via slack penalizado). Isso evita instabilidades do CVXPY.
-- Logs de turnover por rebalanceamento passaram a ser gerados em `results/baselines/baseline_turnover_oos.csv` a cada execução de `run_baselines_comparison.py`.
+- Logs de turnover por rebalanceamento passaram a ser gerados em `outputs/results/baselines/baseline_turnover_oos.csv` a cada execução de `run_baselines_comparison.py`.
 
 **Razão da Falha:**
 - Primeiro rebalance com w_prev = 1/N (37 ativos)

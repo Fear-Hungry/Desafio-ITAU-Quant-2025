@@ -33,7 +33,7 @@ def test_oos_figure_filters_align_with_config_and_metrics() -> None:
     assert df_oos["date"].iloc[0] == start_date
     assert df_oos["date"].iloc[-1] == end_date
 
-    metrics_path = Path("reports/oos_consolidated_metrics.json")
+    metrics_path = Path("outputs/reports/oos_consolidated_metrics.json")
     with metrics_path.open(encoding="utf-8") as handle:
         metrics = json.load(handle)
 

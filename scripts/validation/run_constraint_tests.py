@@ -28,7 +28,7 @@ print()
 # ============================================================================
 
 CONFIG_PATH = Path("configs/production_erc_v2.yaml")
-WEIGHTS_DIR = Path("results/production/weights")
+WEIGHTS_DIR = Path("outputs/results/production/weights")
 
 with open(CONFIG_PATH) as f:
     config = yaml.safe_load(f)

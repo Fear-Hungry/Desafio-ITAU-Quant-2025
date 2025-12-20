@@ -208,7 +208,7 @@ else:
 print()
 
 # Salvar resultados
-results_dir = Path("results")
+results_dir = Path("outputs/results")
 results_dir.mkdir(exist_ok=True)
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

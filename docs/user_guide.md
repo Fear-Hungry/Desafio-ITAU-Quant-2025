@@ -42,7 +42,7 @@ poetry run ruff check    # valida estilo
    ```
 
    - Resolve o programa média-variância com limites long-only e cap individual.
-   - Exporta `results/optimized_weights.parquet` com os pesos ordenados.
+   - Exporta `outputs/results/optimized_weights.parquet` com os pesos ordenados.
 
 4. **Backtest walk-forward**
 
@@ -50,7 +50,7 @@ poetry run ruff check    # valida estilo
    poetry run python scripts/run_04_backtest.py --output backtest_summary.json
    ```
 
-   - Reutiliza `configs/optimizer_example.yaml` e gera métricas em `reports/`.
+   - Reutiliza `configs/optimizer_example.yaml` e gera métricas em `outputs/reports/`.
    - Use `--dry-run` para validar a configuração sem simular.
 
 ## 3. Testes

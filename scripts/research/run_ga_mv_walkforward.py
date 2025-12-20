@@ -9,7 +9,7 @@ Steps:
    subject to the 20–35 cardinality guardrail.
 5. Reuse the best configuration inside a walk-forward evaluation alongside
    equal-weight and risk-parity baselines.
-6. Persist calibration outputs and OOS metrics to `results/ga_metaheuristic/`.
+6. Persist calibration outputs and OOS metrics to `outputs/results/ga_metaheuristic/`.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ from arara_quant.optimization.heuristics.metaheuristic import (
     metaheuristic_outer,
 )
 
-RESULTS_DIR = Path("results") / "ga_metaheuristic"
+RESULTS_DIR = Path("outputs/results") / "ga_metaheuristic"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 PRINT_WIDTH = 80

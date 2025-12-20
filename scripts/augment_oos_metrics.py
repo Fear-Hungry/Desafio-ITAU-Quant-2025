@@ -3,8 +3,8 @@
 Augment consolidated OOS metrics with window-level statistics for PRISM-R.
 
 This script reads:
-- reports/oos_consolidated_metrics.json (single source consolidated metrics)
-- reports/walkforward/per_window_results.csv (walk-forward window metrics)
+- outputs/reports/oos_consolidated_metrics.json (single source consolidated metrics)
+- outputs/reports/walkforward/per_window_results.csv (walk-forward window metrics)
 
 Then it augments the consolidated metrics JSON with the following fields
 computed from per-window results:
@@ -21,8 +21,8 @@ Usage:
     poetry run python scripts/augment_oos_metrics.py
     # or with custom paths:
     poetry run python scripts/augment_oos_metrics.py \
-        --metrics-json reports/oos_consolidated_metrics.json \
-        --windows-csv reports/walkforward/per_window_results.csv \
+        --metrics-json outputs/reports/oos_consolidated_metrics.json \
+        --windows-csv outputs/reports/walkforward/per_window_results.csv \
         --save-csv
 """
 
@@ -39,9 +39,15 @@ import pandas as pd
 
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_METRICS_JSON = REPO_ROOT / "reports" / "oos_consolidated_metrics.json"
-DEFAULT_WINDOWS_CSV = REPO_ROOT / "reports" / "walkforward" / "per_window_results.csv"
-DEFAULT_METRICS_CSV = REPO_ROOT / "reports" / "oos_consolidated_metrics.csv"
+DEFAULT_METRICS_JSON = (
+    REPO_ROOT / "outputs" / "reports" / "oos_consolidated_metrics.json"
+)
+DEFAULT_WINDOWS_CSV = (
+    REPO_ROOT / "outputs" / "reports" / "walkforward" / "per_window_results.csv"
+)
+DEFAULT_METRICS_CSV = (
+    REPO_ROOT / "outputs" / "reports" / "oos_consolidated_metrics.csv"
+)
 
 
 def _phi(z: float) -> float:

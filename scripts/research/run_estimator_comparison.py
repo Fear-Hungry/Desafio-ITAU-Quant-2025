@@ -297,7 +297,7 @@ if valid_results:
 # ============================================================================
 print("💾 Salvando resultados...")
 
-output_dir = Path("results")
+output_dir = Path("outputs/results")
 output_dir.mkdir(exist_ok=True)
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 

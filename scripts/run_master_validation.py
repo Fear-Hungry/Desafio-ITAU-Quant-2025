@@ -38,8 +38,8 @@ import pandas as pd
 
 # Project root
 PROJECT_ROOT = Path(__file__).parent.parent
-RESULTS_DIR = PROJECT_ROOT / "results"
-REPORTS_DIR = PROJECT_ROOT / "reports"
+RESULTS_DIR = PROJECT_ROOT / "outputs" / "results"
+REPORTS_DIR = PROJECT_ROOT / "outputs" / "reports"
 CONFIGS_DIR = PROJECT_ROOT / "configs"
 
 # Validation configurations
@@ -80,7 +80,7 @@ class ValidationOrchestrator:
 
         Args:
             mode: Execution mode ('quick', 'full', 'production')
-            output_dir: Output directory (default: reports/validation_YYYYMMDD_HHMMSS)
+            output_dir: Output directory (default: outputs/reports/validation_YYYYMMDD_HHMMSS)
             skip_download: Skip data download (use cached data)
             skip_sensitivity: Skip sensitivity analyses
             skip_validation: Skip validation test suite
@@ -589,7 +589,7 @@ def main():
     parser.add_argument(
         "--output-dir",
         type=Path,
-        help="Output directory (default: reports/validation_YYYYMMDD_HHMMSS)",
+        help="Output directory (default: outputs/reports/validation_YYYYMMDD_HHMMSS)",
     )
 
     parser.add_argument(

@@ -10,6 +10,14 @@ YELLOW := \033[0;33m
 RED := \033[0;31m
 NC := \033[0m # No Color
 
+# Docker defaults
+DOCKER_IMAGE ?= arara-quant-lab
+DOCKER_TAG ?= dev
+DOCKER_RUN_FLAGS ?= --rm -it
+DOCKER_WORKDIR ?= /workspace
+DOCKER_EXTRA_ARGS ?=
+DOCKER_CMD ?= bash
+
 ##@ General
 
 help: ## Display this help message
@@ -264,13 +272,19 @@ ci: check-all test-cov-xml validate-configs ## Simulate CI pipeline locally
 ci-quick: lint format-check test-fast ## Quick CI checks
 	@echo "$(GREEN)Quick CI checks completed!$(NC)"
 
-##@ Docker (Future)
+##@ Docker
 
-docker-build: ## Build Docker image
-	@echo "$(YELLOW)Docker support not yet implemented$(NC)"
+docker-build: ## Build Docker image for local development
+	@echo "$(BLUE)Building Docker image $(DOCKER_IMAGE):$(DOCKER_TAG)...$(NC)"
+	@docker build -t $(DOCKER_IMAGE):$(DOCKER_TAG) -f Dockerfile .
 
-docker-run: ## Run Docker container
-	@echo "$(YELLOW)Docker support not yet implemented$(NC)"
+docker-run: ## Run Docker container with the repository mounted
+	@echo "$(BLUE)Starting Docker container $(DOCKER_IMAGE):$(DOCKER_TAG)...$(NC)"
+	@docker run $(DOCKER_RUN_FLAGS) $(DOCKER_EXTRA_ARGS) \
+		-v $(CURDIR):/workspace \
+		-w $(DOCKER_WORKDIR) \
+		$(DOCKER_IMAGE):$(DOCKER_TAG) \
+		$(DOCKER_CMD)
 
 ##@ Utilities
 

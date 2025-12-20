@@ -48,7 +48,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         default="optimized_weights.parquet",
-        help="Parquet file under results/ storing optimized weights.",
+        help="Parquet file under outputs/results/ storing optimized weights.",
     )
     return parser.parse_args()
 

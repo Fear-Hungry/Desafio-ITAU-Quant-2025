@@ -145,7 +145,7 @@ def save_results(
         ...     "metadata": {"timestamp": "2025-10-28T12:00:00"},
         ...     "stages": {}
         ... }
-        >>> json_path, md_path = save_results(results, Path("/tmp/reports"))
+        >>> json_path, md_path = save_results(results, Path("/tmp/outputs/reports"))
         >>> json_path.exists()
         True
     """

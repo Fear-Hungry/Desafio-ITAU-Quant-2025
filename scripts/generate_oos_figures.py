@@ -20,9 +20,15 @@ import yaml
 
 REPO_ROOT = Path(__file__).parent.parent
 CONFIG_DIR = REPO_ROOT / "configs"
-REPORTS_DIR = REPO_ROOT / "reports"
+REPORTS_DIR = REPO_ROOT / "outputs" / "reports"
 WALKFORWARD_DIR = REPORTS_DIR / "walkforward"
 FIGURES_DIR = REPORTS_DIR / "figures"
+
+SAVED_PREFIX = "✓ Saved: "
+TEXTCOORDS_OFFSET_POINTS = "offset points"
+COL_SHARPE_EXCESS_TBILL = "Sharpe (excesso T-Bill)"
+COL_RETURN_PCT = "Return (%)"
+DAYS_LABEL_TEMPLATE = "{kind}\n({count} days)"
 
 
 def _palette():
@@ -72,7 +78,7 @@ def generate_nav_figure(df_oos: pd.DataFrame, suffix: str):
     dates = df_oos['date'].values
     nav_curve = df_oos['nav'].values
 
-    fig, ax = plt.subplots(figsize=(14, 7))
+    _, ax = plt.subplots(figsize=(14, 7))
     palette = _palette()
     nav_color = next(palette)
     accent_color = next(palette)
@@ -120,7 +126,7 @@ def generate_nav_figure(df_oos: pd.DataFrame, suffix: str):
         ha='center',
         color=accent_color,
         fontweight='bold',
-        bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.3),
+        bbox={'boxstyle': 'round,pad=0.3', 'facecolor': 'white', 'alpha': 0.3},
     )
 
     ax.set_xlabel('Date', fontsize=12, fontweight='bold')
@@ -133,7 +139,7 @@ def generate_nav_figure(df_oos: pd.DataFrame, suffix: str):
     plt.tight_layout()
     output = _build_output_path("oos_nav_cumulative", suffix)
     plt.savefig(output, dpi=150, bbox_inches='tight')
-    print(f"✓ Saved: {output}")
+    print(f"{SAVED_PREFIX}{output}")
     print(f"  NAV Final: {nav_final:.4f} | Max DD: {max_dd:.2%}")
     plt.close()
 
@@ -154,7 +160,7 @@ def generate_drawdown_figure(df_oos: pd.DataFrame, suffix: str):
     threshold_color = next(palette)
     worst_color = next(palette)
 
-    fig, ax = plt.subplots(figsize=(14, 7))
+    _, ax = plt.subplots(figsize=(14, 7))
 
     # Underwater plot (negative drawdown)
     ax.bar(dates, drawdowns, color=bar_color, alpha=0.6, width=1.0, label='Drawdown %')
@@ -170,10 +176,10 @@ def generate_drawdown_figure(df_oos: pd.DataFrame, suffix: str):
     ax.scatter(dates[min_dd_idx], worst_dd, color=worst_color, s=100, zorder=5)
     ax.annotate(f"Worst: {worst_dd:.1f}%\n({pd.to_datetime(dates[min_dd_idx]).strftime('%Y-%m-%d')})",
                 xy=(dates[min_dd_idx], worst_dd),
-                xytext=(20, -20), textcoords='offset points',
+                xytext=(20, -20), textcoords=TEXTCOORDS_OFFSET_POINTS,
                 fontsize=10, ha='left',
-                bbox=dict(boxstyle='round,pad=0.5', fc='white', alpha=0.5),
-                arrowprops=dict(arrowstyle='->', connectionstyle='arc3,rad=0', color=worst_color))
+                bbox={'boxstyle': 'round,pad=0.5', 'fc': 'white', 'alpha': 0.5},
+                arrowprops={'arrowstyle': '->', 'connectionstyle': 'arc3,rad=0', 'color': worst_color})
 
     ax.set_xlabel('Date', fontsize=11)
     ax.set_ylabel('Drawdown (%)', fontsize=11)
@@ -185,7 +191,7 @@ def generate_drawdown_figure(df_oos: pd.DataFrame, suffix: str):
     plt.tight_layout()
     output = _build_output_path("oos_drawdown_underwater", suffix)
     plt.savefig(output, dpi=150, bbox_inches='tight')
-    print(f"✓ Saved: {output}")
+    print(f"{SAVED_PREFIX}{output}")
     print(f"  Max Drawdown: {worst_dd:.1f}%")
     plt.close()
 
@@ -207,11 +213,11 @@ def generate_baseline_comparison_figure(suffix: str):
     # Valores de Sharpe calculados em excesso ao T‑Bill diário no período OOS canônico
     df_baselines = pd.DataFrame({
         'Strategy': ['Equal-Weight', 'Risk Parity', 'Min-Var (LW)', 'Shrunk MV', '60/40', 'HRP'],
-        'Sharpe (excesso T-Bill)': [0.2618, 0.2304, -0.5476, 0.1770, 0.2268, -0.3049],
-        'Return (%)': [4.32, 3.99, 1.30, 3.63, 3.86, 0.87]
+        COL_SHARPE_EXCESS_TBILL: [0.2618, 0.2304, -0.5476, 0.1770, 0.2268, -0.3049],
+        COL_RETURN_PCT: [4.32, 3.99, 1.30, 3.63, 3.86, 0.87]
     })
 
-    fig, ax = plt.subplots(figsize=(12, 8))
+    _, ax = plt.subplots(figsize=(12, 8))
     palette = _palette()
     baseline_color = next(palette)
     prism_color = next(palette)
@@ -219,8 +225,8 @@ def generate_baseline_comparison_figure(suffix: str):
     # Plot baselines as blue circles
     if not df_baselines.empty:
         ax.scatter(
-            df_baselines['Return (%)'].values,
-            df_baselines['Sharpe (excesso T-Bill)'].values,
+            df_baselines[COL_RETURN_PCT].values,
+            df_baselines[COL_SHARPE_EXCESS_TBILL].values,
             s=200,
             alpha=0.6,
             color=baseline_color,
@@ -230,10 +236,10 @@ def generate_baseline_comparison_figure(suffix: str):
         )
 
         # Label each baseline
-        for idx, row in df_baselines.iterrows():
+        for _, row in df_baselines.iterrows():
             ax.annotate(row['Strategy'],
-                       (row['Return (%)'], row['Sharpe (excesso T-Bill)']),
-                       xytext=(5, 5), textcoords='offset points', fontsize=9, alpha=0.8)
+                       (row[COL_RETURN_PCT], row[COL_SHARPE_EXCESS_TBILL]),
+                       xytext=(5, 5), textcoords=TEXTCOORDS_OFFSET_POINTS, fontsize=9, alpha=0.8)
 
     # Plot PRISM-R as red diamond (emphasize)
     ax.scatter(
@@ -248,12 +254,12 @@ def generate_baseline_comparison_figure(suffix: str):
         linewidth=2.5,
         zorder=5,
     )
-    ax.annotate('PRISM-R', (prism_return, prism_sharpe), xytext=(10, 10), textcoords='offset points',
+    ax.annotate('PRISM-R', (prism_return, prism_sharpe), xytext=(10, 10), textcoords=TEXTCOORDS_OFFSET_POINTS,
                fontsize=11, fontweight='bold', color=prism_color,
-               bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.6))
+               bbox={'boxstyle': 'round,pad=0.3', 'facecolor': 'white', 'alpha': 0.6})
 
     ax.set_xlabel('Annualized Return (%)', fontsize=12, fontweight='bold')
-    ax.set_ylabel('Sharpe (excesso T-Bill)', fontsize=12, fontweight='bold')
+    ax.set_ylabel(COL_SHARPE_EXCESS_TBILL, fontsize=12, fontweight='bold')
     ax.set_title('Risk-Return: PRISM-R vs Baselines (Sharpe em excesso ao T-Bill)', fontsize=14, fontweight='bold')
     ax.grid(True, alpha=0.3)
     ax.legend(fontsize=11, loc='upper left')
@@ -263,12 +269,12 @@ def generate_baseline_comparison_figure(suffix: str):
     # Source info
     ax.text(0.99, 0.02, f'Source: oos_consolidated_metrics.json (excesso T-Bill) | {len(df_baselines)} baselines',
             transform=ax.transAxes, fontsize=9, alpha=0.7, va='bottom', ha='right',
-            bbox=dict(boxstyle='round,pad=0.4', facecolor='lightgray', alpha=0.3))
+            bbox={'boxstyle': 'round,pad=0.4', 'facecolor': 'lightgray', 'alpha': 0.3})
 
     plt.tight_layout()
     output = _build_output_path("oos_baseline_comparison", suffix)
     plt.savefig(output, dpi=150, bbox_inches='tight')
-    print(f"✓ Saved: {output}")
+    print(f"{SAVED_PREFIX}{output}")
     print(f"  PRISM-R: Sharpe={prism_sharpe:.4f}, Return={prism_return:.2f}%")
     plt.close()
 
@@ -284,7 +290,7 @@ def generate_daily_distribution_figure(df_oos: pd.DataFrame, suffix: str):
     vol_color = next(palette)
     pie_colors = [next(palette) for _ in range(3)]
 
-    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    _, axes = plt.subplots(2, 2, figsize=(14, 10))
 
     # 1. Daily Returns Histogram
     axes[0, 0].hist(daily_returns, bins=50, color=hist_color, alpha=0.6, edgecolor='black')
@@ -324,7 +330,11 @@ def generate_daily_distribution_figure(df_oos: pd.DataFrame, suffix: str):
     zero_days = np.sum(daily_returns == 0)
 
     sizes = [positive_days, negative_days, zero_days]
-    labels = [f'Positive\n({positive_days} days)', f'Negative\n({negative_days} days)', f'Zero\n({zero_days} days)']
+    labels = [
+        DAYS_LABEL_TEMPLATE.format(kind='Positive', count=positive_days),
+        DAYS_LABEL_TEMPLATE.format(kind='Negative', count=negative_days),
+        DAYS_LABEL_TEMPLATE.format(kind='Zero', count=zero_days),
+    ]
 
     axes[1, 1].pie(sizes, labels=labels, colors=pie_colors, autopct='%1.1f%%', startangle=90, textprops={'fontsize': 10})
     axes[1, 1].set_title('Distribution of Positive/Negative Days', fontsize=11, fontweight='bold')
@@ -332,7 +342,7 @@ def generate_daily_distribution_figure(df_oos: pd.DataFrame, suffix: str):
     plt.tight_layout()
     output = _build_output_path("oos_daily_distribution", suffix)
     plt.savefig(output, dpi=150, bbox_inches='tight')
-    print(f"✓ Saved: {output}")
+    print(f"{SAVED_PREFIX}{output}")
     print(f"  Daily stats: Mean={np.mean(daily_returns):.3f}%, Std={np.std(daily_returns):.3f}%, Win rate={(positive_days/len(daily_returns)*100):.1f}%")
     plt.close()
 

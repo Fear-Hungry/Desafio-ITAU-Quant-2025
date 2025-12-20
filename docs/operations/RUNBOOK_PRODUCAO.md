@@ -160,10 +160,10 @@ Se violações graves, **NÃO EXECUTAR TRADES**. Investigar.
 Verificar que rebalance foi registrado:
 ```bash
 # Ver últimos 5 rebalances
-tail -5 results/production/production_log.csv
+tail -5 outputs/results/production/production_log.csv
 
 # Ver pesos salvos
-ls -lh results/production/weights/
+ls -lh outputs/results/production/weights/
 ```
 
 ---
@@ -172,7 +172,7 @@ ls -lh results/production/weights/
 
 ### Dashboard
 
-**Arquivo:** `results/production/production_log.csv`
+**Arquivo:** `outputs/results/production/production_log.csv`
 
 **Colunas principais:**
 - `date`: Data do rebalance
@@ -222,7 +222,7 @@ ls -lh results/production/weights/
 3. Usar dados salvos:
    ```bash
    # Copiar dados anteriores
-   cp data/processed/returns_arara.parquet results/backup/
+   cp data/processed/returns_arara.parquet outputs/results/backup/
    ```
 
 ### Problema: Fallback ativado inesperadamente
@@ -230,7 +230,7 @@ ls -lh results/production/weights/
 **Diagnóstico:**
 ```bash
 # Ver histórico de triggers
-grep "fallback_active,True" results/production/production_log.csv
+grep "fallback_active,True" outputs/results/production/production_log.csv
 ```
 
 **Causas possíveis:**
@@ -280,7 +280,7 @@ grep "fallback_active,True" results/production/production_log.csv
 ## 📁 Estrutura de Arquivos
 
 ```
-results/production/
+outputs/results/production/
 ├── production_log.csv          # Log completo de rebalances
 └── weights/
     ├── weights_20251001.csv    # Pesos de cada rebalance
@@ -292,7 +292,7 @@ results/production/
 
 ```bash
 # Semanal
-tar -czf backup_production_$(date +%Y%m%d).tar.gz results/production/
+tar -czf backup_production_$(date +%Y%m%d).tar.gz outputs/results/production/
 
 # Mover para storage seguro
 mv backup_production_*.tar.gz /path/to/backup/
@@ -349,7 +349,7 @@ mv backup_production_*.tar.gz /path/to/backup/
 **Em caso de dúvidas:**
 1. Consultar este RUNBOOK
 2. Revisar `RESULTADOS_FINAIS.md`
-3. Checar logs em `results/production/`
+3. Checar logs em `outputs/results/production/`
 
 ---
 

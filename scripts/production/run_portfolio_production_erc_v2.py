@@ -754,7 +754,7 @@ print()
 # ============================================================================
 
 print("💾 Salvando rebalance...")
-logger = ProductionLogger(log_dir=Path("results/production"))
+logger = ProductionLogger(log_dir=Path("outputs/results/production"))
 
 # Turnover e custo (vs equal-weight baseline)
 previous_weights = pd.Series(1.0 / len(valid_tickers), index=valid_tickers)

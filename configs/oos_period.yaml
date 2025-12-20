@@ -4,7 +4,7 @@
 
 oos_evaluation:
   # Primary evaluation period: January 2, 2020 to October 09, 2025
-  # Matches current canonical artifacts in reports/walkforward/nav_daily.csv
+  # Matches current canonical artifacts in outputs/reports/walkforward/nav_daily.csv
   start_date: "2020-01-02"
   end_date: "2025-10-09"
 

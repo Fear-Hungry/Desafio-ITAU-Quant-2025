@@ -166,7 +166,7 @@ print()
 
 print("💾 [5/5] Registrando rebalance...")
 
-logger = ProductionLogger(log_dir=Path("results/production"))
+logger = ProductionLogger(log_dir=Path("outputs/results/production"))
 
 # Calcular turnover (assumir pesos anteriores = equal-weight para este exemplo)
 previous_weights = pd.Series(1.0 / len(valid_tickers), index=valid_tickers)

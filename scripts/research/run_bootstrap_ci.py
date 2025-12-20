@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """Compute block-bootstrap confidence intervals for Sharpe ratios.
 
-Uses the OOS returns produced by `run_baselines_comparison.py` to estimate
+Uses the OOS returns produced by `scripts/research/run_baselines_comparison.py` to estimate
 confidence intervals for selected strategies. By default, exponential moving
 block bootstrap with block size 21 (one trading month) and 2,000 resamples.
 
 Outputs:
-    results/bootstrap_ci/bootstrap_sharpe_{timestamp}.json
+    outputs/results/bootstrap_ci/bootstrap_sharpe_{timestamp}.json
 """
 
 from __future__ import annotations
@@ -29,20 +29,21 @@ STRATEGIES = {
 BOOTSTRAP_ITERATIONS = 2000
 BLOCK_SIZE = 21
 CONFIDENCE = 0.95
-OUTPUT_DIR = Path("results") / "bootstrap_ci"
+OUTPUT_DIR = Path("outputs/results") / "bootstrap_ci"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def latest_oos_returns() -> Path:
-    baseline_path = Path("results/baselines/baseline_returns_oos.parquet")
+    baseline_path = Path("outputs/results/baselines/baseline_returns_oos.parquet")
     if baseline_path.exists():
         return baseline_path
 
-    legacy = sorted(Path("results").glob("oos_returns_all_strategies_*.csv"))
+    legacy = sorted(Path("outputs/results").glob("oos_returns_all_strategies_*.csv"))
     if legacy:
         return legacy[-1]
     raise FileNotFoundError(
-        "Nenhum arquivo de retornos OOS encontrado. Rode `run_baselines_comparison.py` primeiro."
+        "Nenhum arquivo de retornos OOS encontrado. Rode "
+        "`scripts/research/run_baselines_comparison.py` primeiro."
     )
 
 

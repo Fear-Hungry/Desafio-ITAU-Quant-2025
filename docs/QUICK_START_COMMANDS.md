@@ -146,9 +146,9 @@ poetry run mypy src
 ## Próximos Passos
 
 1. **Tutorial Básico:** Veja `docs/QUICKSTART.md` para um tutorial passo a passo
-2. **Documentação Técnica:** Leia `PRD.md` para requisitos detalhados do produto
-3. **Guia do Claude:** Consulte `CLAUDE.md` para convenções de desenvolvimento
-4. **Resultados:** Veja `docs/results/` para análises de desempenho
+2. **Documentação Técnica:** Leia `docs/specs/PRD.md` para requisitos detalhados do produto
+3. **Guia do projeto:** Consulte `docs/README.md` para o indice de documentacao
+4. **Resultados:** Veja `outputs/results/` para analises de desempenho
 
 ## Solução de Problemas
 
