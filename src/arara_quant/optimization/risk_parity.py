@@ -286,11 +286,13 @@ def _coerce_vector(
     size: int,
     default: float = 0.0,
     name: str,
+    index: Sequence[object] | None = None,
 ) -> np.ndarray:
     if value is None:
         return np.full(size, float(default), dtype=float)
     if isinstance(value, pd.Series):
-        series = value.fillna(default).astype(float)
+        series = value.reindex(index) if index else value
+        series = series.fillna(default).astype(float)
         array = series.to_numpy(dtype=float)
     else:
         array = np.asarray(value, dtype=float)
@@ -343,7 +345,11 @@ def _solve_calibrated_erc(
         or config.get("costs_vector")
     )
     cost_vector = _coerce_vector(
-        costs_raw, size=n_assets, default=0.0, name="transaction costs"
+        costs_raw,
+        size=n_assets,
+        default=0.0,
+        name="transaction costs",
+        index=assets,
     )
 
     w_max = float(config.get("w_max", config.get("max_position", 1.0)))
