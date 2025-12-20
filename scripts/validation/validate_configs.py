@@ -1,43 +1,30 @@
 #!/usr/bin/env python3
-"""Validate all YAML configuration files."""
+"""Validate all YAML configuration files.
+
+This script is a thin wrapper around ``arara_quant.reports.validators``.
+"""
+
+from __future__ import annotations
 
 import sys
 
-from arara_quant.config import (
-    PortfolioConfig,
-    UniverseConfig,
-    get_settings,
-    load_config,
-)
+from arara_quant.config import get_settings
+from arara_quant.reports.validators import validate_configs
 
 
-def main():
-    """Validate all configuration files."""
-    configs_dir = get_settings().configs_dir
-    errors = []
+def main() -> int:
+    settings = get_settings()
+    result = validate_configs(settings)
 
-    # Validate universe configs
-    for config_file in configs_dir.glob("universe_*.yaml"):
-        try:
-            load_config(str(config_file), UniverseConfig)
+    errors_by_path = {path: message for path, message in result.errors}
+    for config_file in result.validated:
+        if config_file in errors_by_path:
+            print(f"✗ {config_file.name}: {errors_by_path[config_file]}", file=sys.stderr)
+        else:
             print(f"✓ {config_file.name}")
-        except Exception as e:
-            errors.append(f"✗ {config_file.name}: {e}")
 
-    # Validate portfolio configs
-    for config_file in configs_dir.glob("portfolio_*.yaml"):
-        try:
-            load_config(str(config_file), PortfolioConfig)
-            print(f"✓ {config_file.name}")
-        except Exception as e:
-            errors.append(f"✗ {config_file.name}: {e}")
-
-    # Print errors and exit
-    for error in errors:
-        print(error, file=sys.stderr)
-
-    sys.exit(1 if errors else 0)
+    return 1 if result.errors else 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
