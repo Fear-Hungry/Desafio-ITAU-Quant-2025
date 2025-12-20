@@ -17,23 +17,19 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable
 
-from arara_quant.backtesting import BacktestResult, run_backtest
 from arara_quant.config import Settings, configure_logging, get_settings
-from arara_quant.evaluation.plots.walkforward import plot_walkforward_summary
-from arara_quant.evaluation.walkforward_report import (
-    build_per_window_table,
-    format_wf_summary_markdown,
-    identify_stress_periods,
-)
-from arara_quant.optimization.solvers import run_optimizer
 from arara_quant.utils.yaml_loader import load_yaml_text
 
 __all__ = ["build_parser", "main"]
 
 # Get project root directory (3 levels up from this file)
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+
+
+if TYPE_CHECKING:  # pragma: no cover
+    from arara_quant.backtesting import BacktestResult
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -115,6 +111,51 @@ def build_parser() -> argparse.ArgumentParser:
         help="Diretório para salvar resultados",
     )
     pipeline.add_argument("--json", action="store_true", help="Output em formato JSON")
+
+    validate_configs = subparsers.add_parser(
+        "validate-configs", help="Valida arquivos YAML em configs/"
+    )
+    validate_configs.add_argument("--json", action="store_true", help="Output em JSON")
+
+    update_turnover = subparsers.add_parser(
+        "update-readme-turnover",
+        help="Atualiza a tabela de turnover no README.md",
+    )
+    update_turnover.add_argument(
+        "--readme",
+        type=Path,
+        default=None,
+        help="Path to README.md (default: <project_root>/README.md).",
+    )
+    update_turnover.add_argument(
+        "--summary",
+        type=Path,
+        default=None,
+        help="Baseline turnover summary CSV (default: outputs/results/oos_canonical/turnover_dist_stats.csv).",
+    )
+    update_turnover.add_argument(
+        "--per-window-prism",
+        type=Path,
+        default=None,
+        help="PRISM-R per-window CSV (default: outputs/reports/walkforward/per_window_results.csv).",
+    )
+    update_turnover.add_argument(
+        "--prism-trades",
+        type=Path,
+        default=None,
+        help="PRISM-R trade-level turnover CSV (default: outputs/reports/walkforward/trades.csv).",
+    )
+    update_turnover.add_argument(
+        "--oos-config",
+        type=Path,
+        default=None,
+        help="OOS period YAML override (default: configs/oos_period.yaml).",
+    )
+    update_turnover.add_argument(
+        "--force-overwrite",
+        action="store_true",
+        help="Overwrite existing values (not only placeholders).",
+    )
 
     # Examples category
     example = subparsers.add_parser(
@@ -218,6 +259,13 @@ def _generate_wf_report(
         )
         return
 
+    from arara_quant.evaluation.plots.walkforward import plot_walkforward_summary
+    from arara_quant.evaluation.walkforward_report import (
+        build_per_window_table,
+        format_wf_summary_markdown,
+        identify_stress_periods,
+    )
+
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
@@ -318,6 +366,8 @@ def main(argv: Iterable[str] | None = None) -> int:
             payload = settings.to_dict()
             _print_payload(payload, as_json=args.json)
         elif args.command == "optimize":
+            from arara_quant.optimization.solvers import run_optimizer
+
             meta_override = None
             if getattr(args, "metaheuristic_config", None):
                 meta_override = _load_metaheuristic_override(
@@ -332,6 +382,8 @@ def main(argv: Iterable[str] | None = None) -> int:
             payload = opt_result.to_dict(include_weights=args.json)
             _print_payload(payload, as_json=args.json)
         elif args.command == "backtest":
+            from arara_quant.backtesting import run_backtest
+
             result = run_backtest(args.config, dry_run=args.dry_run, settings=settings)
 
             # Generate walk-forward report if requested
@@ -355,6 +407,41 @@ def main(argv: Iterable[str] | None = None) -> int:
                 settings=settings,
             )
             _print_payload(result, as_json=args.json)
+
+        elif args.command == "validate-configs":
+            from arara_quant.reports.validators import validate_configs
+
+            result = validate_configs(settings)
+            if args.json:
+                payload = {
+                    "validated": [str(path) for path in result.validated],
+                    "errors": [{"path": str(path), "error": message} for path, message in result.errors],
+                }
+                print(json.dumps(payload, indent=2, sort_keys=True))
+                return 1 if result.errors else 0
+
+            errors_by_path = {path: message for path, message in result.errors}
+            for config_file in result.validated:
+                if config_file in errors_by_path:
+                    print(f"✗ {config_file.name}: {errors_by_path[config_file]}", file=sys.stderr)
+                else:
+                    print(f"✓ {config_file.name}")
+            return 1 if result.errors else 0
+
+        elif args.command == "update-readme-turnover":
+            from arara_quant.reports.generators import update_readme_turnover_stats
+
+            updated = update_readme_turnover_stats(
+                settings=settings,
+                readme_path=args.readme,
+                baseline_summary_csv=args.summary,
+                prism_per_window_csv=args.per_window_prism,
+                prism_trades_csv=args.prism_trades,
+                oos_config_path=args.oos_config,
+                force_overwrite=args.force_overwrite,
+            )
+            print(f"Updated rows: {updated}")
+            return 0
 
         # Example commands
         elif args.command == "run-example":

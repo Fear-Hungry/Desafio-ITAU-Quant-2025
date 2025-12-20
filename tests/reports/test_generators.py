@@ -90,10 +90,10 @@ def test_update_readme_turnover_stats_updates_placeholders(
 
     updated_text = readme_path.read_text(encoding="utf-8")
 
-    prism_expected_median = float(window_turnover.median())
-    prism_expected_p95 = float(window_turnover.quantile(0.95))
+    prism_oos = window_turnover.iloc[:2]
+    prism_expected_median = float(prism_oos.median())
+    prism_expected_p95 = float(prism_oos.quantile(0.95))
     assert f"{prism_expected_median:.2e}" in updated_text
     assert f"{prism_expected_p95:.2e}" in updated_text
     assert "1.00e-02" in updated_text
     assert "2.00e-02" in updated_text
-

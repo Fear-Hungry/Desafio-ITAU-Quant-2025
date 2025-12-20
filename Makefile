@@ -133,7 +133,7 @@ validate-production: ## Run master validation (production)
 
 validate-configs: ## Validate all YAML configuration files
 	@echo "$(BLUE)Validating configuration files...$(NC)"
-	@poetry run python scripts/validation/validate_configs.py
+	@poetry run arara-quant validate-configs
 
 ##@ Data Pipeline
 
@@ -191,7 +191,7 @@ turnover-baselines: ## Export per-window turnover for baselines (per-window CSVs
 
 update-readme-turnover: ## Update README Table 5.1 with turnover median/p95
 	@echo "$(BLUE)Updating README Turnover (mediana/p95)...$(NC)"
-	poetry run python scripts/reporting/update_readme_turnover_stats.py --force-overwrite
+	poetry run arara-quant update-readme-turnover --force-overwrite
 
 turnover: ## Compute per-window turnover and update README
 	@echo "$(BLUE)Computing turnover distributions and updating README...$(NC)"
@@ -290,7 +290,7 @@ docker-run: ## Run Docker container with the repository mounted
 
 show-config: ## Display current configuration
 	@echo "$(BLUE)Project Configuration:$(NC)"
-	@poetry run arara-quant show --format json
+	@poetry run arara-quant show-settings --json
 
 tree: ## Show project directory tree
 	@echo "$(BLUE)Project Structure:$(NC)"
