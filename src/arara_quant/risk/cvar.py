@@ -1,8 +1,15 @@
-"""Helpers for CVaR formulations (Rockafellar-Uryasev)."""
+"""Helpers for CVaR formulations (Rockafellar-Uryasev).
+
+This module is the single source of truth for the auxiliary-variable CVaR
+construction reused by:
+- ``arara_quant.optimization.constraints.cvar`` (constraint builder)
+- ``arara_quant.optimization.core.cvar_lp`` (mean-CVaR solver)
+- ``arara_quant.optimization.core.constraints_builder`` (composable constraints)
+"""
 
 from __future__ import annotations
 
-from typing import Mapping
+from collections.abc import Mapping
 
 import cvxpy as cp
 import numpy as np
@@ -27,7 +34,7 @@ def validate_cvar_inputs(returns_matrix: np.ndarray, alpha: float) -> None:
 
 def build_cvar_lp(
     returns_matrix: np.ndarray,
-    weights: cp.Variable,
+    weights: cp.Expression,
     alpha: float,
 ) -> tuple[cp.Variable, cp.Variable, list[cp.Constraint]]:
     """Build auxiliary variables (VaR, u) and constraints for CVaR."""
@@ -50,7 +57,7 @@ def cvar_objective(var: cp.Variable, u: cp.Variable, alpha: float) -> cp.Express
 
 def add_cvar_constraint(
     returns_matrix: np.ndarray,
-    weights: cp.Variable,
+    weights: cp.Expression,
     alpha: float,
     max_cvar: float,
 ) -> tuple[cp.Variable, cp.Variable, list[cp.Constraint]]:

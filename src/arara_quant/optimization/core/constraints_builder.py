@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Mapping, Sequence
 
 import cvxpy as cp
 import numpy as np
 import pandas as pd
+
+from arara_quant.risk.cvar import add_cvar_constraint, validate_cvar_inputs
 
 __all__ = [
     "BudgetConfig",
@@ -237,18 +239,11 @@ def build_risk_constraints(
             raise ValueError("scenario_returns must have shape (n_scenarios, n_assets)")
         alpha = float(cvar_cfg.get("alpha", 0.95))
         max_cvar = float(cvar_cfg["max"])
-        num_scenarios = scenario_returns.shape[0]
-        losses = -scenario_returns @ weights
-        aux = cp.Variable(num_scenarios)
-        t_var = cp.Variable()
-        constraints.extend(
-            [
-                aux >= 0,
-                aux >= losses - t_var,
-                t_var + (1.0 / ((1.0 - alpha) * num_scenarios)) * cp.sum(aux)
-                <= max_cvar,
-            ]
+        validate_cvar_inputs(scenario_returns, alpha)
+        _, _, cvar_constraints = add_cvar_constraint(
+            scenario_returns, weights, alpha, max_cvar
         )
+        constraints.extend(cvar_constraints)
 
     return constraints
 
