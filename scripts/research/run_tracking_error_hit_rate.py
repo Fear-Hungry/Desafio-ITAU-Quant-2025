@@ -15,14 +15,18 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from arara_quant.config import get_settings
+
+SETTINGS = get_settings()
+
 PORTFOLIO_COLUMN = "Risk Parity"
 BENCHMARK_COLUMN = "60/40"
-OUTPUT_DIR = Path("outputs/results") / "tracking_metrics"
+OUTPUT_DIR = SETTINGS.results_dir / "tracking_metrics"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _latest_oos_file() -> Path:
-    candidates = sorted(Path("outputs/results").glob("oos_returns_all_strategies_*.csv"))
+    candidates = sorted(SETTINGS.results_dir.glob("oos_returns_all_strategies_*.csv"))
     if not candidates:
         raise FileNotFoundError("No OOS returns file found in outputs/results/ directory.")
     return candidates[-1]

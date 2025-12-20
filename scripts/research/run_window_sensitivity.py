@@ -9,12 +9,12 @@ amount of historical data used for μ e Σ. Outputs land in
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pandas as pd
+from arara_quant.config import get_settings
 from arara_quant.evaluation.oos import compare_baselines, default_strategies
 
-OUTPUT_DIR = Path("outputs/results") / "window_sensitivity"
+SETTINGS = get_settings()
+OUTPUT_DIR = SETTINGS.results_dir / "window_sensitivity"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 TRAIN_WINDOWS = [126, 252, 504]
@@ -22,8 +22,8 @@ TRAIN_WINDOWS = [126, 252, 504]
 
 def load_returns() -> pd.DataFrame:
     candidates = [
-        Path("data") / "processed" / "returns_arara.parquet",
-        Path("outputs/results") / "baselines" / "baseline_returns_oos.parquet",
+        SETTINGS.processed_data_dir / "returns_arara.parquet",
+        SETTINGS.results_dir / "baselines" / "baseline_returns_oos.parquet",
     ]
     min_count = max(TRAIN_WINDOWS) + 42  # train + safety margin
     for path in candidates:

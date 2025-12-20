@@ -23,6 +23,10 @@ from pathlib import Path
 import pandas as pd
 from pandas_datareader import data as web
 
+from arara_quant.config import get_settings
+
+DEFAULT_OUTPUT = get_settings().processed_data_dir / "riskfree_tbill_daily.csv"
+
 
 def fetch_tbill(start: str, end: str) -> pd.DataFrame:
     # DGS3MO: 3-Month Treasury Constant Maturity Rate, Daily, Percent, Not Seasonally Adjusted
@@ -45,7 +49,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Fetch daily T-Bill from FRED")
     parser.add_argument("--start", type=str, default="2010-01-01")
     parser.add_argument("--end", type=str, default=datetime.today().strftime("%Y-%m-%d"))
-    parser.add_argument("--output", type=str, default=str(Path("data/processed/riskfree_tbill_daily.csv")))
+    parser.add_argument("--output", type=str, default=str(DEFAULT_OUTPUT))
     args = parser.parse_args()
 
     out_path = Path(args.output)
@@ -59,4 +63,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

@@ -16,11 +16,11 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Sequence
 
 import numpy as np
 import pandas as pd
+from arara_quant.config import get_settings
 from arara_quant.estimators.cov import ledoit_wolf_shrinkage
 from arara_quant.estimators.mu import huber_mean
 from arara_quant.evaluation.oos import (
@@ -35,7 +35,8 @@ from arara_quant.optimization.heuristics.metaheuristic import (
     metaheuristic_outer,
 )
 
-RESULTS_DIR = Path("outputs/results") / "ga_metaheuristic"
+SETTINGS = get_settings()
+RESULTS_DIR = SETTINGS.results_dir / "ga_metaheuristic"
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 
 PRINT_WIDTH = 80

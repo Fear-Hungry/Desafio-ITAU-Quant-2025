@@ -17,6 +17,10 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from arara_quant.config import get_settings
+
+SETTINGS = get_settings()
+
 print("=" * 80)
 print("  PRISM-R - CONSTRAINT VALIDATION TESTS")
 print("  Validação de Constraints do Sistema")
@@ -27,8 +31,8 @@ print()
 # CARREGAR CONFIGURAÇÃO E ÚLTIMA ALOCAÇÃO
 # ============================================================================
 
-CONFIG_PATH = Path("configs/production_erc_v2.yaml")
-WEIGHTS_DIR = Path("outputs/results/production/weights")
+CONFIG_PATH = SETTINGS.configs_dir / "production_erc_v2.yaml"
+WEIGHTS_DIR = SETTINGS.results_dir / "production" / "weights"
 
 with open(CONFIG_PATH) as f:
     config = yaml.safe_load(f)

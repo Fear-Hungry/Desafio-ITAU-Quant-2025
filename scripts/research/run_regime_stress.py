@@ -3,9 +3,8 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pandas as pd
+from arara_quant.config import get_settings
 from arara_quant.estimators.cov import ledoit_wolf_shrinkage
 from arara_quant.estimators.mu import shrunk_mean
 from arara_quant.evaluation.oos import (
@@ -16,7 +15,8 @@ from arara_quant.evaluation.oos import (
 from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 from arara_quant.risk.regime import detect_regime, regime_multiplier
 
-OUTPUT_DIR = Path("outputs/results") / "regime_stress"
+SETTINGS = get_settings()
+OUTPUT_DIR = SETTINGS.results_dir / "regime_stress"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 REGIME_CONFIG = {
@@ -35,9 +35,9 @@ PERIODS = {
 
 def load_returns() -> pd.DataFrame:
     candidates = [
-        Path("outputs/results") / "baselines" / "baseline_returns_oos.parquet",
-        Path("data") / "processed" / "returns_full.parquet",
-        Path("data") / "processed" / "returns_arara.parquet",
+        SETTINGS.results_dir / "baselines" / "baseline_returns_oos.parquet",
+        SETTINGS.processed_data_dir / "returns_full.parquet",
+        SETTINGS.processed_data_dir / "returns_arara.parquet",
     ]
     for path in candidates:
         if path.exists():

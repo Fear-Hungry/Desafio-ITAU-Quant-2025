@@ -17,6 +17,10 @@ from pathlib import Path
 
 import pandas as pd
 
+from arara_quant.config import get_settings
+
+SETTINGS = get_settings()
+
 print("=" * 80)
 print("  PRISM-R - COMPREHENSIVE VALIDATION REPORT")
 print("  Relatório Consolidado de Validação")
@@ -27,8 +31,8 @@ print()
 # CARREGAR RESULTADOS DE VALIDAÇÃO
 # ============================================================================
 
-validation_dir = Path("outputs/results/validation")
-production_log = Path("outputs/results/production/production_log.csv")
+validation_dir = SETTINGS.results_dir / "validation"
+production_log = SETTINGS.results_dir / "production" / "production_log.csv"
 
 print("📥 Carregando resultados de validação...")
 print()
@@ -308,7 +312,7 @@ print("💾 SALVANDO RELATÓRIO")
 print("=" * 80)
 print()
 
-output_dir = Path("outputs/results/validation")
+output_dir = validation_dir
 output_dir.mkdir(parents=True, exist_ok=True)
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

@@ -14,12 +14,14 @@ Objetivo: encontrar config que bate 1/N + 0.2 Sharpe OOS
 import itertools
 import sys
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import yfinance as yf
+from arara_quant.config import get_settings
 from arara_quant.data import get_arara_universe
+
+SETTINGS = get_settings()
 
 print("=" * 80)
 print("  PRISM-R - Grid Search: Shrinkage + Regularization")
@@ -339,8 +341,8 @@ else:
 print()
 
 # Save results
-results_dir = Path("outputs/results")
-results_dir.mkdir(exist_ok=True)
+results_dir = SETTINGS.results_dir
+results_dir.mkdir(parents=True, exist_ok=True)
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 output_file = results_dir / f"grid_search_results_{timestamp}.csv"

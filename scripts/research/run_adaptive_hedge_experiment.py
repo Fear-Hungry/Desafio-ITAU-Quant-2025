@@ -26,17 +26,19 @@ Success Criteria
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+from arara_quant.config import get_settings
 from arara_quant.portfolio.adaptive_hedge import (
     compute_hedge_allocation,
     apply_hedge_rebalance,
     evaluate_hedge_performance,
 )
 from arara_quant.risk.regime import detect_regime
+
+SETTINGS = get_settings()
 
 print("=" * 80)
 print("  PRISM-R - Adaptive Tail Hedge Experiment")
@@ -47,8 +49,8 @@ print()
 # CONFIGURATION
 # ============================================================================
 
-DATA_PATH = Path("data/processed/returns_arara.parquet")
-OUTPUT_DIR = Path("outputs/results/adaptive_hedge")
+DATA_PATH = SETTINGS.processed_data_dir / "returns_arara.parquet"
+OUTPUT_DIR = SETTINGS.results_dir / "adaptive_hedge"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 TRAIN_WINDOW = 252

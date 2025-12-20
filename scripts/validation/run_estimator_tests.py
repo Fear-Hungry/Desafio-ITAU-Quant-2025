@@ -12,11 +12,14 @@ Este script compara:
 
 import sys
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import yaml
+
+from arara_quant.config import get_settings
+
+SETTINGS = get_settings()
 
 print("=" * 80)
 print("  PRISM-R - ESTIMATOR ROBUSTNESS TESTS")
@@ -29,7 +32,7 @@ print()
 # ============================================================================
 print("📥 [1/4] Carregando dados...")
 
-UNIVERSE_PATH = Path("configs/universe_arara_robust.yaml")
+UNIVERSE_PATH = SETTINGS.configs_dir / "universe_arara_robust.yaml"
 
 with open(UNIVERSE_PATH) as f:
     universe_config = yaml.safe_load(f)

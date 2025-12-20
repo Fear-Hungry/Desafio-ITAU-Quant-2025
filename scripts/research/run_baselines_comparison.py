@@ -14,10 +14,12 @@ import os
 import sys
 import time
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import pandas as pd
+from arara_quant.config import get_settings
 from arara_quant.data import get_arara_universe
+
+SETTINGS = get_settings()
 
 print("=" * 80)
 print("  PRISM-R - Comparação de Estratégias Baseline (OOS)")
@@ -63,7 +65,7 @@ print()
 # ============================================================================
 print("📥 [1/3] Carregando dados...")
 
-LOCAL_RETURNS_PATH = Path("data/processed/returns_full.parquet")
+LOCAL_RETURNS_PATH = SETTINGS.processed_data_dir / "returns_full.parquet"
 
 if LOCAL_RETURNS_PATH.exists() and not FORCE_REMOTE:
     print(f"   🔎 Usando painel local: {LOCAL_RETURNS_PATH}")
@@ -221,7 +223,7 @@ else:
 # ============================================================================
 # SALVAR RESULTADOS
 # ============================================================================
-output_dir = Path("outputs/results") / "baselines"
+output_dir = SETTINGS.results_dir / "baselines"
 output_dir.mkdir(parents=True, exist_ok=True)
 
 returns_file = output_dir / "baseline_returns_oos.parquet"

@@ -17,11 +17,14 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from arara_quant.config import get_settings
 from arara_quant.estimators.cov import ledoit_wolf_shrinkage
 from arara_quant.utils.production_logger import ProductionLogger
 from arara_quant.utils.production_monitor import (
     should_fallback_to_1N,
 )
+
+SETTINGS = get_settings()
 
 try:
     import os
@@ -754,7 +757,7 @@ print()
 # ============================================================================
 
 print("💾 Salvando rebalance...")
-logger = ProductionLogger(log_dir=Path("outputs/results/production"))
+logger = ProductionLogger(log_dir=SETTINGS.results_dir / "production")
 
 # Turnover e custo (vs equal-weight baseline)
 previous_weights = pd.Series(1.0 / len(valid_tickers), index=valid_tickers)

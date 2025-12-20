@@ -19,11 +19,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from arara_quant.config import get_settings
+
 plt.style.use("seaborn-v0_8-darkgrid")
 
-REPORTS_DIR = Path("outputs/reports")
-WALKFORWARD_DIR = REPORTS_DIR / "walkforward"
-FIGURES_DIR = REPORTS_DIR / "figures"
+SETTINGS = get_settings()
+
+REPORTS_DIR = SETTINGS.reports_dir
+WALKFORWARD_DIR = SETTINGS.walkforward_dir
+FIGURES_DIR = SETTINGS.figures_dir
 FIGURES_DIR.mkdir(parents=True, exist_ok=True)
 
 

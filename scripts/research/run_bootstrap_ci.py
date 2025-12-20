@@ -17,6 +17,10 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
+from arara_quant.config import get_settings
+
+SETTINGS = get_settings()
+
 # Mapping from friendly names (used in reports) to columns in the OOS
 # returns dataframe.
 STRATEGIES = {
@@ -29,16 +33,16 @@ STRATEGIES = {
 BOOTSTRAP_ITERATIONS = 2000
 BLOCK_SIZE = 21
 CONFIDENCE = 0.95
-OUTPUT_DIR = Path("outputs/results") / "bootstrap_ci"
+OUTPUT_DIR = SETTINGS.results_dir / "bootstrap_ci"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def latest_oos_returns() -> Path:
-    baseline_path = Path("outputs/results/baselines/baseline_returns_oos.parquet")
+    baseline_path = SETTINGS.results_dir / "baselines" / "baseline_returns_oos.parquet"
     if baseline_path.exists():
         return baseline_path
 
-    legacy = sorted(Path("outputs/results").glob("oos_returns_all_strategies_*.csv"))
+    legacy = sorted(SETTINGS.results_dir.glob("oos_returns_all_strategies_*.csv"))
     if legacy:
         return legacy[-1]
     raise FileNotFoundError(

@@ -10,15 +10,17 @@ are written to ``outputs/results/cvar_experiment`` for inclusion in reports.
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 
 import pandas as pd
+from arara_quant.config import get_settings
 from arara_quant.evaluation.oos import (
     StrategySpec,
     compare_baselines,
     default_strategies,
 )
 from arara_quant.optimization.core.cvar_lp import CvarConfig, solve_cvar_lp
+
+SETTINGS = get_settings()
 
 print("=" * 80)
 print("  PRISM-R - Mean-CVaR vs Risk Parity Tail Experiment")
@@ -29,7 +31,7 @@ print()
 # CONFIGURAÇÃO DO EXPERIMENTO
 # ============================================================================
 
-DATA_PATH = Path("data/processed/returns_arara.parquet")
+DATA_PATH = SETTINGS.processed_data_dir / "returns_arara.parquet"
 
 TRAIN_WINDOW = 252
 TEST_WINDOW = 21
@@ -217,7 +219,7 @@ print()
 # 4. SALVAR RESULTADOS
 # ============================================================================
 
-output_dir = Path("outputs/results") / "cvar_experiment"
+output_dir = SETTINGS.results_dir / "cvar_experiment"
 output_dir.mkdir(parents=True, exist_ok=True)
 
 metrics_file = output_dir / "metrics_oos.csv"

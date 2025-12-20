@@ -10,10 +10,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from arara_quant.config import get_settings
+
 plt.style.use("seaborn-v0_8")
 
-RESULTS_DIR = Path("outputs/results")
-FIG_DIR = Path("outputs/reports") / "figures"
+SETTINGS = get_settings()
+RESULTS_DIR = SETTINGS.results_dir
+FIG_DIR = SETTINGS.figures_dir
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 

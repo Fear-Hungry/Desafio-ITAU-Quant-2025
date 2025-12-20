@@ -9,12 +9,14 @@ Decisão crítica: se IC < 0.05 e PSR < 60%, PARE de usar μ.
 """
 
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import yfinance as yf
+from arara_quant.config import get_settings
 from arara_quant.data import get_arara_universe
+
+SETTINGS = get_settings()
 
 print("=" * 80)
 print("  PRISM-R - Teste de Skill do Estimador μ")
@@ -208,8 +210,8 @@ else:
 print()
 
 # Salvar resultados
-results_dir = Path("outputs/results")
-results_dir.mkdir(exist_ok=True)
+results_dir = SETTINGS.results_dir
+results_dir.mkdir(parents=True, exist_ok=True)
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 output_file = results_dir / f"mu_skill_test_{timestamp}.csv"

@@ -16,11 +16,14 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from arara_quant.config import get_settings
 from arara_quant.data import get_arara_universe
 from arara_quant.utils.production_logger import ProductionLogger
 from arara_quant.utils.production_monitor import (
     should_fallback_to_1N,
 )
+
+SETTINGS = get_settings()
 
 print("=" * 80)
 print("  PRISM-R - Sistema de Produção: Risk Parity (ERC)")
@@ -166,7 +169,7 @@ print()
 
 print("💾 [5/5] Registrando rebalance...")
 
-logger = ProductionLogger(log_dir=Path("outputs/results/production"))
+logger = ProductionLogger(log_dir=SETTINGS.results_dir / "production")
 
 # Calcular turnover (assumir pesos anteriores = equal-weight para este exemplo)
 previous_weights = pd.Series(1.0 / len(valid_tickers), index=valid_tickers)

@@ -9,11 +9,11 @@ rebalanço 252/21 dias. Os resultados são salvos em
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Callable
 
 import numpy as np
 import pandas as pd
+from arara_quant.config import get_settings
 from arara_quant.estimators.cov import (
     ledoit_wolf_shrinkage,
     nonlinear_shrinkage,
@@ -30,14 +30,15 @@ from arara_quant.evaluation.oos import (
 from arara_quant.optimization.core.mv_qp import MeanVarianceConfig, solve_mean_variance
 from sklearn.covariance import MinCovDet
 
-OUTPUT_DIR = Path("outputs/results") / "cov_sensitivity"
+SETTINGS = get_settings()
+OUTPUT_DIR = SETTINGS.results_dir / "cov_sensitivity"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def load_returns() -> pd.DataFrame:
     candidates = [
-        Path("data") / "processed" / "returns_arara.parquet",
-        Path("outputs/results") / "baselines" / "baseline_returns_oos.parquet",
+        SETTINGS.processed_data_dir / "returns_arara.parquet",
+        SETTINGS.results_dir / "baselines" / "baseline_returns_oos.parquet",
     ]
     for path in candidates:
         if not path.exists():

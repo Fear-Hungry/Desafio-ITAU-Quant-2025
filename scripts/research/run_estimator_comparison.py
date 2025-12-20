@@ -13,11 +13,13 @@ Objetivo: Escolher estimador que minimiza overfit mantendo power.
 
 import sys
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
+from arara_quant.config import get_settings
 from arara_quant.data import get_arara_universe
+
+SETTINGS = get_settings()
 
 print("=" * 80)
 print("  PRISM-R - Comparação de Estimadores de μ")
@@ -297,8 +299,8 @@ if valid_results:
 # ============================================================================
 print("💾 Salvando resultados...")
 
-output_dir = Path("outputs/results")
-output_dir.mkdir(exist_ok=True)
+output_dir = SETTINGS.results_dir
+output_dir.mkdir(parents=True, exist_ok=True)
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 
 # Salvar comparação

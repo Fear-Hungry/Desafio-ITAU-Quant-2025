@@ -21,7 +21,9 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-from arara_quant.config import PortfolioConfig, UniverseConfig, load_config
+from arara_quant.config import PortfolioConfig, UniverseConfig, get_settings, load_config
+
+SETTINGS = get_settings()
 
 print("=" * 80)
 print("  PRISM-R - Portfolio Risk Intelligence System")
@@ -473,8 +475,8 @@ print()
 # ============================================================================
 print("💾 Salvando resultado...")
 
-output_dir = Path("outputs/results")
-output_dir.mkdir(exist_ok=True)
+output_dir = SETTINGS.results_dir
+output_dir.mkdir(parents=True, exist_ok=True)
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
 

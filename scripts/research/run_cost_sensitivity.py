@@ -3,20 +3,21 @@
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Iterable
 
 import pandas as pd
+from arara_quant.config import get_settings
 from arara_quant.evaluation.oos import (
     StrategySpec,
     compare_baselines,
     default_strategies,
 )
 
-UNIVERSE_RETURNS = Path("outputs/results/baselines/baseline_returns_oos.parquet")
+SETTINGS = get_settings()
+UNIVERSE_RETURNS = SETTINGS.results_dir / "baselines" / "baseline_returns_oos.parquet"
 COST_GRID = [30.0, 50.0, 75.0]
 TURNOVER_CAP_GRID = [None, 0.25, 0.20]
-OUTPUT_DIR = Path("outputs/results") / "cost_sensitivity"
+OUTPUT_DIR = SETTINGS.results_dir / "cost_sensitivity"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 

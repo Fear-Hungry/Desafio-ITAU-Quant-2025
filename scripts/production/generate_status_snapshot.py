@@ -12,6 +12,14 @@ from typing import Dict
 
 import pandas as pd
 
+from arara_quant.config import get_settings
+
+SETTINGS = get_settings()
+PRODUCTION_DIR = SETTINGS.results_dir / "production"
+DEFAULT_OUTPUT_PATH = SETTINGS.project_root / "docs" / "results" / "CARTEIRA_ARARA_STATUS.md"
+DEFAULT_LOG_PATH = PRODUCTION_DIR / "production_log.csv"
+DEFAULT_WEIGHTS_DIR = PRODUCTION_DIR / "weights"
+
 # Asset class mappings (expandir conforme necessário)
 ASSET_CLASS_MAP = {
     # US Equity
@@ -118,9 +126,9 @@ def calculate_group_exposures(weights: pd.Series) -> Dict[str, float]:
 
 
 def generate_status_snapshot(
-    output_path: Path = Path("docs/results/CARTEIRA_ARARA_STATUS.md"),
-    log_path: Path = Path("outputs/results/production/production_log.csv"),
-    weights_dir: Path = Path("outputs/results/production/weights"),
+    output_path: Path = DEFAULT_OUTPUT_PATH,
+    log_path: Path = DEFAULT_LOG_PATH,
+    weights_dir: Path = DEFAULT_WEIGHTS_DIR,
 ) -> None:
     """
     Gera snapshot de status da carteira a partir dos logs de produção.
@@ -135,6 +143,8 @@ def generate_status_snapshot(
         Diretório com arquivos de pesos
     """
     print("📄 Gerando snapshot de status...")
+
+    output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Read latest log entry
     if not log_path.exists():

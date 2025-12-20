@@ -18,6 +18,10 @@ import numpy as np
 import pandas as pd
 import yaml
 
+from arara_quant.config import get_settings
+
+SETTINGS = get_settings()
+
 print("=" * 80)
 print("  PRISM-R - SENSITIVITY ANALYSIS")
 print("  Análise de Sensibilidade de Parâmetros")
@@ -28,7 +32,7 @@ print()
 # CONFIGURAÇÃO
 # ============================================================================
 
-UNIVERSE_PATH = Path("configs/universe_arara_robust.yaml")
+UNIVERSE_PATH = SETTINGS.configs_dir / "universe_arara_robust.yaml"
 
 with open(UNIVERSE_PATH) as f:
     universe_config = yaml.safe_load(f)
@@ -433,7 +437,7 @@ print("💾 [4/4] Salvando resultados")
 print("=" * 80)
 print()
 
-output_dir = Path("outputs/results/validation")
+output_dir = SETTINGS.results_dir / "validation"
 output_dir.mkdir(parents=True, exist_ok=True)
 
 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
