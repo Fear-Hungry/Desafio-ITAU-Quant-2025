@@ -63,7 +63,7 @@
 
 ```bash
 # Teste 1: Data pipeline
-poetry run python scripts/run_01_data_pipeline.py \
+poetry run python scripts/core/run_01_data_pipeline.py \
     --force-download --start 2010-01-01 --end 2025-10-09
 
 # Teste 2: Walk-forward backtest
@@ -71,10 +71,10 @@ poetry run python scripts/research/run_backtest_walkforward.py \
     --start-oos 2020-01-02 --end-oos 2025-10-09
 
 # Teste 3: Consolidação
-poetry run python scripts/consolidate_oos_metrics.py
+poetry run python scripts/reporting/consolidate_oos_metrics.py
 
 # Teste 4: Figuras
-poetry run python scripts/generate_oos_figures.py
+poetry run python scripts/reporting/generate_oos_figures.py
 ```
 
 - [ ] Comando 1 executado sem erros

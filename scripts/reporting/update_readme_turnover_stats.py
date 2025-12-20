@@ -16,7 +16,7 @@ What this script does:
   "Turnover (mediana)" and "Turnover (p95)" for each strategy that has data.
 
 Usage:
-    poetry run python scripts/update_readme_turnover_stats.py \
+    poetry run python scripts/reporting/update_readme_turnover_stats.py \
         --readme README.md \
         --summary outputs/results/oos_canonical/turnover_dist_stats.csv \
         --per-window-prism outputs/reports/walkforward/per_window_results.csv \

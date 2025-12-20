@@ -12,16 +12,16 @@ This script coordinates the complete validation pipeline:
 
 Usage:
     # Full validation (20-30 min)
-    poetry run python scripts/run_master_validation.py --mode full
+    poetry run python scripts/validation/run_master_validation.py --mode full
 
     # Quick smoke test (5 min)
-    poetry run python scripts/run_master_validation.py --mode quick --skip-download
+    poetry run python scripts/validation/run_master_validation.py --mode quick --skip-download
 
     # Production pre-deploy validation (10 min)
-    poetry run python scripts/run_master_validation.py --mode production
+    poetry run python scripts/validation/run_master_validation.py --mode production
 
     # Resume from specific stage
-    poetry run python scripts/run_master_validation.py --resume-from stage3
+    poetry run python scripts/validation/run_master_validation.py --resume-from stage3
 
 Author: PRISM-R Team
 """
@@ -241,7 +241,7 @@ class ValidationOrchestrator:
             "poetry",
             "run",
             "python",
-            "scripts/run_01_data_pipeline.py",
+            "scripts/core/run_01_data_pipeline.py",
             "--force-download",
             "--start",
             "2010-01-01",

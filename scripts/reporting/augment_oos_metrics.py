@@ -18,9 +18,9 @@ computed from per-window results:
 - success_rate (fraction of windows with positive OOS return, if present)
 
 Usage:
-    poetry run python scripts/augment_oos_metrics.py
+    poetry run python scripts/reporting/augment_oos_metrics.py
     # or with custom paths:
-    poetry run python scripts/augment_oos_metrics.py \
+    poetry run python scripts/reporting/augment_oos_metrics.py \
         --metrics-json outputs/reports/oos_consolidated_metrics.json \
         --windows-csv outputs/reports/walkforward/per_window_results.csv \
         --save-csv

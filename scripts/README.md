@@ -6,6 +6,11 @@ This directory contains executable Python scripts organized by purpose. All scri
 
 ```
 scripts/
+├── core/         # Pipeline wrappers (data → estimates → optimize)
+├── reporting/    # OOS metrics, figures, and markdown reports
+├── validation/   # Validation scripts + master orchestrator
+├── baselines/    # Baseline utilities/exports
+├── data/         # Data utilities (e.g., risk-free series fetch)
 ├── examples/     # Demonstration and tutorial scripts
 ├── research/     # Research and analysis scripts
 └── production/   # Production deployment scripts
@@ -17,6 +22,10 @@ scripts/
 ```bash
 # Run a script directly
 python scripts/examples/run_portfolio_arara.py
+
+# Canonical OOS reporting pipeline (from nav_daily.csv)
+python scripts/reporting/consolidate_oos_metrics.py --psr-n-trials 1
+python scripts/reporting/generate_oos_figures.py
 ```
 
 ### Via CLI (Recommended)

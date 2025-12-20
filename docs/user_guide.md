@@ -18,7 +18,7 @@ poetry run ruff check    # valida estilo
 1. **Ingestão de dados**
 
    ```bash
-   poetry run python scripts/run_01_data_pipeline.py
+   poetry run python scripts/core/run_01_data_pipeline.py
    ```
 
    - Verifica `data/raw/prices_arara.csv`; faz download via Yahoo Finance se o
@@ -28,7 +28,7 @@ poetry run ruff check    # valida estilo
 2. **Estimativa de parâmetros (μ/Σ)**
 
    ```bash
-   poetry run python scripts/run_02_estimate_params.py --annualize
+   poetry run python scripts/core/run_02_estimate_params.py --annualize
    ```
 
    - Usa janela padrão de 252 pregões e estimadores robustos (Huber + Ledoit-Wolf).
@@ -38,7 +38,7 @@ poetry run ruff check    # valida estilo
 3. **Otimização da carteira**
 
    ```bash
-   poetry run python scripts/run_03_optimize.py --risk-aversion 4.0 --max-weight 0.15
+   poetry run python scripts/core/run_03_optimize.py --risk-aversion 4.0 --max-weight 0.15
    ```
 
    - Resolve o programa média-variância com limites long-only e cap individual.
@@ -47,10 +47,10 @@ poetry run ruff check    # valida estilo
 4. **Backtest walk-forward**
 
    ```bash
-   poetry run python scripts/run_04_backtest.py --output backtest_summary.json
+   poetry run arara-quant backtest --config configs/optimizer_example.yaml --no-dry-run --wf-report
    ```
 
-   - Reutiliza `configs/optimizer_example.yaml` e gera métricas em `outputs/reports/`.
+   - Reutiliza `configs/optimizer_example.yaml` e exporta artefatos em `outputs/reports/`.
    - Use `--dry-run` para validar a configuração sem simular.
 
 ## 3. Testes
@@ -60,16 +60,11 @@ poetry run ruff check    # valida estilo
 - **Performance (opcional)**: adicione casos em `tests/performance` quando houver
   benchmarks estáveis.
 
-## 4. Scripts legados
+## 4. Scripts adicionais
 
-Os scripts anteriores continuam disponíveis em `scripts/legacy/`. Eles cobrem
-experimentos específicos como `scripts/legacy/run_portfolio_arara_robust.py` e comparações de
-estimadores. Atualize apontadores ou notebooks para o novo caminho,
-por exemplo:
-
-```bash
-poetry run python scripts/legacy/run_portfolio_arara_robust.py
-```
+- **Relatórios/OOS:** `scripts/reporting/`
+- **Validação:** `scripts/validation/`
+- **Pesquisa/Experimentos:** `scripts/research/`
 
 ## 5. Próximos passos sugeridos
 

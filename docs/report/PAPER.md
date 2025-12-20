@@ -10,7 +10,7 @@ Resumo (draft) — Propomos um overlay interpretável de regimes (volatilidade/d
 ## 2. Dados e cenário
 - Universo: 66 ETFs (USD) conforme `configs/universe_arara.yaml` (excluídos ETHA/FBTC/IBIT por histórico curto).
 - Períodos: Treino rolling 252d, teste 21d (purge/embargo 2d); OOS oficial 2020-01-02 a 2025-10-09. Histórico carregado desde 2010-01-01.
-- Fontes: Yahoo Finance (ajustado), fallback Tiingo para cripto, T-Bill diário via FRED (quando disponível). Série RF≈0 usada em artefatos canônicos; recalcular com T-Bill: `scripts/data/fetch_tbill_fred.py` + `scripts/consolidate_oos_metrics.py --riskfree-csv data/processed/riskfree_tbill_daily.csv`.
+- Fontes: Yahoo Finance (ajustado), fallback Tiingo para cripto, T-Bill diário via FRED (quando disponível). Série RF≈0 usada em artefatos canônicos; recalcular com T-Bill: `scripts/data/fetch_tbill_fred.py` + `scripts/reporting/consolidate_oos_metrics.py --riskfree-csv data/processed/riskfree_tbill_daily.csv`.
 - Artefatos: retornos/cov em `data/processed/*`, NAV e métricas em `outputs/reports/oos_consolidated_metrics.json`, janelas WF em `outputs/reports/walkforward/*`, baselines em `outputs/results/baselines/`, stress regimes em `outputs/results/regime_stress/`.
 
 ## 3. Metodologia base (PRISM-R estática)
@@ -29,7 +29,7 @@ Resumo (draft) — Propomos um overlay interpretável de regimes (volatilidade/d
 
 ## 5. Protocolos experimentais
 - Repro OOS canônico (baseline estático): `poetry install --sync && make reproduce-oos` → `outputs/reports/oos_consolidated_metrics.json`, `outputs/reports/walkforward/per_window_results.csv`, figuras em `outputs/reports/figures/`.
-- Regenerar figuras: `poetry run python scripts/generate_oos_figures.py`.
+- Regenerar figuras: `poetry run python scripts/reporting/generate_oos_figures.py`.
 - Comparar baselines: `outputs/results/baselines/baseline_metrics_oos.csv` (Equal Weight, 60/40, MV shrink, ERC, Min-Var).
 - Stress slices: `outputs/results/regime_stress/*.csv` (covid 2020, inflação 2022). Adaptar overlay para rodar nos mesmos recortes.
 - Validação rápida offline: `poetry run pytest tests/backtesting/test_engine_walkforward.py::test_turnover_matches_half_l1_pretrade -q`.

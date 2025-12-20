@@ -19,7 +19,7 @@
 
 The PRISM-R project provides a comprehensive orchestration system for portfolio validation:
 
-- **Master Orchestrator** (`scripts/run_master_validation.py`) - Coordinates 7-stage validation pipeline
+- **Master Orchestrator** (`scripts/validation/run_master_validation.py`) - Coordinates 7-stage validation pipeline
 - **Unified CLI** (`arara-quant`) - 11 commands for backtesting, comparison, optimization
 - **Research Scripts** (15 scripts) - Sensitivity analyses and experimentation
 - **Validation Suite** (4 scripts) - Constraint and estimator validation
@@ -52,13 +52,13 @@ make validate-production
 
 ```bash
 # Full validation with all stages
-poetry run python scripts/run_master_validation.py --mode full
+poetry run python scripts/validation/run_master_validation.py --mode full
 
 # Quick test (skips sensitivity and validation suite)
-poetry run python scripts/run_master_validation.py --mode quick --skip-download
+poetry run python scripts/validation/run_master_validation.py --mode quick --skip-download
 
 # Production validation (tests production config only)
-poetry run python scripts/run_master_validation.py --mode production
+poetry run python scripts/validation/run_master_validation.py --mode production
 ```
 
 ### Using Individual CLI Commands
@@ -96,7 +96,7 @@ poetry run arara-quant run-full-pipeline --config configs/optimizer_example.yaml
 **Use Case:** Quick sanity check before committing code
 
 ```bash
-poetry run python scripts/run_master_validation.py \
+poetry run python scripts/validation/run_master_validation.py \
     --mode quick \
     --skip-download
 ```
@@ -119,7 +119,7 @@ poetry run python scripts/run_master_validation.py \
 **Use Case:** Before final submission or major changes
 
 ```bash
-poetry run python scripts/run_master_validation.py \
+poetry run python scripts/validation/run_master_validation.py \
     --mode full
 ```
 
@@ -143,7 +143,7 @@ poetry run python scripts/run_master_validation.py \
 **Use Case:** Pre-deployment checks for production system
 
 ```bash
-poetry run python scripts/run_master_validation.py \
+poetry run python scripts/validation/run_master_validation.py \
     --mode production \
     --skip-download
 ```
@@ -166,7 +166,7 @@ poetry run python scripts/run_master_validation.py \
 
 **Command:**
 ```bash
-poetry run python scripts/run_01_data_pipeline.py \
+poetry run python scripts/core/run_01_data_pipeline.py \
     --force-download \
     --start 2010-01-01
 ```
@@ -509,7 +509,7 @@ poetry run arara-quant run-example {arara|robust}
 **Solution:**
 ```bash
 # Force fresh download
-poetry run python scripts/run_01_data_pipeline.py --force-download
+poetry run python scripts/core/run_01_data_pipeline.py --force-download
 ```
 
 ---
@@ -549,7 +549,7 @@ poetry run python scripts/run_01_data_pipeline.py --force-download
 
 ```bash
 # Resume from Stage 4
-poetry run python scripts/run_master_validation.py \
+poetry run python scripts/validation/run_master_validation.py \
     --mode full \
     --resume-from stage4
 ```
@@ -614,14 +614,14 @@ poetry run python scripts/validation/run_constraint_tests.py
 
 1. **Use cached data:**
    ```bash
-   poetry run python scripts/run_master_validation.py \
+   poetry run python scripts/validation/run_master_validation.py \
        --mode full \
        --skip-download
    ```
 
 2. **Skip sensitivity analyses:**
    ```bash
-   poetry run python scripts/run_master_validation.py \
+   poetry run python scripts/validation/run_master_validation.py \
        --mode full \
        --skip-sensitivity
    ```
@@ -633,7 +633,7 @@ poetry run python scripts/validation/run_constraint_tests.py
 
 4. **Enable parallel execution (experimental):**
    ```bash
-   poetry run python scripts/run_master_validation.py \
+   poetry run python scripts/validation/run_master_validation.py \
        --mode full \
        --parallel
    ```
@@ -647,7 +647,7 @@ poetry run python scripts/validation/run_constraint_tests.py
 If pipeline fails at Stage 4, resume without re-running earlier stages:
 
 ```bash
-poetry run python scripts/run_master_validation.py \
+poetry run python scripts/validation/run_master_validation.py \
     --mode full \
     --resume-from stage4
 ```
@@ -659,7 +659,7 @@ poetry run python scripts/run_master_validation.py \
 Specify custom directory for results:
 
 ```bash
-poetry run python scripts/run_master_validation.py \
+poetry run python scripts/validation/run_master_validation.py \
     --mode full \
     --output-dir outputs/reports/custom_validation
 ```
@@ -671,7 +671,7 @@ poetry run python scripts/run_master_validation.py \
 Run independent analyses concurrently:
 
 ```bash
-poetry run python scripts/run_master_validation.py \
+poetry run python scripts/validation/run_master_validation.py \
     --mode full \
     --parallel
 ```
@@ -686,7 +686,7 @@ For debugging, run stages individually:
 
 ```bash
 # Stage 1: Data
-poetry run python scripts/run_01_data_pipeline.py --force-download
+poetry run python scripts/core/run_01_data_pipeline.py --force-download
 
 # Stage 2: Backtest
 poetry run arara-quant backtest --config configs/optimizer_example.yaml --no-dry-run
@@ -721,7 +721,7 @@ To add a new research script to the pipeline:
 
 2. **Add to orchestrator:**
    ```python
-   # In scripts/run_master_validation.py
+   # In scripts/validation/run_master_validation.py
 
    SENSITIVITY_SCRIPTS = [
        # ... existing scripts

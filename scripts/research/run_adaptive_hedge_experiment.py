@@ -97,7 +97,7 @@ print()
 
 if not DATA_PATH.exists():
     print(f"❌ Data file not found: {DATA_PATH}")
-    print("   Run: poetry run python scripts/run_01_data_pipeline.py")
+    print("   Run: poetry run python scripts/core/run_01_data_pipeline.py")
     sys.exit(1)
 
 returns = pd.read_parquet(DATA_PATH)

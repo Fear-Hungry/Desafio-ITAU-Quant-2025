@@ -121,19 +121,19 @@ validate-full: validate-configs test lint type-check ## Run all validation check
 
 validate-all: ## Run master validation (full)
 	@echo "$(BLUE)Running master validation (full mode)...$(NC)"
-	poetry run python scripts/run_master_validation.py --mode full
+	poetry run python scripts/validation/run_master_validation.py --mode full
 
 validate-quick: ## Run master validation (quick)
 	@echo "$(BLUE)Running master validation (quick mode)...$(NC)"
-	poetry run python scripts/run_master_validation.py --mode quick --skip-download
+	poetry run python scripts/validation/run_master_validation.py --mode quick --skip-download
 
 validate-production: ## Run master validation (production)
 	@echo "$(BLUE)Running master validation (production mode)...$(NC)"
-	poetry run python scripts/run_master_validation.py --mode production --skip-download
+	poetry run python scripts/validation/run_master_validation.py --mode production --skip-download
 
 validate-configs: ## Validate all YAML configuration files
 	@echo "$(BLUE)Validating configuration files...$(NC)"
-	@poetry run python scripts/validate_configs.py
+	@poetry run python scripts/validation/validate_configs.py
 
 ##@ Data Pipeline
 
@@ -142,15 +142,15 @@ data: download preprocess ## Run full data pipeline (download + preprocess)
 
 download: ## Download raw data
 	@echo "$(BLUE)Downloading data...$(NC)"
-	poetry run python scripts/run_01_data_pipeline.py --force-download
+	poetry run python scripts/core/run_01_data_pipeline.py --force-download
 
 preprocess: ## Preprocess data
 	@echo "$(BLUE)Preprocessing data...$(NC)"
-	poetry run python scripts/run_01_data_pipeline.py --skip-download
+	poetry run python scripts/core/run_01_data_pipeline.py --skip-download
 
 data-clean: ## Download and clean data from 2010
 	@echo "$(BLUE)Downloading and cleaning data...$(NC)"
-	poetry run python scripts/run_01_data_pipeline.py --force-download --start 2010-01-01
+	poetry run python scripts/core/run_01_data_pipeline.py --force-download --start 2010-01-01
 
 ##@ Portfolio Operations
 
@@ -168,18 +168,18 @@ backtest-dry: ## Run backtest in dry-run mode
 
 walkforward: ## Run walk-forward validation
 	@echo "$(BLUE)Running walk-forward validation...$(NC)"
-	poetry run python scripts/examples/run_walkforward_arara.py
+	poetry run arara-quant walkforward
 
 oos-figures: ## Generate OOS figures from existing nav_daily.csv
 	@echo "$(BLUE)Generating OOS figures from nav_daily.csv...$(NC)"
-	poetry run python scripts/generate_oos_figures.py
+	poetry run python scripts/reporting/generate_oos_figures.py
 
 reproduce-oos: ## Run full OOS pipeline (data → backtest → metrics → figures)
 	@echo "$(BLUE)Reproducing canonical OOS pipeline...$(NC)"
-	poetry run python scripts/run_01_data_pipeline.py --force-download --start 2010-01-01
+	poetry run python scripts/core/run_01_data_pipeline.py --force-download --start 2010-01-01
 	poetry run python scripts/research/run_backtest_walkforward.py
-	poetry run python scripts/consolidate_oos_metrics.py --psr-n-trials 1
-	poetry run python scripts/generate_oos_figures.py
+	poetry run python scripts/reporting/consolidate_oos_metrics.py --psr-n-trials 1
+	poetry run python scripts/reporting/generate_oos_figures.py
 
 oos: reproduce-oos ## Alias for reproduce-oos (legacy)
 
@@ -191,7 +191,7 @@ turnover-baselines: ## Export per-window turnover for baselines (per-window CSVs
 
 update-readme-turnover: ## Update README Table 5.1 with turnover median/p95
 	@echo "$(BLUE)Updating README Turnover (mediana/p95)...$(NC)"
-	poetry run python scripts/update_readme_turnover_stats.py --force-overwrite
+	poetry run python scripts/reporting/update_readme_turnover_stats.py --force-overwrite
 
 turnover: ## Compute per-window turnover and update README
 	@echo "$(BLUE)Computing turnover distributions and updating README...$(NC)"
@@ -202,11 +202,11 @@ turnover: ## Compute per-window turnover and update README
 
 report: ## Generate performance report
 	@echo "$(BLUE)Generating performance report...$(NC)"
-	poetry run python scripts/analysis/generate_report.py
+	poetry run python scripts/research/generate_visual_report.py
 
 tearsheet: ## Generate tearsheet plots
 	@echo "$(BLUE)Generating tearsheet...$(NC)"
-	poetry run python scripts/analysis/plot_tearsheet.py
+	poetry run python scripts/research/generate_tearsheet_plots.py
 
 ##@ Coverage
 
