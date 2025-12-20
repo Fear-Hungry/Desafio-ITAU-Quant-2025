@@ -149,8 +149,8 @@ data/processed/**
 *.npz
 *.npy
 # Legacy artifact folders (pre-outputs)
-reports/
-results/
+/reports/
+/results/
 outputs/reports/**/*.pdf
 outputs/reports/**/*.html
 outputs/reports/**/*.json

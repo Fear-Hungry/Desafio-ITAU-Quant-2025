@@ -2,14 +2,18 @@
 """Validate all YAML configuration files."""
 
 import sys
-from pathlib import Path
 
-from arara_quant.config import UniverseConfig, PortfolioConfig, load_config
+from arara_quant.config import (
+    PortfolioConfig,
+    UniverseConfig,
+    get_settings,
+    load_config,
+)
 
 
 def main():
     """Validate all configuration files."""
-    configs_dir = Path("configs")
+    configs_dir = get_settings().configs_dir
     errors = []
 
     # Validate universe configs

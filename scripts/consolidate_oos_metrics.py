@@ -15,30 +15,15 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import yaml
 
 from arara_quant.utils.psr_dsr import psr_dsr
-
-# Setup paths
-REPO_ROOT = Path(__file__).parent.parent
-REPORTS_DIR = REPO_ROOT / "outputs" / "reports"
-WALKFORWARD_DIR = REPORTS_DIR / "walkforward"
-RESULTS_DIR = REPO_ROOT / "outputs" / "results"
-CONFIG_DIR = REPO_ROOT / "configs"
-
-def load_oos_config():
-    """Load OOS period configuration from centralized config."""
-    config_path = CONFIG_DIR / "oos_period.yaml"
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
-    return config['oos_evaluation']
-
-def load_nav_daily():
-    """Load canonical daily NAV series (single source of truth)."""
-    nav_daily_path = WALKFORWARD_DIR / "nav_daily.csv"
-    df = pd.read_csv(nav_daily_path)
-    df["date"] = pd.to_datetime(df["date"])
-    return df.sort_values("date").reset_index(drop=True)
+from arara_quant.config import get_settings
+from arara_quant.reports.canonical import (
+    ensure_output_dirs,
+    load_nav_daily,
+    load_oos_config,
+    resolve_consolidated_metrics_path,
+)
 
 def _load_riskfree_daily(rf_csv: Path) -> pd.DataFrame:
     """Load a risk-free daily series from CSV.
@@ -376,6 +361,9 @@ def main():
     print("CONSOLIDATING OOS METRICS (SINGLE SOURCE OF TRUTH)")
     print("=" * 70)
 
+    settings = get_settings()
+    ensure_output_dirs(settings)
+
     parser = argparse.ArgumentParser(description="Consolidate OOS metrics from nav_daily.csv")
     parser.add_argument("--riskfree-csv", type=str, default=None,
                         help="Optional CSV with daily or annual risk-free (T-Bill) series. Columns: date + rf_daily OR rf_annual/rf_rate/yield")
@@ -389,12 +377,12 @@ def main():
 
     # Load OOS configuration
     print("\nLoading OOS period configuration...")
-    oos_config = load_oos_config()
+    oos_config = load_oos_config(settings)
     print(f"✓ Period: {oos_config['start_date']} to {oos_config['end_date']}")
 
     # Load canonical daily NAV (single source of truth)
     print("\nLoading canonical daily NAV series...")
-    df_nav = load_nav_daily()
+    df_nav = load_nav_daily(settings)
     print(f"✓ Loaded {len(df_nav)} daily observations")
 
     # Optional: load risk-free series
@@ -419,7 +407,7 @@ def main():
     print("\n" + format_simple_metrics_table(metrics))
 
     # Save metrics as JSON for further processing
-    json_output = REPORTS_DIR / "oos_consolidated_metrics.json"
+    json_output = resolve_consolidated_metrics_path(settings)
 
     # Add baseline alignment note
     metrics['baseline_alignment_note'] = (
@@ -437,7 +425,7 @@ def main():
     print(f"\n✓ Metrics JSON saved to: {json_output}")
 
     # Also save as CSV for transparency
-    csv_output = REPORTS_DIR / "oos_consolidated_metrics.csv"
+    csv_output = settings.reports_dir / "oos_consolidated_metrics.csv"
     metrics_df = pd.DataFrame([metrics])
     metrics_df.to_csv(csv_output, index=False)
     print(f"✓ Metrics CSV saved to: {csv_output}")

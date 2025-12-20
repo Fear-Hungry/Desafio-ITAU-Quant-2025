@@ -122,6 +122,30 @@ class Settings:
     structured_logging: bool
 
     @property
+    def outputs_dir(self) -> Path:
+        """Base directory containing reports/results/logs (defaults to ``outputs``)."""
+
+        return self.reports_dir.parent
+
+    @property
+    def results_dir(self) -> Path:
+        """Directory where experiment/result artefacts are stored."""
+
+        return self.outputs_dir / "results"
+
+    @property
+    def walkforward_dir(self) -> Path:
+        """Canonical walk-forward report directory."""
+
+        return self.reports_dir / "walkforward"
+
+    @property
+    def figures_dir(self) -> Path:
+        """Directory where report figures are stored."""
+
+        return self.reports_dir / "figures"
+
+    @property
     def is_production(self) -> bool:
         return self.environment.lower() == "production"
 

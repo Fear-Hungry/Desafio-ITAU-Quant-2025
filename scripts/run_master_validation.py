@@ -36,11 +36,17 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import pandas as pd
 
+from arara_quant.config import get_settings
+from arara_quant.reports.canonical import ensure_output_dirs
+
 # Project root
-PROJECT_ROOT = Path(__file__).parent.parent
-RESULTS_DIR = PROJECT_ROOT / "outputs" / "results"
-REPORTS_DIR = PROJECT_ROOT / "outputs" / "reports"
-CONFIGS_DIR = PROJECT_ROOT / "configs"
+SETTINGS = get_settings()
+ensure_output_dirs(SETTINGS)
+
+PROJECT_ROOT = SETTINGS.project_root
+RESULTS_DIR = SETTINGS.results_dir
+REPORTS_DIR = SETTINGS.reports_dir
+CONFIGS_DIR = SETTINGS.configs_dir
 
 # Validation configurations
 PRIMARY_CONFIGS = [

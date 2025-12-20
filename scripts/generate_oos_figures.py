@@ -9,20 +9,29 @@ Figures generated:
 4. Window-level metrics distribution
 """
 
-import json
 from itertools import cycle
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import yaml
+from arara_quant.config import get_settings
+from arara_quant.reports.canonical import (
+    ensure_output_dirs,
+    load_nav_daily,
+    load_oos_consolidated_metrics,
+    load_oos_period,
+    subset_to_oos_period,
+)
 
-REPO_ROOT = Path(__file__).parent.parent
-CONFIG_DIR = REPO_ROOT / "configs"
-REPORTS_DIR = REPO_ROOT / "outputs" / "reports"
-WALKFORWARD_DIR = REPORTS_DIR / "walkforward"
-FIGURES_DIR = REPORTS_DIR / "figures"
+SETTINGS = get_settings()
+ensure_output_dirs(SETTINGS)
+
+REPO_ROOT = SETTINGS.project_root
+CONFIG_DIR = SETTINGS.configs_dir
+REPORTS_DIR = SETTINGS.reports_dir
+WALKFORWARD_DIR = SETTINGS.walkforward_dir
+FIGURES_DIR = SETTINGS.figures_dir
 
 SAVED_PREFIX = "✓ Saved: "
 TEXTCOORDS_OFFSET_POINTS = "offset points"
@@ -36,28 +45,6 @@ def _palette():
     if colors is None:
         return cycle([None])
     return cycle(colors.by_key().get("color", [None]))
-
-
-def load_oos_config():
-    """Load OOS period from centralized config."""
-    config_path = CONFIG_DIR / "oos_period.yaml"
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f)
-    return config['oos_evaluation']
-
-def load_nav_daily():
-    """Load canonical daily NAV series (single source of truth)."""
-    nav_daily_path = WALKFORWARD_DIR / "nav_daily.csv"
-    df = pd.read_csv(nav_daily_path)
-    df["date"] = pd.to_datetime(df["date"])
-    return df.sort_values("date").reset_index(drop=True)
-
-def filter_to_oos_period(df_nav: pd.DataFrame, oos_config: dict):
-    """Filter NAV data to OOS period."""
-    start_date = pd.to_datetime(oos_config['start_date'])
-    end_date = pd.to_datetime(oos_config['end_date'])
-    mask = (df_nav['date'] >= start_date) & (df_nav['date'] <= end_date)
-    return df_nav[mask].copy()
 
 def setup_style():
     """Setup matplotlib style."""
@@ -201,7 +188,7 @@ def generate_baseline_comparison_figure(suffix: str):
     print("\n=== Generating Baseline Comparison Figure ===")
 
     # Load consolidated metrics for PRISM-R
-    metrics = json.load(open(REPORTS_DIR / "oos_consolidated_metrics.json"))
+    metrics = load_oos_consolidated_metrics(SETTINGS)
 
     # Use Sharpe computed on daily excess vs T‑Bill from consolidated metrics
     prism_sharpe = float(metrics.get('sharpe_ratio', 0))
@@ -356,12 +343,12 @@ def main():
 
     # Load configuration and data
     print("\nLoading configuration and data...")
-    oos_config = load_oos_config()
-    df_nav = load_nav_daily()
-    df_oos = filter_to_oos_period(df_nav, oos_config)
-    figure_suffix = pd.to_datetime(oos_config['end_date']).strftime("%Y%m%d")
+    oos_period = load_oos_period(SETTINGS)
+    df_nav = load_nav_daily(SETTINGS)
+    df_oos = subset_to_oos_period(df_nav, oos_period, date_column="date")
+    figure_suffix = oos_period.end.strftime("%Y%m%d")
 
-    print(f"✓ OOS Period: {oos_config['start_date']} to {oos_config['end_date']}")
+    print(f"✓ OOS Period: {oos_period.start.date()} to {oos_period.end.date()}")
     print(f"✓ Data loaded: {len(df_oos)} trading days")
 
     # Generate all figures

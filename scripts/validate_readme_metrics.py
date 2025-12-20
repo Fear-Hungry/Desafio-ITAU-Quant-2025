@@ -6,14 +6,22 @@ Identifies discrepancies and creates comprehensive validation report.
 
 import pandas as pd
 import numpy as np
-import json
 from pathlib import Path
 from datetime import datetime
 
-REPO_ROOT = Path(__file__).parent.parent
-REPORTS_DIR = REPO_ROOT / "outputs" / "reports"
-RESULTS_DIR = REPO_ROOT / "outputs" / "results"
-WALKFORWARD_DIR = REPORTS_DIR / "walkforward"
+from arara_quant.config import get_settings
+from arara_quant.reports.canonical import (
+    ensure_output_dirs,
+    load_oos_consolidated_metrics,
+)
+
+SETTINGS = get_settings()
+ensure_output_dirs(SETTINGS)
+
+REPO_ROOT = SETTINGS.project_root
+REPORTS_DIR = SETTINGS.reports_dir
+RESULTS_DIR = SETTINGS.results_dir
+WALKFORWARD_DIR = SETTINGS.walkforward_dir
 
 class MetricsValidator:
     def __init__(self):
@@ -25,7 +33,7 @@ class MetricsValidator:
         print("Loading source data...")
 
         # Load consolidated metrics
-        self.metrics_json = json.load(open(REPORTS_DIR / "oos_consolidated_metrics.json"))
+        self.metrics_json = load_oos_consolidated_metrics(SETTINGS)
 
         # Load window-level CSV (complete 162 windows)
         self.windows_all = pd.read_csv(WALKFORWARD_DIR / "per_window_results.csv")

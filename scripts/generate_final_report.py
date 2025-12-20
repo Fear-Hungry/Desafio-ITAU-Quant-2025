@@ -13,10 +13,16 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+from arara_quant.config import get_settings
+from arara_quant.reports.canonical import ensure_output_dirs, resolve_consolidated_metrics_path
+
 # Setup paths
-REPO_ROOT = Path(__file__).parent.parent
-REPORTS_DIR = REPO_ROOT / "outputs" / "reports"
-METRICS_JSON = REPORTS_DIR / "oos_consolidated_metrics.json"
+SETTINGS = get_settings()
+ensure_output_dirs(SETTINGS)
+
+REPO_ROOT = SETTINGS.project_root
+REPORTS_DIR = SETTINGS.reports_dir
+METRICS_JSON = resolve_consolidated_metrics_path(SETTINGS)
 OUTPUT_MD = REPORTS_DIR / "FINAL_OOS_METRICS_REPORT.md"
 
 

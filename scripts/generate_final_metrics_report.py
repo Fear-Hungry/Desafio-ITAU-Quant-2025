@@ -3,23 +3,31 @@
 Generate final metrics report comparing PRISM-R strategy with baselines.
 """
 
-import pandas as pd
 from pathlib import Path
-import json
 
-REPO_ROOT = Path(__file__).parent.parent
-REPORTS_DIR = REPO_ROOT / "outputs" / "reports"
-RESULTS_DIR = REPO_ROOT / "outputs" / "results"
+import pandas as pd
+
+from arara_quant.config import get_settings
+from arara_quant.reports.canonical import (
+    ensure_output_dirs,
+    load_baseline_metrics_oos,
+    load_oos_consolidated_metrics,
+)
+
+SETTINGS = get_settings()
+ensure_output_dirs(SETTINGS)
+
+REPO_ROOT = SETTINGS.project_root
+REPORTS_DIR = SETTINGS.reports_dir
 
 def generate_comparison_table():
     """Generate comprehensive comparison table with PRISM-R vs baselines."""
 
     # Load PRISM-R metrics
-    with open(REPORTS_DIR / "oos_consolidated_metrics.json") as f:
-        prism_metrics = json.load(f)
+    prism_metrics = load_oos_consolidated_metrics(SETTINGS)
 
     # Load baseline metrics
-    baselines_df = pd.read_csv(RESULTS_DIR / "baselines" / "baseline_metrics_oos.csv")
+    baselines_df = load_baseline_metrics_oos(SETTINGS)
 
     # Create comparison table
     comparison_data = []
@@ -95,8 +103,7 @@ def generate_markdown_report():
     """Generate markdown formatted report."""
 
     # Load metrics
-    with open(REPORTS_DIR / "oos_consolidated_metrics.json") as f:
-        metrics = json.load(f)
+    metrics = load_oos_consolidated_metrics(SETTINGS)
 
     start_label = metrics.get("period_start", "2020-01-02")
     end_label = metrics.get("period_end", "2025-10-09")

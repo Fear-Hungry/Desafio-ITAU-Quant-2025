@@ -37,21 +37,20 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
-import yaml
 
+from arara_quant.config import get_settings
+from arara_quant.reports.canonical import ensure_output_dirs, resolve_oos_config_path
+from arara_quant.utils.yaml_loader import read_yaml
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+SETTINGS = get_settings()
+ensure_output_dirs(SETTINGS)
+
+REPO_ROOT = SETTINGS.project_root
 DEFAULT_README = REPO_ROOT / "README.md"
-DEFAULT_SUMMARY = (
-    REPO_ROOT / "outputs" / "results" / "oos_canonical" / "turnover_dist_stats.csv"
-)
-DEFAULT_PER_WINDOW_PRISM = (
-    REPO_ROOT / "outputs" / "reports" / "walkforward" / "per_window_results.csv"
-)
-DEFAULT_PRISM_TRADES = (
-    REPO_ROOT / "outputs" / "reports" / "walkforward" / "trades.csv"
-)
-DEFAULT_OOS_CONFIG = REPO_ROOT / "configs" / "oos_period.yaml"
+DEFAULT_SUMMARY = SETTINGS.results_dir / "oos_canonical" / "turnover_dist_stats.csv"
+DEFAULT_PER_WINDOW_PRISM = SETTINGS.walkforward_dir / "per_window_results.csv"
+DEFAULT_PRISM_TRADES = SETTINGS.walkforward_dir / "trades.csv"
+DEFAULT_OOS_CONFIG = resolve_oos_config_path(SETTINGS)
 
 
 @dataclass
@@ -61,8 +60,7 @@ class OOSPeriod:
 
 
 def load_oos_period(oos_config_path: Path) -> OOSPeriod:
-    with open(oos_config_path, "r", encoding="utf-8") as f:
-        cfg = yaml.safe_load(f)
+    cfg = read_yaml(oos_config_path)
     oos = cfg.get("oos_evaluation", {})
     start = pd.to_datetime(oos.get("start_date"))
     end = pd.to_datetime(oos.get("end_date"))

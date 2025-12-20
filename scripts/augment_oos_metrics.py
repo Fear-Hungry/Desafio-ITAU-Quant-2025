@@ -37,17 +37,19 @@ from typing import Any, Dict
 import numpy as np
 import pandas as pd
 
+from arara_quant.config import get_settings
+from arara_quant.reports.canonical import (
+    ensure_output_dirs,
+    resolve_consolidated_metrics_path,
+    resolve_walkforward_windows_path,
+)
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_METRICS_JSON = (
-    REPO_ROOT / "outputs" / "reports" / "oos_consolidated_metrics.json"
-)
-DEFAULT_WINDOWS_CSV = (
-    REPO_ROOT / "outputs" / "reports" / "walkforward" / "per_window_results.csv"
-)
-DEFAULT_METRICS_CSV = (
-    REPO_ROOT / "outputs" / "reports" / "oos_consolidated_metrics.csv"
-)
+SETTINGS = get_settings()
+ensure_output_dirs(SETTINGS)
+
+DEFAULT_METRICS_JSON = resolve_consolidated_metrics_path(SETTINGS)
+DEFAULT_WINDOWS_CSV = resolve_walkforward_windows_path(SETTINGS)
+DEFAULT_METRICS_CSV = SETTINGS.reports_dir / "oos_consolidated_metrics.csv"
 
 
 def _phi(z: float) -> float:
