@@ -137,20 +137,22 @@ validate-configs: ## Validate all YAML configuration files
 
 ##@ Data Pipeline
 
-data: download preprocess ## Run full data pipeline (download + preprocess)
+data: ## Run full data pipeline (download + preprocess)
+	@echo "$(BLUE)Running data pipeline...$(NC)"
+	poetry run arara-quant data --force-download
 	@echo "$(GREEN)Data pipeline completed!$(NC)"
 
 download: ## Download raw data
 	@echo "$(BLUE)Downloading data...$(NC)"
-	poetry run python scripts/core/run_01_data_pipeline.py --force-download
+	poetry run arara-quant data --force-download
 
 preprocess: ## Preprocess data
 	@echo "$(BLUE)Preprocessing data...$(NC)"
-	poetry run python scripts/core/run_01_data_pipeline.py --skip-download
+	poetry run arara-quant data
 
 data-clean: ## Download and clean data from 2010
 	@echo "$(BLUE)Downloading and cleaning data...$(NC)"
-	poetry run python scripts/core/run_01_data_pipeline.py --force-download --start 2010-01-01
+	poetry run arara-quant data --force-download --start 2010-01-01
 
 ##@ Portfolio Operations
 

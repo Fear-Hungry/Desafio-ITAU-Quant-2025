@@ -34,6 +34,9 @@ python scripts/reporting/generate_oos_figures.py
 poetry install
 
 # Run through unified interface
+poetry run arara-quant data --force-download
+poetry run arara-quant estimate --config configs/optimizer_example.yaml
+poetry run arara-quant run-full-pipeline --config configs/optimizer_example.yaml --skip-backtest
 poetry run arara-quant run-example arara
 poetry run arara-quant compare-baselines
 poetry run arara-quant production-deploy --version v2

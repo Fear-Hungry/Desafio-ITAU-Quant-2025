@@ -107,3 +107,46 @@ estimators:
     assert Path(payload["config_path"]) == custom_config.resolve()
     assert payload["status"] == "completed"
     assert payload["metrics"]["total_return"] > 0
+
+
+def test_estimate_writes_mu_and_cov_outputs(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    processed_dir = tmp_path / "data" / "processed"
+    processed_dir.mkdir(parents=True, exist_ok=True)
+
+    returns = pd.DataFrame(
+        {
+            "AAA": np.full(80, 0.0005),
+            "BBB": np.full(80, 0.0002),
+        },
+        index=pd.bdate_range("2022-01-03", periods=80),
+    )
+    returns_path = processed_dir / "returns.csv"
+    returns.to_csv(returns_path)
+
+    monkeypatch.setenv("ARARA_QUANT_PROJECT_ROOT", str(tmp_path))
+    monkeypatch.setenv("ARARA_QUANT_LOGS_DIR", str(tmp_path / "logs"))
+    monkeypatch.setenv("ARARA_QUANT_CONFIGS_DIR", str(tmp_path / "configs"))
+    monkeypatch.setenv("ARARA_QUANT_DATA_DIR", str(tmp_path / "data"))
+
+    exit_code = main(
+        [
+            "estimate",
+            "--returns-file",
+            "returns.csv",
+            "--mu-output",
+            "mu.csv",
+            "--cov-output",
+            "cov.csv",
+            "--json",
+            "--no-annualize",
+        ]
+    )
+    assert exit_code == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    mu_output = Path(payload["mu_output"])
+    cov_output = Path(payload["cov_output"])
+    assert mu_output.exists()
+    assert cov_output.exists()

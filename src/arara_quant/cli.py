@@ -17,7 +17,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any, Iterable, Mapping
 
 from arara_quant.config import Settings, configure_logging, get_settings
 from arara_quant.utils.yaml_loader import load_yaml_text
@@ -111,6 +111,104 @@ def build_parser() -> argparse.ArgumentParser:
         help="Diretório para salvar resultados",
     )
     pipeline.add_argument("--json", action="store_true", help="Output em formato JSON")
+
+    data = subparsers.add_parser(
+        "data",
+        help="Baixa (ou reutiliza cache) e prepara dados",
+    )
+    data.add_argument("--start", help="Data inicial (YYYY-MM-DD)")
+    data.add_argument("--end", help="Data final (YYYY-MM-DD)")
+    data.add_argument(
+        "--raw-file",
+        default="prices_arara.csv",
+        help="CSV de preços salvo em data/raw/ (compatibilidade).",
+    )
+    data.add_argument(
+        "--processed-file",
+        default="returns_arara.parquet",
+        help="Parquet de retornos salvo em data/processed/ (compatibilidade).",
+    )
+    data.add_argument(
+        "--force-download",
+        action="store_true",
+        help="Ignora cache e força download (requer rede).",
+    )
+    data.add_argument("--json", action="store_true", help="Output em JSON")
+
+    estimate = subparsers.add_parser(
+        "estimate",
+        help="Estima μ/Σ a partir de returns",
+    )
+    estimate.add_argument(
+        "--config",
+        type=str,
+        default=None,
+        help="Config YAML (usa estimators.{mu,sigma} quando presente).",
+    )
+    estimate.add_argument(
+        "--returns-file",
+        default=None,
+        help="Arquivo Parquet/CSV com returns (path absoluto ou relativo).",
+    )
+    estimate.add_argument(
+        "--window",
+        type=int,
+        default=None,
+        help="Janela de estimação em dias (default: usa YAML ou 252).",
+    )
+    estimate.add_argument(
+        "--mu-method",
+        default=None,
+        help="Estimador de μ (simple, huber, shrunk_50, student_t).",
+    )
+    estimate.add_argument(
+        "--cov-method",
+        default=None,
+        help="Estimador de Σ (ledoit_wolf, nonlinear, oas, mincovdet, sample).",
+    )
+    estimate.add_argument(
+        "--huber-delta",
+        type=float,
+        default=None,
+        help="Delta do Huber (quando mu-method=huber).",
+    )
+    estimate.add_argument(
+        "--shrink-strength",
+        type=float,
+        default=None,
+        help="Strength do shrinkage (quando mu-method=shrunk_50).",
+    )
+    estimate.add_argument(
+        "--student-t-nu",
+        type=float,
+        default=None,
+        help="Graus de liberdade (quando mu-method=student_t).",
+    )
+    annualize = estimate.add_mutually_exclusive_group()
+    annualize.add_argument(
+        "--annualize",
+        dest="annualize",
+        action="store_true",
+        help="Anualiza μ/Σ (default).",
+    )
+    annualize.add_argument(
+        "--no-annualize",
+        dest="annualize",
+        action="store_false",
+        help="Não anualiza μ/Σ (mantém unidades diárias).",
+    )
+    estimate.set_defaults(annualize=True)
+    estimate.add_argument(
+        "--mu-output",
+        default="mu_estimate.parquet",
+        help="Nome do output Parquet para μ (em data/processed/).",
+    )
+    estimate.add_argument(
+        "--cov-output",
+        default="cov_estimate.parquet",
+        help="Nome do output Parquet para Σ (em data/processed/).",
+    )
+    estimate.add_argument("--json", action="store_true", help="Output em JSON")
 
     validate_configs = subparsers.add_parser(
         "validate-configs", help="Valida arquivos YAML em configs/"
@@ -223,6 +321,53 @@ def _print_payload(payload: dict[str, Any], *, as_json: bool) -> None:
     else:
         for key, value in payload.items():
             print(f"{key}: {value}")
+
+
+def _resolve_config_relative(
+    value: str | Path,
+    *,
+    base: Path,
+    settings: Settings,
+) -> Path:
+    candidate = Path(value)
+    if not candidate.is_absolute():
+        candidate = (base / candidate).resolve()
+    if not candidate.exists():
+        fallback = (settings.project_root / Path(value)).resolve()
+        if fallback.exists():
+            candidate = fallback
+    return candidate
+
+
+def _infer_returns_from_config(
+    config_path: str | None, *, settings: Settings
+) -> str | None:
+    if not config_path:
+        return None
+
+    config_file = Path(config_path)
+    if not config_file.is_absolute():
+        in_configs = settings.configs_dir / config_file
+        config_file = (
+            in_configs if in_configs.exists() else settings.project_root / config_file
+        )
+    config_file = config_file.expanduser().resolve()
+    if not config_file.exists():
+        return None
+
+    raw = load_yaml_text(config_file.read_text(encoding="utf-8"))
+    data_section = raw.get("data", {})
+    if not isinstance(data_section, Mapping):
+        return None
+
+    returns_entry = data_section.get("returns") or data_section.get("returns_path")
+    if not returns_entry:
+        return None
+
+    returns_path = _resolve_config_relative(
+        str(returns_entry), base=config_file.parent, settings=settings
+    )
+    return str(returns_path)
 
 
 def _run_script(script_path: Path) -> int:
@@ -408,6 +553,43 @@ def main(argv: Iterable[str] | None = None) -> int:
             )
             _print_payload(result, as_json=args.json)
 
+        elif args.command == "data":
+            from arara_quant.pipeline.data import download_and_prepare_data
+
+            result = download_and_prepare_data(
+                start=args.start,
+                end=args.end,
+                raw_file_name=args.raw_file,
+                processed_file_name=args.processed_file,
+                force_download=args.force_download,
+                settings=settings,
+            )
+            _print_payload(result, as_json=args.json)
+
+        elif args.command == "estimate":
+            from arara_quant.pipeline.estimation import estimate_parameters
+
+            returns_from_yaml = _infer_returns_from_config(args.config, settings=settings)
+            returns_file = (
+                args.returns_file or returns_from_yaml or "returns_arara.parquet"
+            )
+
+            result = estimate_parameters(
+                returns_file=returns_file,
+                window=args.window,
+                mu_method=args.mu_method,
+                cov_method=args.cov_method,
+                huber_delta=args.huber_delta,
+                shrink_strength=args.shrink_strength,
+                student_t_nu=args.student_t_nu,
+                annualize=args.annualize,
+                mu_output=args.mu_output,
+                cov_output=args.cov_output,
+                config_path=args.config,
+                settings=settings,
+            )
+            _print_payload(result, as_json=args.json)
+
         elif args.command == "validate-configs":
             from arara_quant.reports.validators import validate_configs
 
@@ -415,7 +597,10 @@ def main(argv: Iterable[str] | None = None) -> int:
             if args.json:
                 payload = {
                     "validated": [str(path) for path in result.validated],
-                    "errors": [{"path": str(path), "error": message} for path, message in result.errors],
+                    "errors": [
+                        {"path": str(path), "error": message}
+                        for path, message in result.errors
+                    ],
                 }
                 print(json.dumps(payload, indent=2, sort_keys=True))
                 return 1 if result.errors else 0
@@ -423,7 +608,10 @@ def main(argv: Iterable[str] | None = None) -> int:
             errors_by_path = {path: message for path, message in result.errors}
             for config_file in result.validated:
                 if config_file in errors_by_path:
-                    print(f"✗ {config_file.name}: {errors_by_path[config_file]}", file=sys.stderr)
+                    print(
+                        f"✗ {config_file.name}: {errors_by_path[config_file]}",
+                        file=sys.stderr,
+                    )
                 else:
                     print(f"✓ {config_file.name}")
             return 1 if result.errors else 0

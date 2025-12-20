@@ -48,11 +48,20 @@ def parse_args() -> argparse.Namespace:
         default=1.5,
         help="Robustness threshold for the Huber estimator.",
     )
-    parser.add_argument(
+    annualize = parser.add_mutually_exclusive_group()
+    annualize.add_argument(
         "--annualize",
+        dest="annualize",
         action="store_true",
-        help="Annualize μ/Σ assuming 252 trading days.",
+        help="Annualize μ/Σ assuming 252 trading days (default).",
     )
+    annualize.add_argument(
+        "--no-annualize",
+        dest="annualize",
+        action="store_false",
+        help="Keep μ/Σ in daily units.",
+    )
+    parser.set_defaults(annualize=True)
     parser.add_argument(
         "--shrink-strength",
         type=float,
