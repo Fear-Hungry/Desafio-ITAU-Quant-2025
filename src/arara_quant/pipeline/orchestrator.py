@@ -140,7 +140,7 @@ def run_full_pipeline(
 
     Examples:
         >>> result = run_full_pipeline(
-        ...     config_path="configs/optimizer_example.yaml",
+        ...     config_path="configs/optimization/optimizer_example.yaml",
         ...     skip_download=True
         ... )
         >>> print(result['status'])
@@ -203,6 +203,7 @@ def run_full_pipeline(
         stage_start = time.perf_counter()
 
         estimation_kwargs: dict[str, Any] = {"settings": settings}
+        estimation_kwargs["config_path"] = config_path
         returns_file = data_result.get("returns_file")
         if returns_file:
             logger.info("Stage 2 will use returns artefact %s", returns_file)

@@ -1,7 +1,7 @@
 # API Reference Overview
 
 This folder groups curated entry points for contributors who prefer to browse
-the package directly instead of reading through notebooks or scripts. The
+the package directly instead of reading through notebooks or runners. The
 recommendation is to start from the high-level modules listed below and follow
 their docstrings for deeper dives.
 

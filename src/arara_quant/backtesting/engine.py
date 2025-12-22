@@ -10,10 +10,17 @@ import numpy as np
 import pandas as pd
 
 from arara_quant.backtesting.bookkeeping import PortfolioLedger, build_ledger
-from arara_quant.backtesting.metrics import PortfolioMetrics, compute_performance_metrics
+from arara_quant.backtesting.metrics import (
+    PortfolioMetrics,
+    compute_performance_metrics,
+)
 from arara_quant.backtesting.risk_monitor import evaluate_turnover_band
 from arara_quant.backtesting.walk_forward import generate_walk_forward_splits
 from arara_quant.config import Settings, get_settings
+from arara_quant.config.params_default import (
+    DEFAULT_OPTIMIZER_YAML,
+    DEFAULT_WALKFORWARD,
+)
 from arara_quant.evaluation.walkforward_report import (
     WalkForwardSummary,
     compute_wf_summary_stats,
@@ -39,7 +46,7 @@ class BacktestConfig:
     returns_path: Path
     prices_path: Path | None
     risk_free_path: Path | None = None
-    evaluation_horizons: tuple[int, ...] = (21, 63, 126)
+    evaluation_horizons: tuple[int, ...] = DEFAULT_WALKFORWARD.evaluation_horizons
 
 
 @dataclass(slots=True)
@@ -116,16 +123,24 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
     if not isinstance(optimizer_section, Mapping):
         optimizer_section = {}
 
-    risk_aversion = float(optimizer_section.get("lambda", 5.0))
-    turnover_penalty = float(optimizer_section.get("eta", 0.0))
+    risk_aversion = float(
+        optimizer_section.get("lambda", DEFAULT_OPTIMIZER_YAML.risk_aversion)
+    )
+    turnover_penalty = float(
+        optimizer_section.get("eta", DEFAULT_OPTIMIZER_YAML.turnover_penalty)
+    )
     turnover_cap = optimizer_section.get("tau")
     if turnover_cap is not None:
         turnover_cap = float(turnover_cap)
     elif turnover_band is not None:
         turnover_cap = float(turnover_band[1])
 
-    min_weight = float(optimizer_section.get("min_weight", 0.0))
-    max_weight = float(optimizer_section.get("max_weight", 1.0))
+    min_weight = float(
+        optimizer_section.get("min_weight", DEFAULT_OPTIMIZER_YAML.min_weight)
+    )
+    max_weight = float(
+        optimizer_section.get("max_weight", DEFAULT_OPTIMIZER_YAML.max_weight)
+    )
 
     estimators_section = raw.get("estimators", {})
     if not isinstance(estimators_section, Mapping):
@@ -136,9 +151,11 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
         else estimators_section.get("costs", 0.0)
     )
     if isinstance(costs_section, Mapping):
-        linear_costs = costs_section.get("linear_bps", 0.0)
+        linear_costs = costs_section.get(
+            "linear_bps", DEFAULT_OPTIMIZER_YAML.linear_costs_bps
+        )
     else:
-        linear_costs = costs_section or 0.0
+        linear_costs = costs_section or DEFAULT_OPTIMIZER_YAML.linear_costs_bps
 
     (
         estimators_section.get("mu", {})
@@ -153,10 +170,10 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
 
     walkforward = raw.get("walkforward", {})
     wf_defaults = {
-        "train_days": 252,
-        "test_days": 21,
-        "purge_days": 0,
-        "embargo_days": 0,
+        "train_days": DEFAULT_WALKFORWARD.train_days,
+        "test_days": DEFAULT_WALKFORWARD.test_days,
+        "purge_days": DEFAULT_WALKFORWARD.purge_days,
+        "embargo_days": DEFAULT_WALKFORWARD.embargo_days,
     }
     wf_config = dict(wf_defaults)
     for key, value in walkforward.items():
@@ -173,21 +190,23 @@ def _load_config(path: Path, settings: Settings) -> BacktestConfig:
             wf_config[key] = value
     horizons = walkforward.get("evaluation_horizons") or raw.get("evaluation_horizons")
     if horizons is None:
-        evaluation_horizons = (21, 63, 126)
+        evaluation_horizons = DEFAULT_WALKFORWARD.evaluation_horizons
     else:
         if isinstance(horizons, (list, tuple, set)):
             evaluation_horizons = tuple(int(x) for x in horizons if int(x) > 0)
         else:
             evaluation_horizons = (int(horizons),)
         if not evaluation_horizons:
-            evaluation_horizons = (21, 63, 126)
+            evaluation_horizons = DEFAULT_WALKFORWARD.evaluation_horizons
 
     data_section = raw.get("data", {})
     if not isinstance(data_section, Mapping):
         data_section = {}
     returns_entry = data_section.get("returns") or data_section.get("returns_path")
     if returns_entry is None:
-        default_returns = settings.data_dir / "processed" / "returns_arara.parquet"
+        default_returns = (
+            settings.processed_data_dir / DEFAULT_OPTIMIZER_YAML.returns_filename
+        )
         if not default_returns.exists():
             raise FileNotFoundError(
                 "Could not locate returns data. Provide data.returns in the backtest config."

@@ -1,4 +1,4 @@
-.PHONY: help install install-dev clean clean-all test test-fast test-cov test-watch lint format type-check validate validate-configs data download preprocess backtest optimize report coverage docs serve-docs ci
+.PHONY: help install install-dev clean clean-all clean-outputs clean-reports clean-results clean-runtime test test-fast test-cov test-watch lint format type-check validate validate-configs data download preprocess backtest optimize report coverage docs serve-docs ci
 
 # Default target
 .DEFAULT_GOAL := help
@@ -121,65 +121,67 @@ validate-full: validate-configs test lint type-check ## Run all validation check
 
 validate-all: ## Run master validation (full)
 	@echo "$(BLUE)Running master validation (full mode)...$(NC)"
-	poetry run python scripts/run_master_validation.py --mode full
+	poetry run python -m arara_quant.runners.validation.run_master_validation --mode full
 
 validate-quick: ## Run master validation (quick)
 	@echo "$(BLUE)Running master validation (quick mode)...$(NC)"
-	poetry run python scripts/run_master_validation.py --mode quick --skip-download
+	poetry run python -m arara_quant.runners.validation.run_master_validation --mode quick --skip-download
 
 validate-production: ## Run master validation (production)
 	@echo "$(BLUE)Running master validation (production mode)...$(NC)"
-	poetry run python scripts/run_master_validation.py --mode production --skip-download
+	poetry run python -m arara_quant.runners.validation.run_master_validation --mode production --skip-download
 
 validate-configs: ## Validate all YAML configuration files
 	@echo "$(BLUE)Validating configuration files...$(NC)"
-	@poetry run python scripts/validate_configs.py
+	@poetry run arara-quant validate-configs
 
 ##@ Data Pipeline
 
-data: download preprocess ## Run full data pipeline (download + preprocess)
+data: ## Run full data pipeline (download + preprocess)
+	@echo "$(BLUE)Running data pipeline...$(NC)"
+	poetry run arara-quant data --force-download
 	@echo "$(GREEN)Data pipeline completed!$(NC)"
 
 download: ## Download raw data
 	@echo "$(BLUE)Downloading data...$(NC)"
-	poetry run python scripts/run_01_data_pipeline.py --force-download
+	poetry run arara-quant data --force-download
 
 preprocess: ## Preprocess data
 	@echo "$(BLUE)Preprocessing data...$(NC)"
-	poetry run python scripts/run_01_data_pipeline.py --skip-download
+	poetry run arara-quant data
 
 data-clean: ## Download and clean data from 2010
 	@echo "$(BLUE)Downloading and cleaning data...$(NC)"
-	poetry run python scripts/run_01_data_pipeline.py --force-download --start 2010-01-01
+	poetry run arara-quant data --force-download --start 2010-01-01
 
 ##@ Portfolio Operations
 
 optimize: ## Run portfolio optimization
 	@echo "$(BLUE)Running portfolio optimization...$(NC)"
-	poetry run arara-quant optimize --config configs/portfolio_arara_basic.yaml
+	poetry run arara-quant optimize --config configs/portfolio/portfolio_arara_basic.yaml
 
 backtest: ## Run backtest with default config
 	@echo "$(BLUE)Running backtest...$(NC)"
-	poetry run arara-quant backtest --config configs/optimizer_example.yaml --no-dry-run
+	poetry run arara-quant backtest --config configs/optimization/optimizer_example.yaml --no-dry-run
 
 backtest-dry: ## Run backtest in dry-run mode
 	@echo "$(BLUE)Running backtest (dry-run)...$(NC)"
-	poetry run arara-quant backtest --config configs/optimizer_example.yaml
+	poetry run arara-quant backtest --config configs/optimization/optimizer_example.yaml
 
 walkforward: ## Run walk-forward validation
 	@echo "$(BLUE)Running walk-forward validation...$(NC)"
-	poetry run python scripts/examples/run_walkforward_arara.py
+	poetry run arara-quant walkforward
 
 oos-figures: ## Generate OOS figures from existing nav_daily.csv
 	@echo "$(BLUE)Generating OOS figures from nav_daily.csv...$(NC)"
-	poetry run python scripts/generate_oos_figures.py
+	poetry run python -m arara_quant.runners.reporting.generate_oos_figures
 
 reproduce-oos: ## Run full OOS pipeline (data → backtest → metrics → figures)
 	@echo "$(BLUE)Reproducing canonical OOS pipeline...$(NC)"
-	poetry run python scripts/run_01_data_pipeline.py --force-download --start 2010-01-01
-	poetry run python scripts/research/run_backtest_walkforward.py
-	poetry run python scripts/consolidate_oos_metrics.py --psr-n-trials 1
-	poetry run python scripts/generate_oos_figures.py
+	poetry run python -m arara_quant.runners.core.run_01_data_pipeline --force-download --start 2010-01-01
+	poetry run python -m arara_quant.runners.research.run_backtest_walkforward
+	poetry run python -m arara_quant.runners.reporting.consolidate_oos_metrics --psr-n-trials 1
+	poetry run python -m arara_quant.runners.reporting.generate_oos_figures
 
 oos: reproduce-oos ## Alias for reproduce-oos (legacy)
 
@@ -187,11 +189,11 @@ oos: reproduce-oos ## Alias for reproduce-oos (legacy)
 
 turnover-baselines: ## Export per-window turnover for baselines (per-window CSVs)
 	@echo "$(BLUE)Exporting per-window turnover for baselines...$(NC)"
-	poetry run python scripts/baselines/export_per_window_turnover.py --strategies equal_weight sixty_forty risk_parity
+	poetry run python -m arara_quant.runners.baselines.export_per_window_turnover --strategies equal_weight sixty_forty risk_parity
 
 update-readme-turnover: ## Update README Table 5.1 with turnover median/p95
 	@echo "$(BLUE)Updating README Turnover (mediana/p95)...$(NC)"
-	poetry run python scripts/update_readme_turnover_stats.py --force-overwrite
+	poetry run arara-quant update-readme-turnover --force-overwrite
 
 turnover: ## Compute per-window turnover and update README
 	@echo "$(BLUE)Computing turnover distributions and updating README...$(NC)"
@@ -202,11 +204,11 @@ turnover: ## Compute per-window turnover and update README
 
 report: ## Generate performance report
 	@echo "$(BLUE)Generating performance report...$(NC)"
-	poetry run python scripts/analysis/generate_report.py
+	poetry run python -m arara_quant.runners.research.generate_visual_report
 
 tearsheet: ## Generate tearsheet plots
 	@echo "$(BLUE)Generating tearsheet...$(NC)"
-	poetry run python scripts/analysis/plot_tearsheet.py
+	poetry run python -m arara_quant.runners.research.generate_tearsheet_plots
 
 ##@ Coverage
 
@@ -261,6 +263,50 @@ clean-data: ## Clean processed data files
 		echo "$(BLUE)Cancelled.$(NC)"; \
 	fi
 
+clean-reports: ## Clean generated reports (outputs/reports)
+	@echo "$(YELLOW)Warning: This will delete outputs/reports/**/* (figures, markdown, JSON)!$(NC)"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		rm -rf outputs/reports; \
+		echo "$(GREEN)Reports cleaned!$(NC)"; \
+	else \
+		echo "$(BLUE)Cancelled.$(NC)"; \
+	fi
+
+clean-results: ## Clean generated results (outputs/results)
+	@echo "$(YELLOW)Warning: This will delete outputs/results/**/* (baselines, sweeps, metrics)!$(NC)"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		rm -rf outputs/results; \
+		echo "$(GREEN)Results cleaned!$(NC)"; \
+	else \
+		echo "$(BLUE)Cancelled.$(NC)"; \
+	fi
+
+clean-runtime: ## Clean runtime scratch directory (runtime/)
+	@echo "$(YELLOW)Warning: This will delete runtime/**/*!$(NC)"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		rm -rf runtime; \
+		echo "$(GREEN)Runtime cleaned!$(NC)"; \
+	else \
+		echo "$(BLUE)Cancelled.$(NC)"; \
+	fi
+
+clean-outputs: ## Clean all generated outputs (outputs/)
+	@echo "$(YELLOW)Warning: This will delete outputs/**/* (reports, results, logs)!$(NC)"
+	@read -p "Are you sure? [y/N] " -n 1 -r; \
+	echo; \
+	if [[ $$REPLY =~ ^[Yy]$$ ]]; then \
+		rm -rf outputs; \
+		echo "$(GREEN)Outputs cleaned!$(NC)"; \
+	else \
+		echo "$(BLUE)Cancelled.$(NC)"; \
+	fi
+
 clean-all: clean clean-data ## Clean everything including data
 	@echo "$(GREEN)Complete cleanup finished!$(NC)"
 
@@ -290,7 +336,7 @@ docker-run: ## Run Docker container with the repository mounted
 
 show-config: ## Display current configuration
 	@echo "$(BLUE)Project Configuration:$(NC)"
-	@poetry run arara-quant show --format json
+	@poetry run arara-quant show-settings --json
 
 tree: ## Show project directory tree
 	@echo "$(BLUE)Project Structure:$(NC)"

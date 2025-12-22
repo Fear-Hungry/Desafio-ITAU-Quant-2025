@@ -8,10 +8,11 @@ import numpy as np
 import pandas as pd
 
 ROOT = Path(__file__).resolve().parents[2]
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
-from scripts.generate_oos_figures import (
+from arara_quant.runners.reporting.generate_oos_figures import (
     filter_to_oos_period,
     load_nav_daily,
     load_oos_config,

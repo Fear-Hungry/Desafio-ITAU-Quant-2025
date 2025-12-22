@@ -1,0 +1,184 @@
+universe: configs/universe/universe_arara.yaml
+base_currency: BRL
+benchmark:
+  name: ACWI60_AGG40_BRUnhedged
+rebalancing:
+  frequency: monthly
+  day_rule: first_business_day
+  turnover_target: [0.05, 0.20]
+risk_limits:
+  vol_annual_max: 0.12
+  cvar_alpha: 0.95
+  cvar_max: 0.08
+  max_drawdown: 0.15
+fx:
+  net_exposure_abs_max: 0.30
+  hedge_ratio_default: 0.30
+  hedge_ratio_defensive: 0.70
+optimizer:
+  objective: mean_variance_l1_costs
+  lambda: 15.0
+  eta: 0.25
+  tau: 0.20
+  solver: clarabel
+  max_weight: 0.10
+  min_weight: 0.0
+  cardinality:
+    enable: true
+    mode: dynamic_neff_cost
+    k_min: 20
+    k_max: 35
+    neff_multiplier: 0.8
+    score_weight: 1.0
+    score_turnover: -0.25
+    score_return: 0.1
+    score_cost: -0.15
+    tie_breaker: low_turnover
+    epsilon: 0.0001
+estimators:
+  mu: { method: shrunk_50, window_days: 252, strength: 0.5 }
+  sigma: { method: ledoit_wolf, window_days: 252, nonlinear: true }
+  costs: { linear_bps: 10, slippage_model: adv20_piecewise }
+portfolio:
+  capital: 1000000
+  returns_window: 252
+  rounding:
+    method: nearest
+    allocate_residual: true
+  risk:
+    budgets:
+      - name: us_equity
+        min_weight: 0.20
+        max_weight: 0.60
+        tickers:
+          - SPY
+          - QQQ
+          - IWM
+          - XLC
+          - XLY
+          - XLP
+          - XLE
+          - XLF
+          - XLV
+          - XLK
+          - XLI
+          - XLB
+          - XLRE
+          - XLU
+          - USMV
+          - MTUM
+          - QUAL
+          - VLUE
+          - SIZE
+          - VYM
+          - SCHD
+          - SPLV
+          - VUG
+          - VTV
+      - name: international_equity
+        min_weight: 0.10
+        max_weight: 0.35
+        tickers:
+          - EFA
+          - VGK
+          - VPL
+          - EWJ
+          - EWG
+          - EEM
+          - EWZ
+          - INDA
+          - MCHI
+          - EWU
+          - EZA
+          - VNQI
+      - name: fixed_income
+        max_weight: 0.35
+        tickers:
+          - SHY
+          - IEI
+          - IEF
+          - TLT
+          - TIP
+          - VGSH
+          - VGIT
+          - AGG
+          - MUB
+          - LQD
+          - HYG
+          - VCIT
+          - VCSH
+          - EMB
+          - EMLC
+          - BNDX
+      - name: core_duration
+        max_weight: 0.10
+        tickers:
+          - IEF
+          - VGIT
+          - TLT
+      - name: short_duration
+        min_weight: 0.15
+        tickers:
+          - SHY
+          - IEI
+      - name: real_assets
+        min_weight: 0.15
+        max_weight: 0.25
+        tickers:
+          - GLD
+          - SLV
+          - PPLT
+          - DBC
+          - USO
+          - UNG
+          - DBA
+          - CORN
+          - UUP
+          - VNQ
+          - O
+          - PSA
+      - name: growth_equity
+        max_weight: 0.12
+        tickers:
+          - QQQ
+          - VUG
+          - XLY
+      - name: defensive_equity
+        min_weight: 0.10
+        tickers:
+          - XLP
+          - XLU
+          - SPLV
+          - USMV
+      - name: emerging_equity
+        max_weight: 0.08
+        tickers:
+          - MCHI
+          - EEM
+          - EWZ
+          - INDA
+          - EZA
+      - name: crypto
+        max_weight: 0.01
+        tickers:
+          - GBTC
+          - ETHE
+reporting:
+  metrics:
+    [
+      sharpe_hac,
+      sortino,
+      vol,
+      cvar5,
+      maxdd,
+      turnover,
+      costs_bps,
+      te_benchmark,
+      hit_rate,
+    ]
+walkforward:
+  train_days: 252
+  test_days: 21
+  purge_days: 2
+  embargo_days: 2
+  n_splits: 60

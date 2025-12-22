@@ -49,7 +49,6 @@ RUN poetry install --with dev --no-interaction --no-ansi --no-root
 # Copy source code and project files
 COPY src ./src
 COPY configs ./configs
-COPY scripts ./scripts
 COPY tests ./tests
 COPY README.md Makefile LICENSE ./
 COPY docs ./docs

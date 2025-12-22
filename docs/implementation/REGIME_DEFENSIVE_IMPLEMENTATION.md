@@ -185,7 +185,7 @@ logger.log_rebalance(
 
 ## Configurações YAML
 
-### Config 1: `configs/optimizer_regime_aware.yaml`
+### Config 1: `configs/optimization/optimizer_regime_aware.yaml`
 
 Portfolio com regime detection e defensive mode:
 
@@ -214,7 +214,7 @@ defensive_mode:
   safe_assets: [CASH, SHY, SGOV, BIL, TLT]
 ```
 
-### Config 2: `configs/optimizer_adaptive_hedge.yaml`
+### Config 2: `configs/optimization/optimizer_adaptive_hedge.yaml`
 
 Portfolio com tail hedge dinâmico:
 
@@ -250,7 +250,7 @@ portfolio:
 
 ## Scripts de Pesquisa
 
-### `scripts/research/run_adaptive_hedge_experiment.py`
+### `arara_quant.runners.research.run_adaptive_hedge_experiment`
 
 **Objetivo:** Validar efetividade do hedge adaptativo vs estático
 
@@ -271,7 +271,7 @@ outputs/results/adaptive_hedge/
 
 **Execução:**
 ```bash
-poetry run python scripts/research/run_adaptive_hedge_experiment.py
+poetry run python -m arara_quant.runners.research.run_adaptive_hedge_experiment
 ```
 
 ---
@@ -282,7 +282,7 @@ poetry run python scripts/research/run_adaptive_hedge_experiment.py
 
 ```bash
 poetry run arara-quant backtest \
-  --config configs/optimizer_regime_aware.yaml \
+  --config configs/optimization/optimizer_regime_aware.yaml \
   --no-dry-run \
   --json > outputs/reports/backtest_regime_aware.json
 ```
@@ -295,8 +295,8 @@ poetry run arara-quant backtest \
 ### Exemplo 2: Production com Adaptive Hedge
 
 ```bash
-poetry run python scripts/production/run_portfolio_production_erc_v2.py \
-  --config configs/optimizer_adaptive_hedge.yaml
+poetry run python -m arara_quant.runners.production.run_portfolio_production_erc_v2 \
+  --config configs/optimization/optimizer_adaptive_hedge.yaml
 ```
 
 **Log Output:**
@@ -396,7 +396,7 @@ assert 0.14 <= alloc_crash <= 0.15  # 14-15%
 1. **Executar Backtest Completo**
    ```bash
    poetry run arara-quant backtest \
-     --config configs/optimizer_regime_aware.yaml \
+     --config configs/optimization/optimizer_regime_aware.yaml \
      --no-dry-run
    ```
 
@@ -458,7 +458,7 @@ defensive_mode:
 **Solução:**
 ```yaml
 # Adicionar ao universe
-universe: configs/universe_arara.yaml  # Deve incluir TLT, SHY, etc.
+universe: configs/universe/universe_arara.yaml  # Deve incluir TLT, SHY, etc.
 
 # Ou ajustar safe_assets
 defensive_mode:
@@ -486,11 +486,11 @@ regime_detection:
 - `src/arara_quant/utils/production_logger.py`
 
 **Configs:**
-- `configs/optimizer_regime_aware.yaml`
-- `configs/optimizer_adaptive_hedge.yaml`
+- `configs/optimization/optimizer_regime_aware.yaml`
+- `configs/optimization/optimizer_adaptive_hedge.yaml`
 
 **Experimentos:**
-- `scripts/research/run_adaptive_hedge_experiment.py`
+- `arara_quant.runners.research.run_adaptive_hedge_experiment`
 
 **Documentação:**
 - docs/specs/PRD.md (linhas 302-305: defensive mode spec)

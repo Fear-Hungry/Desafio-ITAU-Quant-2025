@@ -6,12 +6,15 @@ or sector level (e.g., equity ≤ 40%, crypto ≤ 10%).
 
 from __future__ import annotations
 
+import importlib
 import re
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-import cvxpy as cp
 import pandas as pd
+
+if TYPE_CHECKING:  # pragma: no cover
+    import cvxpy as cp
 
 __all__ = ["GroupConstraint", "build_group_constraints", "validate_group_caps"]
 
@@ -24,6 +27,7 @@ class GroupConstraint:
         name: Group name (e.g., "equity", "crypto")
         max_weight: Maximum total weight for the group
         min_weight: Minimum total weight (optional)
+        per_asset_max: Optional max weight per asset in the group
         assets: List of asset tickers in the group
         assets_regex: Regex pattern to match assets (alternative to explicit list)
     """
@@ -33,6 +37,7 @@ class GroupConstraint:
     min_weight: float = 0.0
     assets: list[str] | None = None
     assets_regex: str | None = None
+    per_asset_max: float | None = None
 
     def matches(self, asset: str) -> bool:
         """Check if asset belongs to this group.
@@ -94,6 +99,8 @@ def build_group_constraints(
         >>> len(constraints)
         1
     """
+    cp = importlib.import_module("cvxpy")
+
     constraints = []
 
     for group in groups:
@@ -105,7 +112,7 @@ def build_group_constraints(
         indices = [asset_index.get_loc(a) for a in group_assets]
 
         # Sum of group weights
-        group_sum = cp.sum([w[i] for i in indices])
+        group_sum = cp.sum(w[indices])
 
         # Max constraint
         if group.max_weight < 1.0:
@@ -114,6 +121,11 @@ def build_group_constraints(
         # Min constraint
         if group.min_weight > 0.0:
             constraints.append(group_sum >= group.min_weight)
+
+        if group.per_asset_max is not None:
+            cap = float(group.per_asset_max)
+            for idx in indices:
+                constraints.append(w[idx] <= cap)
 
     return constraints
 
@@ -219,6 +231,7 @@ def parse_group_config(config: dict[str, Any]) -> list[GroupConstraint]:
             min_weight=spec.get("min_weight", 0.0),
             assets=spec.get("assets"),
             assets_regex=spec.get("assets_regex"),
+            per_asset_max=spec.get("per_asset_max"),
         )
         groups.append(group)
 

@@ -1,6 +1,8 @@
 import pytest
 from arara_quant.config.params_default import (
     DEFAULT_PARAMS,
+    DEFAULT_OPTIMIZER_YAML,
+    DEFAULT_WALKFORWARD,
     StrategyParams,
     default_params,
     merge_params,
@@ -28,3 +30,10 @@ def test_strategy_params_from_mapping_partial() -> None:
     params = StrategyParams.from_mapping({"eta_turnover": 0.75})
     assert params.eta_turnover == pytest.approx(0.75)
     assert params.lambda_risk == DEFAULT_PARAMS.lambda_risk
+
+
+def test_yaml_defaults_are_available() -> None:
+    assert DEFAULT_OPTIMIZER_YAML.risk_aversion > 0
+    assert DEFAULT_OPTIMIZER_YAML.returns_filename
+    assert DEFAULT_WALKFORWARD.train_days > 0
+    assert 21 in DEFAULT_WALKFORWARD.evaluation_horizons

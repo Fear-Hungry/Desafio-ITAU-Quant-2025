@@ -3,7 +3,16 @@
 from .constants import *  # noqa: F401,F403
 from .loader import ConfigError, load_config, load_configs_batch, save_config
 from .logging_conf import JSONFormatter, configure_logging
-from .params_default import DEFAULT_PARAMS, StrategyParams, default_params, merge_params
+from .params_default import (
+    DEFAULT_OPTIMIZER_YAML,
+    DEFAULT_PARAMS,
+    DEFAULT_WALKFORWARD,
+    OptimizerYamlDefaults,
+    StrategyParams,
+    WalkforwardDefaults,
+    default_params,
+    merge_params,
+)
 from .schemas import (
     AssetGroupConstraints,
     DataConfig,
@@ -18,7 +27,11 @@ __all__ = [
     "JSONFormatter",
     "configure_logging",
     "DEFAULT_PARAMS",
+    "DEFAULT_OPTIMIZER_YAML",
+    "DEFAULT_WALKFORWARD",
     "StrategyParams",
+    "OptimizerYamlDefaults",
+    "WalkforwardDefaults",
     "default_params",
     "merge_params",
     "ENV_PREFIX",

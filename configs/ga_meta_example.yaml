@@ -1,6 +1,6 @@
 # Example GA/meta-heuristic configuration for arara-quant optimize/backtest
 # Can be supplied via CLI with:
-#   poetry run arara-quant optimize --config configs/optimizer_example.yaml \
+#   poetry run arara-quant optimize --config configs/optimization/optimizer_example.yaml \
 #       --metaheuristic-config configs/ga_meta_example.yaml --no-dry-run
 
 ga:

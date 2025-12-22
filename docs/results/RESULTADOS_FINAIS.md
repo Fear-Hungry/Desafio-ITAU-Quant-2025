@@ -187,7 +187,7 @@ poetry run python run_baselines_comparison.py
 
 ### Fase 5: Mean-CVaR com retorno-alvo e limite explícito
 ```bash
-poetry run python scripts/research/run_cvar_tail_experiment.py
+poetry run python -m arara_quant.runners.research.run_cvar_tail_experiment
 ```
 | Estratégia        | Sharpe | Retorno Anual | Vol | CVaR 95% | Max DD | Turnover |
 |-------------------|--------|---------------|-----|----------|--------|----------|
@@ -200,7 +200,7 @@ poetry run python scripts/research/run_cvar_tail_experiment.py
 
 ### Fase 6: Meta-heurística (GA) para λ/η/τ + subset
 ```bash
-PYTHONPATH=src poetry run python scripts/research/run_ga_mv_walkforward.py
+PYTHONPATH=src poetry run python -m arara_quant.runners.research.run_ga_mv_walkforward
 ```
 
 - Janela de calibração: 504 dias recentes (μ Huber c=1.5, Σ Ledoit-Wolf).

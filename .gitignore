@@ -149,15 +149,14 @@ data/processed/**
 *.npz
 *.npy
 # Legacy artifact folders (pre-outputs)
-reports/
-results/
+/reports/
+/results/
+outputs/
 outputs/reports/**/*.pdf
 outputs/reports/**/*.html
 outputs/reports/**/*.json
 outputs/reports/**/*.png
-!outputs/reports/figures/*.png
 outputs/reports/**/*.md
-!outputs/reports/walkforward/*.md
 outputs/reports/walkforward/*.csv
 notebooks/.ipynb_checkpoints/**
 notebooks/**.ipynb
@@ -185,13 +184,3 @@ secrets/**
 **/.mypy_cache/**
 **/.ipynb_checkpoints/**
 **/.DS_Store
-
-# === Committed artifacts exceptions (allow committing canonical results) ===
-# Unignore canonical reports files
-!outputs/reports/walkforward/nav_daily.csv
-!outputs/reports/oos_consolidated_metrics.json
-!outputs/reports/oos_consolidated_metrics.csv
-
-# Unignore all results CSV/JSON artifacts
-!outputs/results/**/*.csv
-!outputs/results/**/*.json

@@ -4,7 +4,7 @@
 
 ## 1. Resumo Executivo (0.5 págs)
 - Propósito da carteira ARARA e principais guardrails (vol ≤ 12%, DD ≤ 15%, CVaR5% ≤ 8% anual).
-- Destaque para resultados mais recentes (`configs/optimizer_example_trimmed.yaml`, backtest em 2020-2025):
+- Destaque para resultados mais recentes (`configs/optimization/optimizer_example_trimmed.yaml`, backtest em 2020-2025):
   - Sharpe OOS: 0.41 (excesso ao T‑Bill quando fornecida série RF diária)
   - Max Drawdown: -14.8%
   - Vol anualizada: 6.1%
@@ -65,7 +65,7 @@
 ## 9. Uso de IA Generativa (0.5–1 pág)
 - Descrever como LLMs auxiliaram:
   - Exploração de parâmetros (`lambda`, `eta`, cardinalidade) e interpretação de métricas.
-  - Ajuste de scripts (`run_regime_stress.py`, `run_baselines_comparison.py`) para ambientes offline.
+  - Ajuste de runners (`run_regime_stress.py`, `run_baselines_comparison.py`) para ambientes offline.
   - Estruturação do próprio relatório (este outline) e identificação de gaps (drawdown, baselines).
 - Registrar controles de revisão humana e validações (execução via `poetry`, inspeção manual de métricas).
 

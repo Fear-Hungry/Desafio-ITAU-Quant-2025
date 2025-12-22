@@ -8,16 +8,16 @@ Resumo (draft) — Propomos um overlay interpretável de regimes (volatilidade/d
 - Contribuição: overlay de regime simples (gatilhos de vol e drawdown observáveis) que ajusta λ, bounds e caixa mantendo a convexidade. Hipótese: reduzir DD e melhorar Sharpe/CVaR vs. MV estática, com custos/turnover explícitos.
 
 ## 2. Dados e cenário
-- Universo: 66 ETFs (USD) conforme `configs/universe_arara.yaml` (excluídos ETHA/FBTC/IBIT por histórico curto).
+- Universo: 66 ETFs (USD) conforme `configs/universe/universe_arara.yaml` (excluídos ETHA/FBTC/IBIT por histórico curto).
 - Períodos: Treino rolling 252d, teste 21d (purge/embargo 2d); OOS oficial 2020-01-02 a 2025-10-09. Histórico carregado desde 2010-01-01.
-- Fontes: Yahoo Finance (ajustado), fallback Tiingo para cripto, T-Bill diário via FRED (quando disponível). Série RF≈0 usada em artefatos canônicos; recalcular com T-Bill: `scripts/data/fetch_tbill_fred.py` + `scripts/consolidate_oos_metrics.py --riskfree-csv data/processed/riskfree_tbill_daily.csv`.
+- Fontes: Yahoo Finance (ajustado), fallback Tiingo para cripto, T-Bill diário via FRED (quando disponível). Série RF≈0 usada em artefatos canônicos; recalcular com T-Bill: `poetry run python -m arara_quant.runners.data.fetch_tbill_fred` + `poetry run python -m arara_quant.runners.reporting.consolidate_oos_metrics --riskfree-csv data/processed/riskfree_tbill_daily.csv`.
 - Artefatos: retornos/cov em `data/processed/*`, NAV e métricas em `outputs/reports/oos_consolidated_metrics.json`, janelas WF em `outputs/reports/walkforward/*`, baselines em `outputs/results/baselines/`, stress regimes em `outputs/results/regime_stress/`.
 
 ## 3. Metodologia base (PRISM-R estática)
 - Estimadores: μ Shrunk_50 (força 0.5, janela 252d), Σ Ledoit-Wolf não linear.
 - Otimizador: `max_w μ^T w - (λ/2) w^T Σ w - costs(w,w_{t-1})`; λ=15 baseline; custos lineares 30 bps round-trip aplicados ao turnover one-way.
 - Restrições: 0 ≤ w_i ≤ 10%; budgets por 11 buckets; soma = 1. Cardinalidade desativada na rodada canônica. Solver CVXPY+Clarabel.
-- Convenções: CVaR reportado anualizado (ver `docs/CVAR_CONVENTION.md`); turnover como ‖Δw‖₁ one-way (pré-trade vs pós-drift).
+- Convenções: CVaR reportado anualizado (ver `docs/standards/CVAR_CONVENTION.md`); turnover como ‖Δw‖₁ one-way (pré-trade vs pós-drift).
 
 ## 4. Overlay regime-aware (proposto)
 - Sinalização (exemplo, ajustar conforme experimento):
@@ -29,7 +29,7 @@ Resumo (draft) — Propomos um overlay interpretável de regimes (volatilidade/d
 
 ## 5. Protocolos experimentais
 - Repro OOS canônico (baseline estático): `poetry install --sync && make reproduce-oos` → `outputs/reports/oos_consolidated_metrics.json`, `outputs/reports/walkforward/per_window_results.csv`, figuras em `outputs/reports/figures/`.
-- Regenerar figuras: `poetry run python scripts/generate_oos_figures.py`.
+- Regenerar figuras: `poetry run python -m arara_quant.runners.reporting.generate_oos_figures`.
 - Comparar baselines: `outputs/results/baselines/baseline_metrics_oos.csv` (Equal Weight, 60/40, MV shrink, ERC, Min-Var).
 - Stress slices: `outputs/results/regime_stress/*.csv` (covid 2020, inflação 2022). Adaptar overlay para rodar nos mesmos recortes.
 - Validação rápida offline: `poetry run pytest tests/backtesting/test_engine_walkforward.py::test_turnover_matches_half_l1_pretrade -q`.
@@ -59,7 +59,7 @@ Notas:
 - Caminho único para dados/artefatos: `outputs/reports/walkforward/nav_daily.csv` é a fonte canônica; métricas consolidadas em `outputs/reports/oos_consolidated_metrics.json`.
 - Scripts versionados (Poetry), comandos explícitos (make/poetry). Sem segredos em repo; `.env` local.
 - Determinismo: seeds documentados; solver tolerâncias padrão (Clarabel 1e-8).
-- Checklist de validação: `docs/VALIDATION_CHECKLIST.md`; convenção CVaR em `docs/CVAR_CONVENTION.md`.
+- Checklist de validação: `docs/guides/VALIDATION_CHECKLIST.md`; convenção CVaR em `docs/standards/CVAR_CONVENTION.md`.
 
 ## 9. Trabalhos relacionados (posicionar contribuição)
 - Markowitz (1952); Ledoit & Wolf (2004); Jagannathan & Ma (2003).
@@ -93,7 +93,7 @@ Notas:
   e provar existência/unicidade sob hipóteses brandas.
 
 ### B. Experimentos diferenciadores
-- Backtests de crises históricas (1987, 2008, 2011, 2015, 2018) com overlay vs. estático; organizar em `scripts/crisis_analysis/` com `crisis_periods.yaml`.
+- Backtests de crises históricas (1987, 2008, 2011, 2015, 2018) com overlay vs. estático; organizar em `src/arara_quant/runners/crisis_analysis/` com `crisis_periods.yaml`.
 - Custos realistas: implementar `adv20_piecewise` e comparar com 30 bps lineares; “cost-aware regime switching” (ajustar thresholds considerando fricção).
   ```python
   def cost_nonlinear(trade_value, adv20):
@@ -108,7 +108,7 @@ Notas:
 ### D. Sensibilidade rigorosa
 - Grid search documentado para thresholds de vol/DD e multiplicadores de λ (heatmaps Sharpe × thresholds × λ).
   ```python
-  # scripts/sensitivity/grid_search.py
+  # arara_quant.runners.sensitivity.grid_search
   lambda_mults = [0.5, 0.75, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0]
   vol_thresholds = [0.04, 0.06, 0.08, 0.10, 0.12]
   dd_thresholds = [-0.05, -0.08, -0.10, -0.15, -0.20]
@@ -116,7 +116,7 @@ Notas:
 - Decompor ganhos: (a) λ dinâmico; (b) bounds dinâmicos; (c) cash overlay. Avaliar look-ahead bias simulando delay na detecção de regime.
 
 ### E. Aspectos práticos
-- Implementação realista: latência/capacidade, modelo de fills; análise de drawdown (duração, recuperação) em `scripts/drawdown_analysis.py`.
+- Implementação realista: latência/capacidade, modelo de fills; análise de drawdown (duração, recuperação) em `src/arara_quant/runners/drawdown_analysis.py`.
 - Risk budgeting dinâmico: visualizar heatmap temporal de budgets por bucket/regime.
 - Forward-looking signals: VIX, credit spreads como proxy de regime; suavização de transições via “regime confidence weighting”.
   ```python
@@ -152,7 +152,7 @@ Notas:
 - Estimadores robustos: média Huber, shrinkage bayesiano (Shrunk_50), Black-Litterman; covariância Ledoit-Wolf (linear/não linear), Tyler/Student-t; experimento indicou Shrunk_50 como mais realista.
 - Validação purged walk-forward (Lopez de Prado) com KPIs claros e baselines (1/N, min-var, RP) e critérios de sucesso (Sharpe OOS vs baseline).
 - Overlays de risco: modos defensivos/críticos por gatilhos de vol/DD; experimentos de λ dinâmico em crises (COVID/inflação 2022).
-- Pipeline modular e replicável: YAML + Pydantic, scripts reprodutíveis, testes/lint; pronto para Colab/CLI.
+- Pipeline modular e replicável: YAML + Pydantic, runners reprodutíveis, testes/lint; pronto para Colab/CLI.
 
 **Oportunidades teóricas**
 - Provar convexidade/existência de ótimo (KKT) do problema contínuo; penalização L1 como relaxação convexa da cardinalidade.
@@ -227,11 +227,11 @@ Pergunta de decisão imediata:
 - Dados/experimentos: agente RL (PPO/DQN) vs otimizador; LSTM/Transformer para μ/Σ ou regime; GAN para stress testing. Baseline: Paper 1 e 3.
 - Teoria/metodologia: evitar look-ahead; divisão treino/val/test OOS; regularização; métricas de estabilidade (turnover, overfit gaps).
 - Comparações: métodos clássicos vs ML; custo computacional (CPU/GPU); resultados negativos são válidos.
-- Riscos: tempo de treino, overfit, hiperparâmetros. Entregáveis: tabelas de performance, análise de overfit, scripts reproduzíveis.
+- Riscos: tempo de treino, overfit, hiperparâmetros. Entregáveis: tabelas de performance, análise de overfit, runners reproduzíveis.
 
 ### Paper 5 — Practitioner / engenharia
 - Pergunta central: como operar e reproduzir o framework de ponta a ponta de forma confiável?
-- Conteúdo: pipeline de dados, configs YAML (Pydantic), scripts make/poetry, seeds, logging, monitoração, custos/latência, limites operacionais (AUM/capacidade).
+- Conteúdo: pipeline de dados, configs YAML (Pydantic), runners e comandos make/poetry, seeds, logging, monitoração, custos/latência, limites operacionais (AUM/capacidade).
 - Experimentos: smokes e validações (`make validate`, testes-chave), exemplos de falhas comuns e mitigação.
 - Comparações: escolhas de solver (Clarabel/OSQP/ECOS), custo vs precisão, cardinalidade heurística vs exata.
 - Entregáveis: guia passo-a-passo, checklist de produção, contêiner/`make reproduce-paper`, artefatos referências (outputs/reports/ outputs/results/ docs/).

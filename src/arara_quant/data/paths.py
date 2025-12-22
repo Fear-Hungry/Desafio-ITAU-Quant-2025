@@ -4,7 +4,7 @@ Funções/Constantes
 ------------------
 `find_project_root()`
     Caminha pelos diretórios ancestrais até encontrar ``pyproject.toml``,
-    garantindo que scripts executados fora da raiz ainda localizem os dados.
+    garantindo que runners executados fora da raiz ainda localizem os dados.
 
 `PROJECT_ROOT`
     Resultado memoizado de ``find_project_root``.

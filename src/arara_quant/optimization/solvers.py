@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 
 from arara_quant.config import Settings, get_settings
+from arara_quant.config.params_default import DEFAULT_OPTIMIZER_YAML
 from arara_quant.estimators import cov as covariance_estimators
 from arara_quant.estimators import mu as mean_estimators
 from arara_quant.optimization.core.cvar_lp import CvarConfig, solve_cvar_lp
@@ -326,11 +327,19 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
     optimizer_section = raw.get("optimizer", {})
     risk_limits = raw.get("risk_limits", {})
 
-    objective = str(optimizer_section.get("objective", "mean_variance")).lower()
-    long_only = bool(optimizer_section.get("long_only", True))
+    objective = str(
+        optimizer_section.get("objective", DEFAULT_OPTIMIZER_YAML.objective)
+    ).lower()
+    long_only = bool(
+        optimizer_section.get("long_only", DEFAULT_OPTIMIZER_YAML.long_only)
+    )
 
-    risk_aversion = float(optimizer_section.get("lambda", 5.0))
-    turnover_penalty = float(optimizer_section.get("eta", 0.0))
+    risk_aversion = float(
+        optimizer_section.get("lambda", DEFAULT_OPTIMIZER_YAML.risk_aversion)
+    )
+    turnover_penalty = float(
+        optimizer_section.get("eta", DEFAULT_OPTIMIZER_YAML.turnover_penalty)
+    )
     turnover_cap = optimizer_section.get("tau")
     if turnover_cap is not None:
         turnover_cap = float(turnover_cap)
@@ -339,10 +348,18 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
     if target_return is not None:
         target_return = float(target_return)
 
-    min_weight = float(optimizer_section.get("min_weight", 0.0))
-    max_weight = float(optimizer_section.get("max_weight", 1.0))
+    min_weight = float(
+        optimizer_section.get("min_weight", DEFAULT_OPTIMIZER_YAML.min_weight)
+    )
+    max_weight = float(
+        optimizer_section.get("max_weight", DEFAULT_OPTIMIZER_YAML.max_weight)
+    )
 
-    linear_costs = raw.get("estimators", {}).get("costs", {}).get("linear_bps", 0.0)
+    linear_costs = (
+        raw.get("estimators", {})
+        .get("costs", {})
+        .get("linear_bps", DEFAULT_OPTIMIZER_YAML.linear_costs_bps)
+    )
 
     mu_config = raw.get("estimators", {}).get("mu", {})
     sigma_config = raw.get("estimators", {}).get("sigma", {})
@@ -395,7 +412,9 @@ def _load_config(path: Path, settings: Settings) -> OptimizerConfig:
     data_section = raw.get("data", {})
     returns_path_raw = data_section.get("returns") or data_section.get("returns_path")
     if returns_path_raw is None:
-        returns_path = settings.data_dir / "processed" / "returns_arara.parquet"
+        returns_path = (
+            settings.processed_data_dir / DEFAULT_OPTIMIZER_YAML.returns_filename
+        )
     else:
         returns_path = _resolve_relative_path(
             returns_path_raw, base=path.parent, settings=settings, must_exist=False
@@ -499,30 +518,48 @@ def _estimate_inputs(
     mu_config = config.mu_config
     sigma_config = config.sigma_config
 
-    mu_window = int(mu_config.get("window_days", 0) or 0)
-    sigma_window = int(sigma_config.get("window_days", 0) or 0)
+    mu_window = int(
+        mu_config.get("window_days", DEFAULT_OPTIMIZER_YAML.estimators_mu.window_days)
+        or 0
+    )
+    sigma_window = int(
+        sigma_config.get(
+            "window_days", DEFAULT_OPTIMIZER_YAML.estimators_sigma.window_days
+        )
+        or 0
+    )
 
     data_for_mu = returns.tail(mu_window) if mu_window > 0 else returns
     data_for_sigma = returns.tail(sigma_window) if sigma_window > 0 else returns
 
-    mu_method = (mu_config.get("method") or "simple").lower()
+    mu_method = (
+        mu_config.get("method") or DEFAULT_OPTIMIZER_YAML.estimators_mu.method
+    ).lower()
     if mu_method in {"simple", "mean"}:
         mu_series = mean_estimators.mean_return(data_for_mu, method="simple")
     elif mu_method == "geometric":
         mu_series = mean_estimators.mean_return(data_for_mu, method="geometric")
     elif mu_method == "huber":
-        delta = float(mu_config.get("delta", 1.5))
+        delta = float(
+            mu_config.get("delta", DEFAULT_OPTIMIZER_YAML.estimators_mu.huber_delta)
+        )
         mu_series, _ = mean_estimators.huber_mean(data_for_mu, c=delta)
     elif mu_method in {"shrunk", "shrunk_50", "shrinkage"}:
         strength = float(
-            mu_config.get("strength", mu_config.get("shrink_strength", 0.5))
+            mu_config.get(
+                "strength",
+                mu_config.get(
+                    "shrink_strength",
+                    DEFAULT_OPTIMIZER_YAML.estimators_mu.shrink_strength,
+                ),
+            )
         )
         if not 0.0 <= strength <= 1.0:
             raise ValueError("Shrinkage strength must lie in [0, 1].")
         prior_value = mu_config.get("prior")
         prior: Any
         if prior_value is None:
-            prior = 0.0
+            prior = DEFAULT_OPTIMIZER_YAML.estimators_mu.prior
         elif isinstance(prior_value, pd.Series):
             prior = prior_value
         elif isinstance(prior_value, Mapping):
@@ -535,15 +572,23 @@ def _estimate_inputs(
             data_for_mu, strength=strength, prior=prior
         )
     elif mu_method == "student_t":
-        nu = float(mu_config.get("nu", 5.0))
+        nu = float(
+            mu_config.get("nu", DEFAULT_OPTIMIZER_YAML.estimators_mu.student_t_nu)
+        )
         mu_series = mean_estimators.student_t_mean(data_for_mu, nu=nu)
     else:
         raise ValueError(f"Unsupported mean estimator '{mu_method}'")
 
-    sigma_method = (sigma_config.get("method") or "ledoit_wolf")
+    sigma_method = (
+        sigma_config.get("method") or DEFAULT_OPTIMIZER_YAML.estimators_sigma.method
+    )
     sigma_key = sigma_method.strip().lower().replace("-", "_")
     if sigma_key == "ledoit_wolf":
-        nonlinear = bool(sigma_config.get("nonlinear", False))
+        nonlinear = bool(
+            sigma_config.get(
+                "nonlinear", DEFAULT_OPTIMIZER_YAML.estimators_sigma.nonlinear
+            )
+        )
         if nonlinear:
             cov_matrix = covariance_estimators.nonlinear_shrinkage(data_for_sigma)
         else:
@@ -553,12 +598,22 @@ def _estimate_inputs(
     elif sigma_key in {"sample", "empirical"}:
         cov_matrix = covariance_estimators.sample_cov(data_for_sigma)
     elif sigma_key == "oas":
-        assume_centered = bool(sigma_config.get("assume_centered", False))
+        assume_centered = bool(
+            sigma_config.get(
+                "assume_centered",
+                DEFAULT_OPTIMIZER_YAML.estimators_sigma.assume_centered,
+            )
+        )
         cov_matrix, _ = covariance_estimators.oas_shrinkage(
             data_for_sigma, assume_centered=assume_centered
         )
     elif sigma_key in {"mincovdet", "mcd", "min_cov_det"}:
-        assume_centered = bool(sigma_config.get("assume_centered", False))
+        assume_centered = bool(
+            sigma_config.get(
+                "assume_centered",
+                DEFAULT_OPTIMIZER_YAML.estimators_sigma.assume_centered,
+            )
+        )
         cov_matrix = covariance_estimators.min_cov_det(
             data_for_sigma,
             support_fraction=sigma_config.get("support_fraction"),
@@ -568,13 +623,21 @@ def _estimate_inputs(
     elif sigma_key == "tyler":
         cov_matrix = covariance_estimators.tyler_m_estimator(data_for_sigma)
     elif sigma_key in {"graphical_lasso", "glasso"}:
-        alpha = float(sigma_config.get("alpha", 0.01))
-        max_iter = int(sigma_config.get("max_iter", 200))
-        tol = float(sigma_config.get("tol", 1e-4))
-        assume_centered = bool(sigma_config.get("assume_centered", False))
-        enet_tol = float(sigma_config.get("enet_tol", 1e-4))
-        mode = str(sigma_config.get("mode", "cd"))
-        sparsity_tol = float(sigma_config.get("sparsity_tol", 1e-6))
+        glasso_defaults = DEFAULT_OPTIMIZER_YAML.estimators_sigma.graphical_lasso
+        alpha = float(sigma_config.get("alpha", glasso_defaults.alpha))
+        max_iter = int(sigma_config.get("max_iter", glasso_defaults.max_iter))
+        tol = float(sigma_config.get("tol", glasso_defaults.tol))
+        assume_centered = bool(
+            sigma_config.get(
+                "assume_centered",
+                DEFAULT_OPTIMIZER_YAML.estimators_sigma.assume_centered,
+            )
+        )
+        enet_tol = float(sigma_config.get("enet_tol", glasso_defaults.enet_tol))
+        mode = str(sigma_config.get("mode", glasso_defaults.mode))
+        sparsity_tol = float(
+            sigma_config.get("sparsity_tol", glasso_defaults.sparsity_tol)
+        )
         cov_matrix, precision_matrix = covariance_estimators.graphical_lasso_cov(
             data_for_sigma,
             alpha=alpha,

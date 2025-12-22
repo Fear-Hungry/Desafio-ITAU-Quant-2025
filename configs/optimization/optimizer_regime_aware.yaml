@@ -1,0 +1,207 @@
+# Regime-Aware Portfolio Optimization with Defensive Mode
+# Integrates dynamic lambda adjustment and risk reduction triggers
+
+universe: configs/universe/universe_arara.yaml
+base_currency: BRL
+benchmark:
+  name: ACWI60_AGG40_BRUnhedged
+
+rebalancing:
+  frequency: monthly
+  day_rule: first_business_day
+  turnover_target: [0.05, 0.20]
+
+risk_limits:
+  vol_annual_max: 0.12
+  cvar_alpha: 0.95
+  cvar_max: 0.08
+  max_drawdown: 0.15
+
+fx:
+  net_exposure_abs_max: 0.30
+  hedge_ratio_default: 0.30
+  hedge_ratio_defensive: 0.70
+
+optimizer:
+  objective: mean_variance_l1_costs
+  lambda: 15.0  # Base risk aversion (will be adjusted by regime)
+  eta: 0.25     # Turnover penalty
+  tau: 0.20     # Turnover cap
+  solver: clarabel
+  max_weight: 0.10
+  min_weight: 0.0
+
+  # Regime detection configuration
+  regime_detection:
+    enable: true
+    window_days: 63  # ~3 months rolling window
+
+    # Volatility thresholds (annualized)
+    vol_calm_threshold: 0.12      # vol ≤ 12% → calm
+    vol_stressed_threshold: 0.25  # vol ≥ 25% → stressed
+
+    # Drawdown thresholds
+    dd_crash_threshold: -0.15  # DD < -15% → crash
+
+    # Lambda multipliers by regime
+    multipliers:
+      calm: 0.75      # Less conservative in calm markets
+      neutral: 1.0    # Baseline
+      stressed: 2.5   # 2.5x risk aversion in stress
+      crash: 4.0      # 4.0x risk aversion in crashes
+
+  cardinality:
+    enable: false
+
+estimators:
+  mu:
+    method: shrunk_50
+    window_days: 252
+    strength: 0.5
+  sigma:
+    method: ledoit_wolf
+    window_days: 252
+    nonlinear: true
+  costs:
+    linear_bps: 10
+    slippage_model: adv20_piecewise
+
+# Defensive Mode Configuration (PRD compliance)
+defensive_mode:
+  enable: true
+
+  # Defensive mode: DD > 15% OR vol > 15%
+  defensive_threshold_dd: -0.15   # Trigger if drawdown < -15%
+  defensive_threshold_vol: 0.15   # Trigger if volatility > 15%
+
+  # Critical mode: DD > 20% AND vol > 18%
+  critical_threshold_dd: -0.20    # Trigger if drawdown < -20%
+  critical_threshold_vol: 0.18    # Trigger if volatility > 18%
+
+  # Window for volatility calculation
+  vol_window: 63  # 3 months
+
+  # Assets considered "safe" (not scaled down)
+  safe_assets:
+    - CASH
+    - SHY    # 1-3Y Treasury
+    - SGOV   # 0-3M Treasury
+    - BIL    # 1-3M Treasury
+    - TLT    # 20Y+ Treasury (negative correlation in crashes)
+
+portfolio:
+  capital: 1000000
+  returns_window: 252
+  rounding:
+    method: nearest
+    allocate_residual: true
+  risk:
+    budgets:
+      - name: us_equity
+        min_weight: 0.20
+        max_weight: 0.60
+        tickers:
+          - SPY
+          - QQQ
+          - IWM
+          - XLC
+          - XLY
+          - XLP
+          - XLE
+          - XLF
+          - XLV
+          - XLK
+          - XLI
+          - XLB
+          - XLRE
+          - XLU
+          - USMV
+          - MTUM
+          - QUAL
+          - VLUE
+          - SIZE
+          - VYM
+          - SCHD
+          - SPLV
+          - VUG
+          - VTV
+
+      - name: international_equity
+        min_weight: 0.10
+        max_weight: 0.35
+        tickers:
+          - EFA
+          - VGK
+          - VPL
+          - EWJ
+          - EWG
+          - EEM
+          - EWZ
+          - INDA
+          - MCHI
+          - EWU
+          - EZA
+          - VNQI
+
+      - name: fixed_income
+        max_weight: 0.35
+        tickers:
+          - SHY
+          - IEI
+          - IEF
+          - TLT
+          - TIP
+          - VGSH
+          - VGIT
+          - AGG
+          - MUB
+          - LQD
+          - HYG
+          - VCIT
+          - VCSH
+          - EMB
+
+      - name: commodities
+        max_weight: 0.15
+        tickers:
+          - GLD
+          - SLV
+          - PPLT
+          - DBC
+          - PDBC
+          - USO
+          - UNG
+
+      - name: real_estate
+        max_weight: 0.10
+        tickers:
+          - VNQ
+          - VNQI
+
+      - name: crypto
+        max_weight: 0.05  # Conservative limit
+        tickers:
+          - IBIT
+          - ETHA
+
+data:
+  lookback_years: 5
+  min_history_days: 252
+  start_date: "2018-01-01"
+
+# Backtest configuration
+backtest:
+  start_date: "2020-01-01"
+  end_date: null  # Use all available data
+  initial_capital: 1000000
+
+  # Walk-forward validation
+  train_window: 252  # 1 year
+  test_window: 21    # 1 month
+  purge_days: 2
+  embargo_days: 2
+
+  # Costs
+  costs:
+    linear_bps: 10
+    slippage_enabled: false  # Disable non-linear slippage for now

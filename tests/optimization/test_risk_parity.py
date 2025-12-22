@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-from arara_quant.optimization.core import risk_parity as rp
+import pytest
+
+from arara_quant.optimization import risk_parity as rp
 
 
 def test_risk_contribution_sums_to_one():
@@ -60,3 +62,24 @@ def test_risk_parity_wrapper_returns_result():
     result = rp.risk_parity(cov, config={"method": "iterative"})
     assert np.isclose(result.weights.sum(), 1.0)
     assert result.converged
+
+
+def test_calibrated_erc_method_runs_when_cvxpy_available():
+    pytest.importorskip("cvxpy")
+
+    cov = pd.DataFrame(
+        [[0.04, 0.01], [0.01, 0.09]], index=["A", "B"], columns=["A", "B"]
+    )
+    result = rp.risk_parity(
+        cov,
+        config={
+            "method": "erc_calibrated",
+            "gamma": 1.0,
+            "eta": 0.01,
+            "w_max": 1.0,
+            "solver": "CLARABEL",
+        },
+    )
+    assert result.converged
+    assert np.isclose(result.weights.sum(), 1.0)
+    assert (result.weights >= 0).all()
