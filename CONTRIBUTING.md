@@ -14,11 +14,10 @@ poetry install --sync
 
 ## Language policy
 This repository is **English-only** for new and updated content.
-See `docs/LANGUAGE_POLICY.md`.
+See `docs/standards/LANGUAGE_POLICY.md`.
 
 ## PR guidelines
 - Prefer small, focused commits.
-- Keep scripts as thin wrappers; reusable logic should live under `src/arara_quant/`.
+- Keep runners as thin wrappers; reusable logic should live under `src/arara_quant/`.
 - Avoid committing generated artefacts (reports, figures, outputs).
 - When adding a new feature, include a minimal test when feasible.
-

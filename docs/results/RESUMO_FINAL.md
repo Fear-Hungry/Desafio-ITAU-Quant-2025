@@ -7,7 +7,7 @@
 
 ## 🎯 Missão Cumprida
 
-Transformamos o portfolio original (overfit, Sharpe 2.15 ex-ante) em **3 scripts robustos** com validação OOS completa.
+Transformamos o portfolio original (overfit, Sharpe 2.15 ex-ante) em **3 runners robustos** com validação OOS completa.
 
 ---
 
@@ -348,7 +348,7 @@ poetry run python run_baselines_comparison.py
 - ✅ Identificamos **Shrunk_50 como melhor estimador** (Sharpe 1.18, realista)
 - ✅ Eliminamos overfit grosseiro (5 ativos a 15% → 0 ativos > 10%)
 - ✅ Diversificação melhorou 42% (N_eff 7.4 → 10.5)
-- ✅ 3 scripts robustos prontos para uso
+- ✅ 3 runners robustos prontos para uso
 
 **Próximo passo crítico:**
 Executar validação OOS completa via `run_baselines_comparison.py` para confirmar que Sharpe realizado ≥ baselines.

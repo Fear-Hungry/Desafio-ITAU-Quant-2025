@@ -1,20 +1,20 @@
 """Command line interface for the project.
 
 Provides a unified interface to run portfolio optimization, backtesting, and
-various analysis scripts. Commands are organized into categories:
+various analysis runners. Commands are organized into categories:
 - Core: optimize, backtest, show-settings
 - Examples: run-example
 - Research: compare-baselines, compare-estimators, grid-search, test-skill, walkforward
 - Production: production-deploy
 
-All scripts have been reorganized from the root directory into scripts/ subfolders.
+Runner modules live under ``arara_quant.runners`` for in-process execution.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import subprocess
+import runpy
 import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
@@ -23,10 +23,6 @@ from arara_quant.config import Settings, configure_logging, get_settings
 from arara_quant.utils.yaml_loader import load_yaml_text
 
 __all__ = ["build_parser", "main"]
-
-# Get project root directory (3 levels up from this file)
-PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-
 
 if TYPE_CHECKING:  # pragma: no cover
     from arara_quant.backtesting import BacktestResult
@@ -370,20 +366,25 @@ def _infer_returns_from_config(
     return str(returns_path)
 
 
-def _run_script(script_path: Path) -> int:
-    """Execute a Python script and return its exit code."""
-    if not script_path.exists():
-        print(f"Error: Script not found at {script_path}", file=sys.stderr)
-        return 1
-
+def _run_runner_module(module: str, argv: list[str] | None = None) -> int:
+    """Execute a runner module in-process and return its exit code."""
+    saved_argv = sys.argv
+    sys.argv = [module]
+    if argv:
+        sys.argv.extend(argv)
     try:
-        result = subprocess.run(
-            [sys.executable, str(script_path)], cwd=PROJECT_ROOT, check=False
-        )
-        return result.returncode
-    except Exception as e:
-        print(f"Error running script: {e}", file=sys.stderr)
+        runpy.run_module(module, run_name="__main__")
+        return 0
+    except SystemExit as exc:
+        code = exc.code
+        if code is None:
+            return 0
+        if isinstance(code, int):
+            return code
+        print(code, file=sys.stderr)
         return 1
+    finally:
+        sys.argv = saved_argv
 
 
 def _generate_wf_report(
@@ -633,38 +634,39 @@ def main(argv: Iterable[str] | None = None) -> int:
 
         # Example commands
         elif args.command == "run-example":
-            script_map = {
-                "arara": "scripts/examples/run_portfolio_arara.py",
-                "robust": "scripts/examples/run_portfolio_arara_robust.py",
+            module_map = {
+                "arara": "arara_quant.runners.examples.run_portfolio_arara",
+                "robust": "arara_quant.runners.examples.run_portfolio_arara_robust",
             }
-            script_path = PROJECT_ROOT / script_map[args.variant]
-            return _run_script(script_path)
+            return _run_runner_module(module_map[args.variant])
 
         # Research commands
         elif args.command == "compare-baselines":
-            script_path = PROJECT_ROOT / "scripts/research/run_baselines_comparison.py"
-            return _run_script(script_path)
+            return _run_runner_module(
+                "arara_quant.runners.research.run_baselines_comparison"
+            )
         elif args.command == "compare-estimators":
-            script_path = PROJECT_ROOT / "scripts/research/run_estimator_comparison.py"
-            return _run_script(script_path)
+            return _run_runner_module(
+                "arara_quant.runners.research.run_estimator_comparison"
+            )
         elif args.command == "grid-search":
-            script_path = PROJECT_ROOT / "scripts/research/run_grid_search_shrinkage.py"
-            return _run_script(script_path)
+            return _run_runner_module(
+                "arara_quant.runners.research.run_grid_search_shrinkage"
+            )
         elif args.command == "test-skill":
-            script_path = PROJECT_ROOT / "scripts/research/run_mu_skill_test.py"
-            return _run_script(script_path)
+            return _run_runner_module("arara_quant.runners.research.run_mu_skill_test")
         elif args.command == "walkforward":
-            script_path = PROJECT_ROOT / "scripts/research/run_backtest_walkforward.py"
-            return _run_script(script_path)
+            return _run_runner_module(
+                "arara_quant.runners.research.run_backtest_walkforward"
+            )
 
         # Production commands
         elif args.command == "production-deploy":
-            script_map = {
-                "v1": "scripts/production/run_portfolio_production_erc.py",
-                "v2": "scripts/production/run_portfolio_production_erc_v2.py",
+            module_map = {
+                "v1": "arara_quant.runners.production.run_portfolio_production_erc",
+                "v2": "arara_quant.runners.production.run_portfolio_production_erc_v2",
             }
-            script_path = PROJECT_ROOT / script_map[args.version]
-            return _run_script(script_path)
+            return _run_runner_module(module_map[args.version])
 
         else:  # pragma: no cover - defensive fallback
             parser.error(f"Unknown command: {args.command}")

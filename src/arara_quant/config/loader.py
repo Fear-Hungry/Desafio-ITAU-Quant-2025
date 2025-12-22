@@ -8,7 +8,7 @@ Example
 >>> from arara_quant.config.loader import load_config
 >>> from arara_quant.config.schemas import PortfolioConfig
 >>>
->>> config = load_config("configs/portfolio_arara_basic.yaml", PortfolioConfig)
+>>> config = load_config("configs/portfolio/portfolio_arara_basic.yaml", PortfolioConfig)
 >>> print(config.risk_aversion)
 3.0
 """
@@ -113,7 +113,7 @@ def load_config(
     Examples
     --------
     >>> from arara_quant.config.schemas import UniverseConfig
-    >>> config = load_config("configs/universe_arara.yaml", UniverseConfig)
+    >>> config = load_config("configs/universe/universe_arara.yaml", UniverseConfig)
     >>> print(config.name)
     'ARARA'
     """
@@ -234,8 +234,8 @@ def load_configs_batch(
     --------
     >>> from arara_quant.config.schemas import UniverseConfig, PortfolioConfig
     >>> configs = load_configs_batch({
-    ...     "universe": ("configs/universe_arara.yaml", UniverseConfig),
-    ...     "portfolio": ("configs/portfolio_arara_basic.yaml", PortfolioConfig),
+    ...     "universe": ("configs/universe/universe_arara.yaml", UniverseConfig),
+    ...     "portfolio": ("configs/portfolio/portfolio_arara_basic.yaml", PortfolioConfig),
     ... })
     >>> print(configs["universe"].name)
     'ARARA'

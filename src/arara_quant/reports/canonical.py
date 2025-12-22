@@ -1,4 +1,4 @@
-"""Canonical artefact loaders for scripts and reports.
+"""Canonical artefact loaders for runners and reports.
 
 This module centralises file locations and parsing for the "single source of truth"
 artefacts referenced throughout the repository (configs + outputs).

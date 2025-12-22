@@ -1,6 +1,6 @@
 # Official Out-of-Sample (OOS) Evaluation Period Configuration
 # This is the SINGLE SOURCE OF TRUTH for all OOS period definitions
-# All scripts should read from this config to ensure consistency
+# All runners should read from this config to ensure consistency
 
 oos_evaluation:
   # Primary evaluation period: January 2, 2020 to October 09, 2025
@@ -22,7 +22,7 @@ oos_evaluation:
 
   description: |
     Official OOS evaluation period for PRISM-R portfolio validation.
-    Used by all metric consolidation, reporting, and figure generation scripts.
+    Used by all metric consolidation, reporting, and figure generation runners.
 
     This period spans from the beginning of 2020 (post-COVID entry) through
     Q3 2025, providing robust walk-forward validation across ~63 monthly windows

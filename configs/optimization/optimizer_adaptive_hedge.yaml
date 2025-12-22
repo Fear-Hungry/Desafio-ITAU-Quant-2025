@@ -1,0 +1,206 @@
+# Adaptive Tail Hedge Configuration
+# Dynamic hedge allocation based on market regime
+
+universe: configs/universe/universe_arara.yaml
+base_currency: BRL
+benchmark:
+  name: ACWI60_AGG40_BRUnhedged
+
+rebalancing:
+  frequency: monthly
+  day_rule: first_business_day
+  turnover_target: [0.05, 0.20]
+
+risk_limits:
+  vol_annual_max: 0.12
+  cvar_alpha: 0.95
+  cvar_max: 0.08
+  max_drawdown: 0.15
+
+fx:
+  net_exposure_abs_max: 0.30
+  hedge_ratio_default: 0.30
+  hedge_ratio_defensive: 0.70
+
+optimizer:
+  objective: mean_variance_l1_costs
+  lambda: 15.0
+  eta: 0.25
+  tau: 0.20
+  solver: clarabel
+  max_weight: 0.10
+  min_weight: 0.0
+
+  # Regime detection for dynamic hedge scaling
+  regime_detection:
+    enable: true
+    window_days: 63
+    vol_calm_threshold: 0.12
+    vol_stressed_threshold: 0.25
+    dd_crash_threshold: -0.15
+    multipliers:
+      calm: 0.75
+      neutral: 1.0
+      stressed: 2.5
+      crash: 4.0
+
+  cardinality:
+    enable: false
+
+estimators:
+  mu:
+    method: shrunk_50
+    window_days: 252
+    strength: 0.5
+  sigma:
+    method: ledoit_wolf
+    window_days: 252
+    nonlinear: true
+  costs:
+    linear_bps: 10
+    slippage_model: adv20_piecewise
+
+# Adaptive Tail Hedge Configuration
+adaptive_hedge:
+  enable: true
+
+  # Base allocation (calm markets)
+  base_allocation: 0.05  # 5% in calm regime
+
+  # Regime-based scaling factors
+  regime_multipliers:
+    calm: 0.5        # 2.5% allocation (base * 0.5)
+    neutral: 1.0     # 5.0% allocation (base * 1.0)
+    stressed: 2.0    # 10% allocation (base * 2.0)
+    crash: 3.0       # 15% allocation (base * 3.0)
+
+  # Hard caps per regime
+  max_allocation:
+    calm: 0.03       # Max 3% in calm
+    neutral: 0.05    # Max 5% in neutral
+    stressed: 0.12   # Max 12% in stressed
+    crash: 0.15      # Max 15% in crash
+
+  # Minimum allocation (always maintain some hedge)
+  min_allocation: 0.02  # Always at least 2%
+
+portfolio:
+  capital: 1000000
+  returns_window: 252
+  rounding:
+    method: nearest
+    allocate_residual: true
+  risk:
+    budgets:
+      - name: us_equity
+        min_weight: 0.20
+        max_weight: 0.60
+        tickers:
+          - SPY
+          - QQQ
+          - IWM
+          - XLC
+          - XLY
+          - XLP
+          - XLE
+          - XLF
+          - XLV
+          - XLK
+          - XLI
+          - XLB
+          - XLRE
+          - XLU
+          - USMV
+          - MTUM
+          - QUAL
+          - VLUE
+          - SIZE
+          - VYM
+          - SCHD
+          - SPLV
+          - VUG
+          - VTV
+
+      - name: international_equity
+        min_weight: 0.10
+        max_weight: 0.35
+        tickers:
+          - EFA
+          - VGK
+          - VPL
+          - EWJ
+          - EWG
+          - EEM
+          - EWZ
+          - INDA
+          - MCHI
+          - EWU
+          - EZA
+          - VNQI
+
+      - name: fixed_income
+        max_weight: 0.30  # Reduced to make room for tail hedge
+        tickers:
+          - SHY
+          - IEI
+          - IEF
+          - TIP
+          - VGSH
+          - VGIT
+          - AGG
+          - MUB
+          - LQD
+          - HYG
+          - VCIT
+          - VCSH
+          - EMB
+
+      - name: commodities
+        max_weight: 0.10
+        tickers:
+          - GLD
+          - SLV
+          - PPLT
+          - DBC
+          - PDBC
+
+      - name: real_estate
+        max_weight: 0.08
+        tickers:
+          - VNQ
+          - VNQI
+
+      - name: crypto
+        max_weight: 0.05
+        tickers:
+          - IBIT
+          - ETHA
+
+      # Dedicated tail hedge budget (adaptive allocation)
+      - name: tail_hedge
+        min_weight: 0.02  # Always maintain minimum hedge
+        max_weight: 0.15  # Up to 15% in crash scenarios
+        tickers:
+          - TLT    # 20Y+ Treasury (negative correlation)
+          - TIP    # Inflation-protected
+          - GLD    # Gold (safe haven)
+          - SLV    # Silver
+          - PPLT   # Platinum
+          - UUP    # USD strength (crisis hedge)
+
+data:
+  lookback_years: 5
+  min_history_days: 252
+  start_date: "2018-01-01"
+
+backtest:
+  start_date: "2020-01-01"
+  end_date: null
+  initial_capital: 1000000
+  train_window: 252
+  test_window: 21
+  purge_days: 2
+  embargo_days: 2
+  costs:
+    linear_bps: 10
+    slippage_enabled: false

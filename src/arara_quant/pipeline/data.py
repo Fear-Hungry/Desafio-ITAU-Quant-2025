@@ -3,7 +3,7 @@
 This module orchestrates the ingestion of market data using the shared
 ``DataLoader`` facade. It handles caching, persistence of artefacts under
 deterministic hash-based filenames and backwards-compatible legacy outputs
-used by scripts and notebooks.
+used by runners and notebooks.
 """
 
 from __future__ import annotations

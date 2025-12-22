@@ -140,7 +140,7 @@ def run_full_pipeline(
 
     Examples:
         >>> result = run_full_pipeline(
-        ...     config_path="configs/optimizer_example.yaml",
+        ...     config_path="configs/optimization/optimizer_example.yaml",
         ...     skip_download=True
         ... )
         >>> print(result['status'])

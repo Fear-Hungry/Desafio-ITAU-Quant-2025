@@ -9,7 +9,7 @@ Versão: 1.0 (Robusta)
 
 ## 📋 Resumo Executivo
 
-Foram criados **3 scripts robustos** para substituir a versão original que apresentava **overfit severo** (Sharpe ex-ante 2.15, concentração em 5 ativos no teto).
+Foram criados **3 runners robustos** para substituir a versão original que apresentava **overfit severo** (Sharpe ex-ante 2.15, concentração em 5 ativos no teto).
 
 ### Correções Aplicadas vs Versão Original
 

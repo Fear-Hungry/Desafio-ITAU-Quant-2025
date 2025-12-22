@@ -1,6 +1,6 @@
 """Parâmetros padrão para as estratégias e experimentos.
 
-O módulo centraliza *defaults* utilizados em testes, scripts e loaders de YAML,
+O módulo centraliza *defaults* utilizados em testes, runners e loaders de YAML,
 evitando a duplicação dos mesmos números mágicos em vários pontos do código. Os
 valores podem ser facilmente sobrescritos via ``merge_params`` ou via arquivos
 de configuração YAML, mantendo uma única fonte para defaults.

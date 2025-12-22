@@ -1,7 +1,7 @@
 # Carteira ARARA – Snapshot de Produção
 
 **Data do rebalance:** 2025-10-26
-**Pipeline:** `scripts/production/run_portfolio_production_erc_v2.py`
+**Pipeline:** `arara_quant.runners.production.run_portfolio_production_erc_v2`
 **Fontes:** `results/production/production_log.csv` (linha 33) e `weights_20251026.csv`
 
 ---

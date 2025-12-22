@@ -121,15 +121,15 @@ validate-full: validate-configs test lint type-check ## Run all validation check
 
 validate-all: ## Run master validation (full)
 	@echo "$(BLUE)Running master validation (full mode)...$(NC)"
-	poetry run python scripts/validation/run_master_validation.py --mode full
+	poetry run python -m arara_quant.runners.validation.run_master_validation --mode full
 
 validate-quick: ## Run master validation (quick)
 	@echo "$(BLUE)Running master validation (quick mode)...$(NC)"
-	poetry run python scripts/validation/run_master_validation.py --mode quick --skip-download
+	poetry run python -m arara_quant.runners.validation.run_master_validation --mode quick --skip-download
 
 validate-production: ## Run master validation (production)
 	@echo "$(BLUE)Running master validation (production mode)...$(NC)"
-	poetry run python scripts/validation/run_master_validation.py --mode production --skip-download
+	poetry run python -m arara_quant.runners.validation.run_master_validation --mode production --skip-download
 
 validate-configs: ## Validate all YAML configuration files
 	@echo "$(BLUE)Validating configuration files...$(NC)"
@@ -158,15 +158,15 @@ data-clean: ## Download and clean data from 2010
 
 optimize: ## Run portfolio optimization
 	@echo "$(BLUE)Running portfolio optimization...$(NC)"
-	poetry run arara-quant optimize --config configs/portfolio_arara_basic.yaml
+	poetry run arara-quant optimize --config configs/portfolio/portfolio_arara_basic.yaml
 
 backtest: ## Run backtest with default config
 	@echo "$(BLUE)Running backtest...$(NC)"
-	poetry run arara-quant backtest --config configs/optimizer_example.yaml --no-dry-run
+	poetry run arara-quant backtest --config configs/optimization/optimizer_example.yaml --no-dry-run
 
 backtest-dry: ## Run backtest in dry-run mode
 	@echo "$(BLUE)Running backtest (dry-run)...$(NC)"
-	poetry run arara-quant backtest --config configs/optimizer_example.yaml
+	poetry run arara-quant backtest --config configs/optimization/optimizer_example.yaml
 
 walkforward: ## Run walk-forward validation
 	@echo "$(BLUE)Running walk-forward validation...$(NC)"
@@ -174,14 +174,14 @@ walkforward: ## Run walk-forward validation
 
 oos-figures: ## Generate OOS figures from existing nav_daily.csv
 	@echo "$(BLUE)Generating OOS figures from nav_daily.csv...$(NC)"
-	poetry run python scripts/reporting/generate_oos_figures.py
+	poetry run python -m arara_quant.runners.reporting.generate_oos_figures
 
 reproduce-oos: ## Run full OOS pipeline (data → backtest → metrics → figures)
 	@echo "$(BLUE)Reproducing canonical OOS pipeline...$(NC)"
-	poetry run python scripts/core/run_01_data_pipeline.py --force-download --start 2010-01-01
-	poetry run python scripts/research/run_backtest_walkforward.py
-	poetry run python scripts/reporting/consolidate_oos_metrics.py --psr-n-trials 1
-	poetry run python scripts/reporting/generate_oos_figures.py
+	poetry run python -m arara_quant.runners.core.run_01_data_pipeline --force-download --start 2010-01-01
+	poetry run python -m arara_quant.runners.research.run_backtest_walkforward
+	poetry run python -m arara_quant.runners.reporting.consolidate_oos_metrics --psr-n-trials 1
+	poetry run python -m arara_quant.runners.reporting.generate_oos_figures
 
 oos: reproduce-oos ## Alias for reproduce-oos (legacy)
 
@@ -189,7 +189,7 @@ oos: reproduce-oos ## Alias for reproduce-oos (legacy)
 
 turnover-baselines: ## Export per-window turnover for baselines (per-window CSVs)
 	@echo "$(BLUE)Exporting per-window turnover for baselines...$(NC)"
-	poetry run python scripts/baselines/export_per_window_turnover.py --strategies equal_weight sixty_forty risk_parity
+	poetry run python -m arara_quant.runners.baselines.export_per_window_turnover --strategies equal_weight sixty_forty risk_parity
 
 update-readme-turnover: ## Update README Table 5.1 with turnover median/p95
 	@echo "$(BLUE)Updating README Turnover (mediana/p95)...$(NC)"
@@ -204,11 +204,11 @@ turnover: ## Compute per-window turnover and update README
 
 report: ## Generate performance report
 	@echo "$(BLUE)Generating performance report...$(NC)"
-	poetry run python scripts/research/generate_visual_report.py
+	poetry run python -m arara_quant.runners.research.generate_visual_report
 
 tearsheet: ## Generate tearsheet plots
 	@echo "$(BLUE)Generating tearsheet...$(NC)"
-	poetry run python scripts/research/generate_tearsheet_plots.py
+	poetry run python -m arara_quant.runners.research.generate_tearsheet_plots
 
 ##@ Coverage
 
