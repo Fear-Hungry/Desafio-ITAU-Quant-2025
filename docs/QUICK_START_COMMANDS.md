@@ -93,8 +93,11 @@ poetry run arara-quant production-deploy --version v1
 # Otimização com arquivo de configuração
 poetry run arara-quant optimize --config configs/optimizer_example.yaml
 
-# Backtest com arquivo de configuração
-poetry run arara-quant backtest --config configs/backtest_example.yaml
+# Backtest (dry-run: valida config sem simular)
+poetry run arara-quant backtest --config configs/optimizer_example.yaml
+
+# Backtest real + relatório walk-forward
+poetry run arara-quant backtest --config configs/optimizer_example.yaml --no-dry-run --wf-report
 ```
 
 ## Executar Scripts Diretamente
@@ -125,6 +128,16 @@ poetry run black src tests
 
 # Type checking (se implementado)
 poetry run mypy src
+```
+
+## Documentação
+
+```bash
+# Validar links internos da documentação
+make docs
+
+# Servir docs (static) em http://localhost:8000
+make serve-docs
 ```
 
 ## Estrutura de Diretórios

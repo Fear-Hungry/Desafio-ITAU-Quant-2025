@@ -1,6 +1,6 @@
 # Arara Quant Lab — Carteira ARARA (PRISM-R)
 [![Python](https://img.shields.io/badge/Python-3.11%2B-blue.svg)]()
-[![CI](https://github.com/Fear-Hungry/Desafio-ITAU-Quant/actions/workflows/ci.yml/badge.svg)](https://github.com/Fear-Hungry/Desafio-ITAU-Quant/actions)
+[![CI](https://github.com/Fear-Hungry/Desafio-ITAU-Quant-2025/actions/workflows/ci.yml/badge.svg)](https://github.com/Fear-Hungry/Desafio-ITAU-Quant-2025/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
 
 ## Quickstart (reprodução do OOS canônico)
@@ -13,6 +13,7 @@ poetry run python scripts/generate_oos_figures.py
 ```
 > Ajuste `--psr-n-trials` para o número efetivo de estratégias/parametrizações testadas. Sem T-Bill disponível, remova `--riskfree-csv`.
 > Prefere um atalho? `make reproduce-oos` executa a sequência acima; `make oos-figures` regenera apenas as figuras a partir de `nav_daily.csv`.
+> Sem Poetry: `python -m pip install -r requirements-dev.txt && python -m pip install -e .` e rode os comandos sem `poetry run`.
 
 ## Smoke test em 60 segundos
 Garanta que o ambiente está pronto (sem rede, usando dados sintéticos) com:
@@ -21,6 +22,18 @@ poetry install --sync
 poetry run pytest tests/backtesting/test_engine_walkforward.py::test_turnover_matches_half_l1_pretrade -q
 ```
 > O teste roda um walk-forward mínimo com dados gerados em memória e verifica se o turnover reportado bate a convenção one-way. Dura ~1–2 s numa máquina padrão.
+
+## Documentação e estrutura
+
+- Índice da documentação: `docs/README.md`
+- API Reference: `docs/api/README.md`
+- Configurações (YAML): `configs/README.md`
+- Dados locais: `data/README.md`
+- Scripts: `scripts/README.md`
+- Testes: `tests/README.md`
+- Notebooks: `notebooks/README.md`
+- Changelog: `CHANGELOG.md`
+- Contribuição: `CONTRIBUTING.md`
 
 ---
 
@@ -1033,7 +1046,7 @@ Scripts de Consolidação:
   title  = {Arara Quant Lab: Carteira ARARA (PRISM-R)},
   author = {Marcus Vinícius Silva and Anna Beatriz Cardoso},
   year   = {2025},
-  url    = {https://github.com/Fear-Hungry/Desafio-ITAU-Quant}
+  url    = {https://github.com/Fear-Hungry/Desafio-ITAU-Quant-2025}
 }
 ```
 

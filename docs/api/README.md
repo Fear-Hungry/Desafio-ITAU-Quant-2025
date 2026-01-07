@@ -15,5 +15,11 @@ their docstrings for deeper dives.
 - `arara_quant.portfolio`: execution layer that turns optimizer results into
   rebalancing instructions.
 
+## Curated pages
+
+- `docs/api/DATA.md`
+- `docs/api/OPTIMIZATION.md`
+- `docs/api/BACKTESTING.md`
+
 When editing code, keep docstrings descriptive—`pdoc` or `sphinx-apidoc` can be
 plugged in later to auto-generate HTML using the structure defined here.

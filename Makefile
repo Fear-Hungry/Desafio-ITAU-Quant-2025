@@ -224,13 +224,13 @@ coverage-badge: ## Generate coverage badge
 
 ##@ Documentation
 
-docs: ## Build documentation
-	@echo "$(BLUE)Building documentation...$(NC)"
-	@echo "$(YELLOW)Documentation builder not yet configured$(NC)"
+docs: ## Validate documentation links
+	@echo "$(BLUE)Validating documentation links...$(NC)"
+	poetry run python scripts/validation/check_docs_links.py
 
-serve-docs: ## Serve documentation locally
-	@echo "$(BLUE)Serving documentation...$(NC)"
-	@echo "$(YELLOW)Documentation server not yet configured$(NC)"
+serve-docs: ## Serve docs locally (static)
+	@echo "$(BLUE)Serving docs at http://localhost:8000$(NC)"
+	python -m http.server 8000 --directory docs
 
 ##@ Cleanup
 

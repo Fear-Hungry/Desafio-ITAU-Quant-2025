@@ -162,7 +162,7 @@ poetry run python scripts/run_master_validation.py \
 - Applies corporate action adjustments
 - Computes log returns
 - Winsorizes outliers
-- Saves to Parquet format (`data/processed/returns.parquet`)
+- Saves to Parquet format (default: `data/processed/returns_arara.parquet`)
 
 **Command:**
 ```bash

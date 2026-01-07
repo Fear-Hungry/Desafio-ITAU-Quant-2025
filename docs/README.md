@@ -5,9 +5,17 @@ below as entry points.
 
 ## Getting Started
 - [Project README](../README.md)
+- [Changelog](../CHANGELOG.md)
+- [Contributing](../CONTRIBUTING.md)
 - [Quickstart](QUICKSTART.md)
 - [Quick Start Commands](QUICK_START_COMMANDS.md)
 - [User Guide](user_guide.md)
+- [API Reference](api/README.md)
+- [Repository Structure - Configs](../configs/README.md)
+- [Repository Structure - Data](../data/README.md)
+- [Repository Structure - Scripts](../scripts/README.md)
+- [Repository Structure - Tests](../tests/README.md)
+- [Repository Structure - Notebooks](../notebooks/README.md)
 
 ## Specs and Architecture
 - [PRD](specs/PRD.md)

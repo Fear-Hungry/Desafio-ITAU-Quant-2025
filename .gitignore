@@ -162,6 +162,7 @@ outputs/reports/walkforward/*.csv
 notebooks/.ipynb_checkpoints/**
 notebooks/**.ipynb
 !notebooks/README.md
+!notebooks/04-or-optimization-experiments.ipynb
 outputs/logs/**
 runtime/**
 outputs/results/**/*.json

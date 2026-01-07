@@ -6,6 +6,7 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
+import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
@@ -17,9 +18,17 @@ from scripts.generate_oos_figures import (
     load_oos_config,
 )
 
+NAV_DAILY_PATH = Path("outputs/reports/walkforward/nav_daily.csv")
+OOS_METRICS_PATH = Path("outputs/reports/oos_consolidated_metrics.json")
+
 
 def test_oos_figure_filters_align_with_config_and_metrics() -> None:
     """Ensure figure helpers honor the OOS config and match consolidated metrics."""
+
+    if not NAV_DAILY_PATH.exists() or not OOS_METRICS_PATH.exists():
+        pytest.skip(
+            "Canonical OOS artifacts not found. Run `make reproduce-oos` to generate them."
+        )
 
     oos_config = load_oos_config()
     df_nav = load_nav_daily()
@@ -33,8 +42,7 @@ def test_oos_figure_filters_align_with_config_and_metrics() -> None:
     assert df_oos["date"].iloc[0] == start_date
     assert df_oos["date"].iloc[-1] == end_date
 
-    metrics_path = Path("outputs/reports/oos_consolidated_metrics.json")
-    with metrics_path.open(encoding="utf-8") as handle:
+    with OOS_METRICS_PATH.open(encoding="utf-8") as handle:
         metrics = json.load(handle)
 
     nav_final = float(df_oos["nav"].iloc[-1])
